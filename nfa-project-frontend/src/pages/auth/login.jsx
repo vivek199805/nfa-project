@@ -5,6 +5,8 @@ import { useAuth } from "../../hooks/use-auth";
 import PasswordInput from "../../component/passwordInput";
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import { showErrorToast, showSuccessToast } from "../../common/services/toastService";
+import { postRequest } from "../../common/services/requestService";
 
 // Schema with clear required field messages
 const loginSchema = z.object({
@@ -33,6 +35,7 @@ const LoginPage = () => {
     register,
     handleSubmit,
     formState: { errors },
+    getValues 
   } = loginForm;
 
   const onSubmit = (data) => {
@@ -40,10 +43,22 @@ const LoginPage = () => {
     loginMutation.mutate(data);
   };
 
- const  handleVerifyEmail = () => {
-  console.log("Verify email");
-  setIsVerify(true);
- }
+  const handleVerifyEmail = async () => {
+      const currentValues = getValues();
+    console.log("Verify email", currentValues);
+    const credentials = {
+      email: currentValues?.username,
+      password: ''
+    }
+    const res = await postRequest("user/verify-email", credentials);
+    if (res.statusCode == 200) {
+      setIsVerify(true);
+      showSuccessToast(res.message);
+    } else {
+      showErrorToast(res.message)
+    }
+
+  }
 
   return (
     <div className="form-container p-5">
@@ -85,13 +100,13 @@ const LoginPage = () => {
             )}
           </div>
           {!isVerify && (
-          <div className="d-flex align-item-center justify-content-end">
-          <button type="button" className="btn btn-primary w-10 mb-2"
-            onClick={handleVerifyEmail}
-            >
-            Verify Email
-          </button>
-          </div>
+            <div className="d-flex align-item-center justify-content-end">
+              <button type="button" className="btn btn-primary w-10 mb-2"
+                onClick={handleVerifyEmail}
+              >
+                Verify Email
+              </button>
+            </div>
           )}
 
 
@@ -119,18 +134,18 @@ const LoginPage = () => {
           />
 
           <div className="form-group text-end mb-3">
-          <Link to="/forgot-password">Forgot Password?</Link>
+            <Link to="/forgot-password">Forgot Password?</Link>
 
           </div>
 
-          <button type="submit" className="btn btn-common-form w-100"   disabled ={!isVerify}>
+          <button type="submit" className="btn btn-common-form w-100" disabled={!isVerify}>
             Login
           </button>
 
           <div className="link text-center mt-2">
             <p>
               Don't have an account?{" "}
-                  <Link to="/signup" className="signup-link">Sign up</Link>
+              <Link to="/signup" className="signup-link">Sign up</Link>
             </p>
           </div>
         </form>

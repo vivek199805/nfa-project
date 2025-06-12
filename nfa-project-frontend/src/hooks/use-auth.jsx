@@ -10,43 +10,39 @@ export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, ] = useState(() => {
-  const storedUser = localStorage.getItem("user");
+  const storedUser = localStorage.getItem("userData");
   return storedUser ? JSON.parse(storedUser) : null;
 });
   const navigate = useNavigate();
-//   const storedUser = localStorage.getItem("user");
-// const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+  const storedUser = localStorage.getItem("userData");
+const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+const getCurrentUser = async () => {
+  const response = await getRequest('user/current'); // replace with your actual API
+  return response.data;
+};
 
-// const {
-//   data: userData,
-//   error,
-//   isLoading,
-// } = useQuery({
-//   queryKey: ["/api/user/currentUser"],
-//   queryFn: '',
-//   enabled: !parsedUser,  // Only run if not in localStorage
-//   initialData: parsedUser,
-// });
+const {
+  data: userData,
+  error,
+  isLoading,
+} = useQuery({
+  queryKey: ["user/currentUser"],
+  queryFn: getCurrentUser,
+  enabled: !parsedUser,  // Only run if not in localStorage
+  initialData: parsedUser,
+});
 
   const loginMutation = useMutation({
     mutationFn: async (credentials) => {
-      let loginData = {
-        "username": "",
-        "captcha": "11111222",
-        "password": credentials.password,
-        "email": credentials.email
-      }
-
-      // const res = await postRequest("login", loginData);
-      
-        navigate('/dashboard') 
+      const res = await postRequest("user/login", credentials);
+      return res;
     },
-    onSuccess: (user) => {
-    // const userData = user.data;
-    //   localStorage.setItem("user", JSON.stringify(userData));
+    onSuccess: (res) => {      
+    const userData = res.data;
+      localStorage.setItem("userData", JSON.stringify(userData));
       // queryClient.setQueryData(["/api/user"], user);
       navigate('/dashboard')
-      // showSuccessToast(`Welcome back, ${user.firstName}!`);
+      showSuccessToast(`Welcome, ${res.message}!`);
     },
     onError: (error) => {
       showErrorToast(error.message || "Login failed");
@@ -55,14 +51,12 @@ export function AuthProvider({ children }) {
 
   const registerMutation = useMutation({
     mutationFn: async (credentials) => {
-      // const res = await postRequest("/api/register", credentials);
-    return credentials;
+      const res = await postRequest("user/register", credentials);
+      return res;
     },
-    onSuccess: (user) => {
-        console.log("user", user);
-           localStorage.setItem("user", JSON.stringify(user));
+    onSuccess: (res) => {
       // queryClient.setQueryData(["/api/user"], user);
-      // showSuccessToast(`Welcome, ${user.username}!`);
+      showSuccessToast(`Welcome, ${res.message}!`);
       navigate('/')
     },
     onError: (error) => {
@@ -93,7 +87,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider
       value={{
-        user: user ?? null,
+        user: userData ?? null,
         // isLoading,
         // error,
         loginMutation,

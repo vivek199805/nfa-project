@@ -3,8 +3,10 @@ import { Autoplay, EffectFade, Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import FeatureModalComponent from "../common/modal/feature-modal";
 import { useQuery } from "@tanstack/react-query";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import "../styles/dashboard.css";
+import { useAuth } from "../hooks/use-auth";
+import { useEffect } from "react";
 const slides = [
   { image: "/images/login-01.jpg" },
   { image: "/images/login-02.jpg" },
@@ -237,6 +239,8 @@ export const getUserForms = async () => {
 };
 const DashboardPage = () => {
   const [showModal, setShowModal] = useState(false);
+  const { user, logoutMutation } = useAuth();
+  const navigate = useNavigate();
 
   // Simulate skipping fetch and using static data
   const {
@@ -249,6 +253,13 @@ const DashboardPage = () => {
     enabled: false, // disables automatic query
     initialData: staticForms, // sets mock data
   });
+  useEffect(() => {
+    console.log('dashboard', user);
+
+    if (!user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   return (
     <div className="dashboard">
@@ -267,15 +278,25 @@ const DashboardPage = () => {
             <div className="user-details">
               <div className="mt-4">
                 <div className="porfile-info">
-                  <h4 className="mb-2">Hello, Alok</h4>
+                  <h4 className="mb-2">{user?.name}</h4>
                   <ul>
                     <li>
-                      <i className="bi bi-telephone"></i> 011-26499378/357
+                      <i className="bi bi-telephone"></i> {user?.phone}
                     </li>
                     <li>
-                      <i className="bi bi-envelope"></i> 71nfa2023@gmail.com
+                      <i className="bi bi-envelope"></i>{user?.email}
                     </li>
                   </ul>
+                  <div className="d-flex justify-content-end">
+                    <button
+                      type="button"
+                      className="btn btn-danger mx-2"
+                      onClick={() => logoutMutation.mutate()}
+                    >
+                      LOG OUT{" "}
+                    </button>
+                  </div>
+
                 </div>
 
                 <div className="notification mt-4 col-out-div">
@@ -325,9 +346,8 @@ const DashboardPage = () => {
                               className="text-decoration-none"
                             >
                               <i
-                                className={`bi bi-${
-                                  card.payment_status !== 2 ? "pencil" : "eye"
-                                }`}
+                                className={`bi bi-${card.payment_status !== 2 ? "pencil" : "eye"
+                                  }`}
                               ></i>{" "}
                               {card.payment_status !== 2 ? "Edit" : "View"}
                             </NavLink>
@@ -344,26 +364,26 @@ const DashboardPage = () => {
 
         <div className="col-lg-6 col-md-6 p-0">
 
-            <Swiper
-              modules={[Autoplay, Navigation, Pagination, EffectFade]}
-              autoplay={{ delay: 3000, disableOnInteraction: false }}
-              // loop={true}  
-              // navigation={true}
-              pagination={{ clickable: true }}
-              // effect="fade"
-              spaceBetween={10}
-              slidesPerView={1}
-            >
-              {slides.map((slide, index) => (
-                <SwiperSlide key={index}>
-                  <img
-                    src={slide.image}
-                    alt={`slide-${index}`}
-                    className="carousel-img"
-                  />
-                </SwiperSlide>
-              ))}
-            </Swiper>
+          <Swiper
+            modules={[Autoplay, Navigation, Pagination, EffectFade]}
+            autoplay={{ delay: 3000, disableOnInteraction: false }}
+            // loop={true}  
+            // navigation={true}
+            pagination={{ clickable: true }}
+            // effect="fade"
+            spaceBetween={10}
+            slidesPerView={1}
+          >
+            {slides.map((slide, index) => (
+              <SwiperSlide key={index}>
+                <img
+                  src={slide.image}
+                  alt={`slide-${index}`}
+                  className="carousel-img"
+                />
+              </SwiperSlide>
+            ))}
+          </Swiper>
 
         </div>
       </div>

@@ -5,6 +5,7 @@ import { z } from "zod";
 import Select from "react-dropdown-select";
 import { useEffect, useState } from "react";
 import { countWords } from "../../common/common-function";
+import { getRequest } from "../../common/services/requestService";
 
 const filmSchema = z.object({
   titleRoman: z.string().min(1, "This field is required"),
@@ -46,7 +47,7 @@ const filmSchema = z.object({
     ),
 });
 
-const options = [
+let options = [
   { id: 1, name: "Assamese" },
   { id: 2, name: "Bengali" },
   { id: 3, name: "Bodo" },
@@ -138,10 +139,11 @@ const options = [
 
 const FilmDetailsSection = ({ setActiveSection, data }) => {
   const [synopsisWordCount, setSynopsisWordCount] = useState(0);
-  const languageOptions = options.map((lang) => ({
-    label: lang.name,
-    value: String(lang.id),
-  }));
+    const [languageOptions, setLanguageOptions] = useState([]);
+  // const languageOptions = options.map((lang) => ({
+  //   label: lang.name,
+  //   value: String(lang.id),
+  // }));
 
   const {
     register,
@@ -155,6 +157,23 @@ const FilmDetailsSection = ({ setActiveSection, data }) => {
     mode: "onTouched",
     // shouldFocusError: false,
   });
+
+ useEffect(() => {
+    async function fetchLanguages() {
+      try {
+        const response = await getRequest('get-languages');
+        const options = response.data.map((lang) => ({
+          label: lang.name,
+          value: String(lang.id),
+        }));
+        setLanguageOptions(options);
+      } catch (error) {
+        console.error("Failed to fetch languages:", error);
+      }
+    }
+
+    fetchLanguages();
+  }, []);
 
   useEffect(() => {
     if (data) {
@@ -177,16 +196,16 @@ const FilmDetailsSection = ({ setActiveSection, data }) => {
           data?.sound_system == 1
             ? "Optional Mono"
             : data?.sound_system == 2
-            ? "Dolby"
-            : data?.sound_system == 3
-            ? "DTS"
-            : "Other",
+              ? "Dolby"
+              : data?.sound_system == 3
+                ? "DTS"
+                : "Other",
         synopsis: data.film_synopsis,
       });
-        setSynopsisWordCount(countWords(synopsis));
+      setSynopsisWordCount(countWords(synopsis));
 
     }
-  }, [data, reset]);
+  }, [data, reset, languageOptions]);
 
   const onSubmit = (data) => {
     console.log("Form submitted:", data);
@@ -207,9 +226,8 @@ const FilmDetailsSection = ({ setActiveSection, data }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${
-                errors.titleRoman ? "is-invalid" : ""
-              }`}
+              className={`form-control ${errors.titleRoman ? "is-invalid" : ""
+                }`}
               placeholder="Film Title (Roman Script)"
               {...register("titleRoman")}
             />
@@ -226,9 +244,8 @@ const FilmDetailsSection = ({ setActiveSection, data }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${
-                errors.titleDevanagari ? "is-invalid" : ""
-              }`}
+              className={`form-control ${errors.titleDevanagari ? "is-invalid" : ""
+                }`}
               placeholder="Film Title (Devanagri)"
               {...register("titleDevanagari")}
             />
@@ -246,9 +263,8 @@ const FilmDetailsSection = ({ setActiveSection, data }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${
-                errors.titleEnglish ? "is-invalid" : ""
-              }`}
+              className={`form-control ${errors.titleEnglish ? "is-invalid" : ""
+                }`}
               placeholder="English Title"
               {...register("titleEnglish")}
             />
@@ -397,9 +413,8 @@ const FilmDetailsSection = ({ setActiveSection, data }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${
-                errors.aspectRatio ? "is-invalid" : ""
-              }`}
+              className={`form-control ${errors.aspectRatio ? "is-invalid" : ""
+                }`}
               placeholder="Aspect Ratio"
               {...register("aspectRatio")}
             />
@@ -416,9 +431,8 @@ const FilmDetailsSection = ({ setActiveSection, data }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${
-                errors.runningTime ? "is-invalid" : ""
-              }`}
+              className={`form-control ${errors.runningTime ? "is-invalid" : ""
+                }`}
               placeholder="Running Time"
               {...register("runningTime")}
             />

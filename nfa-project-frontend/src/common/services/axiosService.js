@@ -3,7 +3,7 @@ import axios from "axios";
 
 // Create the Axios instance
 const api = axios.create({
-  baseURL: "http://119.82.68.149/NFA/api/", // API base URL
+  baseURL: "http://localhost:5000/api/", // API base URL
   // withCredentials: true, // If need to send cookies
 });
 
@@ -19,9 +19,9 @@ api.interceptors.request.use(
     );
 
     if (!isExcluded) {
-      const token = localStorage.getItem("auth_token");
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+      const tokenData = JSON.parse(localStorage.getItem("userData"));      
+      if (tokenData) {
+        config.headers.Authorization = `Bearer ${tokenData?.token}`;
       }
     }
 
