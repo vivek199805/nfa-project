@@ -1,9 +1,10 @@
-const jwt = require("jsonwebtoken");
-const User = require("../models/user");
+
+import User  from "../models/mongodbModels/user.js"
+import { verifyToken } from "../utils/jwt.util.js";
 const auth = async (req, res, next) =>{
     try {
         const token = req.header("Autherization").replace('Bearer', '')
-        const decode = jwt.verify(token, 'thisisnewproject')
+        const decode = verifyToken(token)
         const user = User.findOne({_id: decode._id, 'tokens.token':token})
 
         if(!user){
@@ -11,7 +12,6 @@ const auth = async (req, res, next) =>{
         }
 
         req.token = token;
-
         req.user = user;
 
 

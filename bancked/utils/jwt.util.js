@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key"; // keep this secure
 
-export function generateToken(payload, expiresIn = "7d") {
+export function generateToken(payload, expiresIn = "1h") {
   return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }
 
