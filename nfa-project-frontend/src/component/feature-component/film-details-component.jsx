@@ -5,7 +5,8 @@ import { z } from "zod";
 import Select from "react-dropdown-select";
 import { useEffect, useState } from "react";
 import { countWords } from "../../common/common-function";
-import { getRequest } from "../../common/services/requestService";
+import { getRequest, postRequest } from "../../common/services/requestService";
+import { useParams } from "react-router-dom";
 
 const filmSchema = z.object({
   titleRoman: z.string().min(1, "This field is required"),
@@ -139,7 +140,8 @@ let options = [
 
 const FilmDetailsSection = ({ setActiveSection, data }) => {
   const [synopsisWordCount, setSynopsisWordCount] = useState(0);
-    const [languageOptions, setLanguageOptions] = useState([]);
+  const [languageOptions, setLanguageOptions] = useState([]);
+    const { id } = useParams();
   // const languageOptions = options.map((lang) => ({
   //   label: lang.name,
   //   value: String(lang.id),
@@ -158,7 +160,7 @@ const FilmDetailsSection = ({ setActiveSection, data }) => {
     // shouldFocusError: false,
   });
 
- useEffect(() => {
+  useEffect(() => {
     async function fetchLanguages() {
       try {
         const response = await getRequest('get-languages');
@@ -176,7 +178,7 @@ const FilmDetailsSection = ({ setActiveSection, data }) => {
   }, []);
 
   useEffect(() => {
-    if (data) {
+    if (data && id) {
       const synopsis = data.film_synopsis || "";
       reset({
         titleRoman: data.film_title_roman,
@@ -207,10 +209,28 @@ const FilmDetailsSection = ({ setActiveSection, data }) => {
     }
   }, [data, reset, languageOptions]);
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
+        // Call API to submit form data
     console.log("Form submitted:", data);
-    // Call API to submit form data
-    setActiveSection(2);
+    const formData = new FormData();
+    formData.append('film_title_roman', data.titleRoman)
+    formData.append('film_title_devnagri', data.titleDevanagari)
+    formData.append('film_title_english', data.titleEnglish)
+    formData.append('language_id', data.languages)
+    formData.append('english_subtitle', data.englishSubtitle)
+    formData.append('colorFormat', data.colorFormat)
+    formData.append('aspectRatio', data.aspectRatio)
+    formData.append('runningTime', data.runningTime)
+    formData.append('format', data.format)
+    formData.append('director_debut', data.directorDebut)
+    formData.append('sound_system', data.soundSystem)
+    formData.append('film_synopsis', data.synopsis)
+    formData.append('step', '1')
+
+    const response = await postRequest('film/feature-create',formData);
+    if (response.statusCode == 200) {
+      setActiveSection(2);
+    }
   };
 
   return (
