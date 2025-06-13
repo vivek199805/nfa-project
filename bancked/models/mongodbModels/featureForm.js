@@ -1,0 +1,88 @@
+// models/FeatureForm.ts
+import mongoose from 'mongoose';
+import producerSchema from '../mongodbModels/producer.js';
+import directorSchema from '../mongodbModels/director.js';
+import songSchema from '../mongodbModels/song.js';
+import actorSchema from '../mongodbModels/actor.js';
+import audiographerSchema from '../mongodbModels/audiographer.js';
+import documentSchema from '../mongodbModels/document.js';
+
+const featureFormSchema = new mongoose.Schema({
+  step: Number,
+  active_step: Number,
+  payment_status: Number,
+  status: Number,
+  client_id: Number,
+  film_title_roman: String,
+  film_title_devnagri: String,
+  film_title_english: String,
+  language_id: [String],
+  english_subtitle: Boolean,
+  director_debut: Boolean,
+  nom_reels_tapes: String,
+  aspect_ratio: String,
+  format: Number,
+  sound_system: Number,
+  running_time: String,
+  color_bw: Number,
+  film_synopsis: String,
+  censor_certificate_nom: String,
+  censor_certificate_date: Date,
+  censor_certificate_file: String,
+  title_registratin_detils: String,
+  payment_date: Date,
+  amount: Number,
+  reference_number: String,
+  receipt: String,
+  company_reg_details: String,
+  company_reg_doc: String,
+  original_screenplay_name: String,
+  adapted_screenplay_name: String,
+  story_writer_name: String,
+  work_under_public_domain: Boolean,
+  original_work_copy: String,
+  dialogue: String,
+  cinemetographer: String,
+  editor: String,
+  costume_designer: String,
+  animator: String,
+  vfx_supervisor: String,
+  stunt_choreographer: String,
+  music_director: String,
+  special_effect_creator: String,
+  shot_digital_video_format: Boolean,
+  production_designer: String,
+  make_up_director: String,
+  choreographer: String,
+  return_name: String,
+  return_mobile: String,
+  return_address: String,
+  return_fax: String,
+  return_email: String,
+  return_pincode: String,
+  return_website: String,
+
+  declaration_one: Boolean,
+  declaration_two: Boolean,
+  declaration_three: Boolean,
+  declaration_four: Boolean,
+  declaration_five: Boolean,
+  declaration_six: Boolean,
+  declaration_seven: Boolean,
+  declaration_eight: Boolean,
+  declaration_nine: Boolean,
+  declaration_ten: Boolean,
+  declaration_eleven: Boolean,
+  declaration_twelve: Boolean,
+
+  producers: [producerSchema],
+  directors: [directorSchema],
+  songs: [songSchema],
+  actors: [actorSchema],
+  audiographer: [audiographerSchema],
+  documents: [documentSchema],
+
+  payment_response: mongoose.Schema.Types.Mixed,
+}, { timestamps: true });
+
+export const FeatureForm = mongoose.model('FeatureForm', featureFormSchema);

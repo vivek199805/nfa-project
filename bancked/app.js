@@ -12,6 +12,7 @@ import cors from 'cors';
 // import productRoutes from "./routes/product.js";
 import authRoutes from './routes/mongoDBRoutes/auth.js';
 import langRoutes from './routes/mongoDBRoutes/languages.js';
+import filmSubmissionRoutes from './routes/mongoDBRoutes/filmSubmission.js';
 dotenv.config();
 const app = express();
 
@@ -43,6 +44,7 @@ app.use((req, res, next) => {
 
 app.use("/api/user", authRoutes);
 app.use("/api", langRoutes);
+app.use("/api/film", filmSubmissionRoutes);
 // app.use("/api/addresses", addressRoutes);
 // app.use("/api/payment", paymentRoutes);
 // app.use("/api/cart", cartRoutes);
