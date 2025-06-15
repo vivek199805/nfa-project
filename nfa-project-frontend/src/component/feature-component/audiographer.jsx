@@ -4,6 +4,14 @@ import { z } from "zod";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import {
+  getRequestById,
+  postRequest,
+} from "../../common/services/requestService";
+import { showErrorToast, showSuccessToast } from "../../common/services/toastService";
+import { useQuery } from "@tanstack/react-query";
+import { useParams } from "react-router-dom";
+import Swal from "sweetalert2";
 
 const filmSchema = z.object({
   soundRecordist: z.string().trim().optional(),
@@ -15,6 +23,7 @@ const AudiographerSection = ({ setActiveSection, data }) => {
   const [audioGrapherData, setAudioGrapherData] = useState([]); // your producer list
   const [showForm, setShowForm] = useState(audioGrapherData.length === 0);
   const [editingIndex, setEditingIndex] = useState(null);
+  const { id } = useParams();
 
   const {
     register,
@@ -34,48 +43,140 @@ const AudiographerSection = ({ setActiveSection, data }) => {
     // shouldFocusError: false,
   });
 
-    useEffect(() => {
-    if (data?.audiographer?.length > 0) {
-    const updatedAudiographer = data.audiographer.map(item => ({
-      soundRecordist: item?.production_sound_recordist, 
-      soundDesigner: item?.sound_designer,
-      reRecordist: item?.re_recordist_filnal
-    }));    
+  useEffect(() => {
+    getAudiographerList();
+  }, [id]);
 
-    setAudioGrapherData(updatedAudiographer);
+  const getAudiographerList = async () => {
+    try {
+      const response = await postRequest("film/audiographer-list", { id });
+      if (response.statusCode === 200) {
+        setAudioGrapherData(response.data);
+      } else {
+        showErrorToast(response.message);
+      }
+    } catch (error) {
+      showErrorToast(error);
     }
-  }, [data?.audiographer]);
+  };
+
+  const { data: formData } = useQuery({
+    queryKey: ["userForm", id],
+    queryFn: () => getRequestById("film/feature-entry-by", id),
+    enabled: !!id, // Only run query if id exists
+    refetchOnMount: true,
+    staleTime: 0,
+  });
+
+  // useEffect(() => {
+  //   if (data?.audiographer?.length > 0) {
+  //     const updatedAudiographer = data.audiographer.map((item) => ({
+  //       soundRecordist: item?.production_sound_recordist,
+  //       soundDesigner: item?.sound_designer,
+  //       reRecordist: item?.re_recordist_filnal,
+  //     }));
+
+  //     setAudioGrapherData(updatedAudiographer);
+  //   }
+  // }, [data?.audiographer]);
+
   useEffect(() => {
     setShowForm(audioGrapherData.length === 0);
   }, [audioGrapherData.length]);
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
+    const formData = new FormData();
+    formData.append("production_sound_recordist", data.soundRecordist);
+    formData.append("sound_designer", data.soundDesigner);
+    formData.append("re_recordist_filnal", data.reRecordist);
+    formData.append("nfa_feature_id", id);
     if (editingIndex !== null) {
-      const updated = [...audioGrapherData];
-      updated[editingIndex] = data;
-      setAudioGrapherData(updated);
-      setEditingIndex(null);
-    } else {
-      setAudioGrapherData([...audioGrapherData, data]);
+      formData.append("audiographerId", editingIndex);
     }
 
-    reset();
+    try {
+      const response = await postRequest("film/store-audiographer", formData);
+      if (response.statusCode === 200) {
+        showSuccessToast(response.message);
+        await getAudiographerList();
+        setEditingIndex(null);
+        reset({
+          soundRecordist: "",
+          soundDesigner: "",
+          reRecordist: "",
+        });
+      } else {
+        showErrorToast(response.message);
+      }
+    } catch (error) {
+      showErrorToast(error);
+    }
+
     setShowForm(false);
   };
+
   const handleEdit = (index) => {
-    const data = audioGrapherData[index];
-    Object.entries(data).forEach(([key, value]) => {
-      setValue(key, value);
+    //  const data = audioGrapherData[index];
+    const data = audioGrapherData.find((item) => item._id === index);
+    reset({
+      soundRecordist: data.production_sound_recordist,
+      soundDesigner: data.sound_designer,
+      reRecordist: data.re_recordist_filnal,
     });
     setEditingIndex(index);
     setShowForm(true);
   };
 
   const handleDelete = (index) => {
-    const updated = [...audioGrapherData];
-    updated.splice(index, 1);
-    setAudioGrapherData(updated);
-    if (audioGrapherData.length === 1) setShowForm(true); // Show form if all deleted
+    Swal.fire({
+      title: "Confirm Deletion",
+      text: "Are you sure you want to delete audiographer?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        // if (audioGrapherData.length === 1) setShowForm(true);
+
+        const formData = new FormData();
+        formData.append("audiographerId", index);
+        formData.append("nfa_feature_id", id);
+        try {
+          const response = await postRequest(
+            "film/delete-audiographer",
+            formData
+          );
+          if (response.statusCode === 200) {
+            showSuccessToast(response.message);
+            await getAudiographerList();
+            setEditingIndex(null);
+            Swal.fire("Deleted!", "audiographer has been deleted.", "success");
+          } else {
+            showErrorToast(response.message);
+          }
+        } catch (error) {
+          showErrorToast(error);
+        }
+      }
+    });
+  };
+
+  const onNext = async () => {
+    const isValid = await trigger(); // validate the form
+    if (isValid || !showForm) {
+      const formData = new FormData();
+      formData.append("step", "8");
+      formData.append("id", id);
+      const response = await postRequest("film/feature-update", formData);
+      if (response.statusCode == 200) {
+        setActiveSection(9);
+      }
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
+      showSuccessToast("Atleast one audiographer is required");
+    }
   };
 
   return (
@@ -106,24 +207,24 @@ const AudiographerSection = ({ setActiveSection, data }) => {
               </thead>
               <tbody>
                 {audioGrapherData.length > 0 &&
-                  audioGrapherData.map((song, index) => (
+                  audioGrapherData.map((audiographer, index) => (
                     <tr key={index}>
                       <td>{index + 1}</td>
-                      <td>{song.soundRecordist}</td>
-                      <td>{song.soundDesigner}</td>
-                      <td>{song.reRecordist}</td>
+                      <td>{audiographer.production_sound_recordist}</td>
+                      <td>{audiographer.sound_designer}</td>
+                      <td>{audiographer.re_recordist_filnal}</td>
                       <td>
                         <button
                           className="action-btn delete-btn"
                           title="Delete"
-                          onClick={() => handleDelete(index)}
+                          onClick={() => handleDelete(audiographer._id)}
                         >
                           <Trash2 size={16} />
                         </button>
                         <button
                           className="action-btn edit-btn"
                           title="Edit"
-                          onClick={() => handleEdit(index)}
+                          onClick={() => handleEdit(audiographer._id)}
                         >
                           <Pencil size={16} />
                         </button>
@@ -218,14 +319,7 @@ const AudiographerSection = ({ setActiveSection, data }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={async () => {
-            const isValid = await trigger(); // validate the form
-            if (isValid || !showForm) {
-              setActiveSection(9);
-            } else {
-              window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
-            }
-          }}
+          onClick={async () => onNext()}
         >
           Next <i className="bi bi-arrow-right ms-2"></i>
         </button>

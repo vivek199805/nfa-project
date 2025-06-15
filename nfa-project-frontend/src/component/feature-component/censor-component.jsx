@@ -4,6 +4,13 @@ import { Controller, useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
 import { z } from "zod";
 import { setFormData } from "../../store/featureFormSlice";
+import {
+  getRequestById,
+  postRequest,
+} from "../../common/services/requestService";
+import { useQuery } from "@tanstack/react-query";
+import { useParams } from "react-router-dom";
+import { formatDate } from "../../common/common-function";
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
@@ -24,16 +31,16 @@ const censorSchema = z.object({
 });
 
 const CensorSection = ({ setActiveSection, data }) => {
-    const dispatch = useDispatch();
+  const dispatch = useDispatch();
   const storedFilmData = useSelector((state) => state.featureFilm.data);
-  console.log(";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;", storedFilmData);
-  
+  const { id } = useParams();
+
   const {
     register,
     control,
     handleSubmit,
     formState: { errors },
-    reset
+    reset,
   } = useForm({
     resolver: zodResolver(censorSchema),
     defaultValues: {
@@ -44,109 +51,128 @@ const CensorSection = ({ setActiveSection, data }) => {
     mode: "onTouched",
     // shouldFocusError: false,
   });
+  
+  const { data: formData, } = useQuery({
+    queryKey: ["userForm", id],
+    queryFn: () => getRequestById("film/feature-entry-by", id),
+    enabled: !!id, // Only run query if id exists
+    // staleTime: 1000 * 60 * 5, // 5 minutes - consider this data fresh for 5 mins
+    // initialData: () => queryClient.getQueryData(["userForm", id]), // optional
+    refetchOnMount: true,
+    staleTime: 0,
+  });
 
   useEffect(() => {
-  if (data || storedFilmData) {
-    reset({
-      certificateNumber: data?.censor_certificate_nom || "",
-      certificateDate: data?.censor_certificate_date || "",
-      certificateFile: data?.censor_certificate_file || "", // Files can't be pre-filled
-    });
-  }
-}, [data, reset, storedFilmData]);
+    if (formData || storedFilmData) {
+      reset({
+        certificateNumber: formData?.data?.censor_certificate_nom || "",
+        certificateDate: formatDate(formData?.data?.censor_certificate_date) || "",
+        certificateFile: formData?.data?.censor_certificate_file || "", // Files can't be pre-filled
+      });
+    }
+  }, [formData, reset, storedFilmData]);
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     console.log("Form submitted:", data);
-     dispatch(setFormData(data));
+    //  dispatch(setFormData(data));
     // Call API to submit form data
-    setActiveSection(3);
+    const formData = new FormData();
+    formData.append("censor_certificate_nom", data.certificateNumber);
+    formData.append("censor_certificate_date", data.certificateDate);
+    formData.append("censor_certificate_file", data.certificateFile);
+    formData.append('step', '3');
+    formData.append('id', id);
+    const response = await postRequest("film/feature-update", formData);
+    if (response.statusCode == 200) {
+      setActiveSection(3);
+    }
   };
 
   return (
     <>
-        <form
-      onSubmit={handleSubmit(onSubmit)}
-      style={{ padding: 20, maxWidth: 900, margin: "auto" }}
-    >
-      <div className="row g-3">
-        <div className="col-md-6">
-          <label className="form-label">
-            Censor Certificate Number<span className="text-danger">*</span>
-          </label>
-          <input
-            type="text"
-            className={`form-control ${
-              errors.certificateNumber ? "is-invalid" : ""
-            }`}
-            placeholder="Censor Certificate Number"
-            {...register("certificateNumber")}
-          />
-          {errors.certificateNumber && (
-            <div className="invalid-feedback">
-              {errors.certificateNumber.message}
-            </div>
-          )}
-        </div>
-
-        <div className="col-md-6">
-          <label className="form-label">
-            Censor Certification Date<span className="text-danger">*</span>
-          </label>
-          <input
-            type="date"
-            className={`form-control ${
-              errors.certificateDate ? "is-invalid" : ""
-            }`}
-            placeholder="Censor Certification Date"
-            {...register("certificateDate")}
-          />
-          {errors.certificateDate && (
-            <div className="invalid-feedback">
-              {errors.certificateDate.message}
-            </div>
-          )}
-        </div>
-
-        <div className="col-md-6">
-          <label className="form-label">
-            Censor Certificate File
-            <span className="text-danger">*</span>
-          </label>
-          <Controller
-            name="certificateFile"
-            control={control}
-            render={({ field }) => (
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png,.webp"
-                className={`form-control ${
-                  errors.certificateFile ? "is-invalid" : ""
-                }`}
-                onChange={(e) => field.onChange(e.target.files?.[0] || null)}
-              />
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        style={{ padding: 20, maxWidth: 900, margin: "auto" }}
+      >
+        <div className="row g-3">
+          <div className="col-md-6">
+            <label className="form-label">
+              Censor Certificate Number<span className="text-danger">*</span>
+            </label>
+            <input
+              type="text"
+              className={`form-control ${
+                errors.certificateNumber ? "is-invalid" : ""
+              }`}
+              placeholder="Censor Certificate Number"
+              {...register("certificateNumber")}
+            />
+            {errors.certificateNumber && (
+              <div className="invalid-feedback">
+                {errors.certificateNumber.message}
+              </div>
             )}
-          />
-          {errors.certificateFile && (
-            <div className="invalid-feedback">
-              {errors.certificateFile.message}
-            </div>
-          )}
+          </div>
+
+          <div className="col-md-6">
+            <label className="form-label">
+              Censor Certification Date<span className="text-danger">*</span>
+            </label>
+            <input
+              type="date"
+              className={`form-control ${
+                errors.certificateDate ? "is-invalid" : ""
+              }`}
+              placeholder="Censor Certification Date"
+              {...register("certificateDate")}
+            />
+            {errors.certificateDate && (
+              <div className="invalid-feedback">
+                {errors.certificateDate.message}
+              </div>
+            )}
+          </div>
+
+          <div className="col-md-6">
+            <label className="form-label">
+              Censor Certificate File
+              <span className="text-danger">*</span>
+            </label>
+            <Controller
+              name="certificateFile"
+              control={control}
+              render={({ field }) => (
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp"
+                  className={`form-control ${
+                    errors.certificateFile ? "is-invalid" : ""
+                  }`}
+                  onChange={(e) => field.onChange(e.target.files?.[0] || null)}
+                />
+              )}
+            />
+            {errors.certificateFile && (
+              <div className="invalid-feedback">
+                {errors.certificateFile.message}
+              </div>
+            )}
+          </div>
+          <div className="d-flex justify-content-between">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setActiveSection(1)}
+            >
+              <i className="bi bi-arrow-left me-2"></i>
+              Back to Prev
+            </button>
+            <button type="submit" className="btn btn-primary">
+              Next <i className="bi bi-arrow-right ms-2"></i>
+            </button>
+          </div>
         </div>
-        <div className="d-flex justify-content-between">
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => setActiveSection(1)}
-          >
-            <i className="bi bi-arrow-left me-2"></i>
-            Back to Prev
-          </button>
-          <button type="submit" className="btn btn-primary">
-            Next <i className="bi bi-arrow-right ms-2"></i>
-          </button>
-        </div>
-      </div>
-    </form>
+      </form>
     </>
   );
 };

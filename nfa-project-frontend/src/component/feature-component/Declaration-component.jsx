@@ -2,6 +2,12 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useParams } from "react-router-dom";
+import {
+  getRequestById,
+  postRequest,
+} from "../../common/services/requestService";
 
 const declarationSchema = z.object({
   declarations: z.tuple([
@@ -40,6 +46,7 @@ const defaultValues = {
 };
 
 const DeclarationSection = ({ setActiveSection, data }) => {
+  const { id } = useParams();
   const {
     control,
     handleSubmit,
@@ -50,8 +57,18 @@ const DeclarationSection = ({ setActiveSection, data }) => {
     resolver: zodResolver(declarationSchema),
   });
 
+  const { data: formData } = useQuery({
+    queryKey: ["userForm", id],
+    queryFn: () => getRequestById("film/feature-entry-by", id),
+    enabled: !!id, // Only run query if id exists
+    // staleTime: 1000 * 60 * 5, // 5 minutes - consider this data fresh for 5 mins
+    // initialData: () => queryClient.getQueryData(["userForm", id]), // optional
+    refetchOnMount: true,
+    staleTime: 0,
+  });
+
   useEffect(() => {
-    if (data) {
+    if (formData) {
       const declarationKeysInOrder = [
         "declaration_one",
         "declaration_two",
@@ -67,16 +84,37 @@ const DeclarationSection = ({ setActiveSection, data }) => {
         "declaration_twelve",
       ];
 
-      const declarations = declarationKeysInOrder.map((key) => data[key] === 1);
-      console.log("llllllllllllllllllllllll", declarations);
-
+      const declarations = declarationKeysInOrder.map((key) => formData.data[key]);
       reset({ declarations });
     }
-  }, [data, reset]);
+  }, [formData, reset]);
 
-  const onSubmit = (data) => {
-    console.log("Declarations submitted:", data);
-    setActiveSection(12);
+  const onSubmit = async (data) => {
+    const declarationKeysInOrder = [
+      "declaration_one",
+      "declaration_two",
+      "declaration_three",
+      "declaration_four",
+      "declaration_five",
+      "declaration_six",
+      "declaration_seven",
+      "declaration_eight",
+      "declaration_nine",
+      "declaration_ten",
+      "declaration_eleven",
+      "declaration_twelve",
+    ];
+    const formData = new FormData();
+    declarationKeysInOrder.forEach((item, index) => {
+    formData.append(item, data.declarations[index] ? "true" : "false");
+    });
+    formData.append("step", "11");
+    formData.append("id", id);
+
+    const response = await postRequest("film/feature-update", formData);
+    if (response.statusCode == 200) {
+      setActiveSection(12);
+    }
   };
 
   return (

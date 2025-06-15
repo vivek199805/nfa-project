@@ -1,12 +1,17 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
-// import "./../styles/FeatureFilmForm.css";
 import Select from "react-dropdown-select";
 import { useEffect, useState } from "react";
 import { countWords } from "../../common/common-function";
-import { getRequest, postRequest } from "../../common/services/requestService";
+import {
+  getRequest,
+  getRequestById,
+  postRequest,
+} from "../../common/services/requestService";
 import { useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "../../lib/queryClient";
 
 const filmSchema = z.object({
   titleRoman: z.string().min(1, "This field is required"),
@@ -141,7 +146,7 @@ let options = [
 const FilmDetailsSection = ({ setActiveSection, data }) => {
   const [synopsisWordCount, setSynopsisWordCount] = useState(0);
   const [languageOptions, setLanguageOptions] = useState([]);
-    const { id } = useParams();
+  const { id } = useParams();
   // const languageOptions = options.map((lang) => ({
   //   label: lang.name,
   //   value: String(lang.id),
@@ -160,10 +165,28 @@ const FilmDetailsSection = ({ setActiveSection, data }) => {
     // shouldFocusError: false,
   });
 
+  const { data: formData, refetch } = useQuery({
+    queryKey: ["userForm", id],
+    queryFn: () => getRequestById("film/feature-entry-by", id),
+    enabled: !!id,  // Only run query if id exists
+    // staleTime: 1000 * 60 * 5, // 5 minutes - consider this data fresh for 5 mins
+    // initialData: staticForms, // sets mock data
+    // initialData: () => queryClient.getQueryData(["userForm", id]), // optional
+    refetchOnMount: true,
+    staleTime: 0,
+  });
+
+  // Call refetch manually on mount
+  // useEffect(() => {
+  //   if (id) {
+  //     refetch();
+  //   }
+  // }, [id, refetch]);
+
   useEffect(() => {
     async function fetchLanguages() {
       try {
-        const response = await getRequest('get-languages');
+        const response = await getRequest("get-languages");
         const options = response.data.map((lang) => ({
           label: lang.name,
           value: String(lang.id),
@@ -178,56 +201,81 @@ const FilmDetailsSection = ({ setActiveSection, data }) => {
   }, []);
 
   useEffect(() => {
-    if (data && id) {
-      const synopsis = data.film_synopsis || "";
+     if (!id || !formData?.data) return;
+    //     const cachedData = queryClient.getQueryData(["userForm", id]) || formData;
+    // if (!cachedData) return;
+
+      const synopsis = formData?.data?.film_synopsis || "";
       reset({
-        titleRoman: data.film_title_roman,
-        titleDevanagari: data.film_title_devnagri,
-        titleEnglish: data.film_title_english,
+        titleRoman: formData?.data.film_title_roman,
+        titleDevanagari: formData?.data.film_title_devnagri,
+        titleEnglish: formData?.data.film_title_english,
         languages: languageOptions.filter((opt) =>
-          data.language_id.includes(opt.value)
+          formData?.data.language_id?.includes(opt.value.toString())
         ),
-        englishSubtitle: data.english_subtitle == 1 ? "Yes" : "No",
-        colorFormat: data.color_bw == 1 ? "Color" : "Black and White",
-        aspectRatio: data.aspect_ratio,
-        runningTime: data.running_time,
+        englishSubtitle: formData?.data.english_subtitle == 1 ? "Yes" : "No",
+        colorFormat: formData?.data.color_bw == 1 ? "Color" : "Black and White",
+        aspectRatio: formData?.data.aspect_ratio,
+        runningTime: formData?.data.running_time,
         format:
-          data?.format == 1 ? "35mm" : data?.format == 2 ? "DCP" : "Blu Ray",
-        directorDebut: data?.director_debut == 1 ? "Yes" : "No",
+          formData?.data?.format == 1
+            ? "35mm"
+            : formData?.data?.format == 2
+            ? "DCP"
+            : "Blu Ray",
+        directorDebut: formData?.data?.director_debut == 1 ? "Yes" : "No",
         soundSystem:
-          data?.sound_system == 1
+          formData?.data?.sound_system == 1
             ? "Optional Mono"
-            : data?.sound_system == 2
-              ? "Dolby"
-              : data?.sound_system == 3
-                ? "DTS"
-                : "Other",
-        synopsis: data.film_synopsis,
+            : formData?.data?.sound_system == 2
+            ? "Dolby"
+            : formData?.data?.sound_system == 3
+            ? "DTS"
+            : "Other",
+        synopsis: formData?.data?.film_synopsis,
       });
       setSynopsisWordCount(countWords(synopsis));
-
-    }
-  }, [data, reset, languageOptions]);
+    
+  }, [formData, reset, id, languageOptions]);
 
   const onSubmit = async (data) => {
-        // Call API to submit form data
+    // Call API to submit form data
     console.log("Form submitted:", data);
+    let url = "";
     const formData = new FormData();
-    formData.append('film_title_roman', data.titleRoman)
-    formData.append('film_title_devnagri', data.titleDevanagari)
-    formData.append('film_title_english', data.titleEnglish)
-    formData.append('language_id', data.languages)
-    formData.append('english_subtitle', data.englishSubtitle)
-    formData.append('colorFormat', data.colorFormat)
-    formData.append('aspectRatio', data.aspectRatio)
-    formData.append('runningTime', data.runningTime)
-    formData.append('format', data.format)
-    formData.append('director_debut', data.directorDebut)
-    formData.append('sound_system', data.soundSystem)
-    formData.append('film_synopsis', data.synopsis)
-    formData.append('step', '1')
+    formData.append("film_title_roman", data.titleRoman);
+    formData.append("film_title_devnagri", data.titleDevanagari);
+    formData.append("film_title_english", data.titleEnglish);
+    formData.append("language_id", data.languages);
+    formData.append("english_subtitle", data.englishSubtitle == "Yes" ? 1 : 0);
+    formData.append("color_bw", data.colorFormat == "Color" ? 1 : 0);
+    formData.append("aspect_ratio", data.aspectRatio);
+    formData.append("running_time", data.runningTime.toString());
+    formData.append(
+      "format",
+      data.format == "35mm" ? 1 : data.format == "DCP" ? 2 : 3
+    );
+    formData.append("director_debut", data.directorDebut == "Yes" ? 1 : 0);
+    formData.append(
+      "sound_system",
+      data.soundSystem == "Optional Mono"
+        ? 1
+        : data.soundSystem == "Dolby"
+        ? 2
+        : data.soundSystem == "DTS"
+        ? 3
+        : 4
+    );
+    formData.append("film_synopsis", data.synopsis);
+    formData.append("step", "1");
+    if (id) {
+      formData.append("id", id);
+      url = "film/feature-update";
+    } else {
+      url = "film/feature-create";
+    }
 
-    const response = await postRequest('film/feature-create',formData);
+    const response = await postRequest(url, formData);
     if (response.statusCode == 200) {
       setActiveSection(2);
     }
@@ -246,8 +294,9 @@ const FilmDetailsSection = ({ setActiveSection, data }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${errors.titleRoman ? "is-invalid" : ""
-                }`}
+              className={`form-control ${
+                errors.titleRoman ? "is-invalid" : ""
+              }`}
               placeholder="Film Title (Roman Script)"
               {...register("titleRoman")}
             />
@@ -264,8 +313,9 @@ const FilmDetailsSection = ({ setActiveSection, data }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${errors.titleDevanagari ? "is-invalid" : ""
-                }`}
+              className={`form-control ${
+                errors.titleDevanagari ? "is-invalid" : ""
+              }`}
               placeholder="Film Title (Devanagri)"
               {...register("titleDevanagari")}
             />
@@ -283,8 +333,9 @@ const FilmDetailsSection = ({ setActiveSection, data }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${errors.titleEnglish ? "is-invalid" : ""
-                }`}
+              className={`form-control ${
+                errors.titleEnglish ? "is-invalid" : ""
+              }`}
               placeholder="English Title"
               {...register("titleEnglish")}
             />
@@ -433,8 +484,9 @@ const FilmDetailsSection = ({ setActiveSection, data }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${errors.aspectRatio ? "is-invalid" : ""
-                }`}
+              className={`form-control ${
+                errors.aspectRatio ? "is-invalid" : ""
+              }`}
               placeholder="Aspect Ratio"
               {...register("aspectRatio")}
             />
@@ -451,8 +503,9 @@ const FilmDetailsSection = ({ setActiveSection, data }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${errors.runningTime ? "is-invalid" : ""
-                }`}
+              className={`form-control ${
+                errors.runningTime ? "is-invalid" : ""
+              }`}
               placeholder="Running Time"
               {...register("runningTime")}
             />

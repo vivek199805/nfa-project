@@ -1,7 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { useParams } from "react-router-dom";
 import { z } from "zod";
+import { getRequestById, postRequest } from "../../common/services/requestService";
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 
@@ -23,6 +26,7 @@ const companySchema = z.object({
 });
 
 const CompanyRegistrationSection = ({ setActiveSection, data }) => {
+    const { id } = useParams();
   const {
     register,
     control,
@@ -36,20 +40,36 @@ const CompanyRegistrationSection = ({ setActiveSection, data }) => {
     mode: "onTouched",
     // shouldFocusError: false,
   });
+  
+    const { data: formData, } = useQuery({
+    queryKey: ["userForm", id],
+    queryFn: () => getRequestById("film/feature-entry-by", id),
+    enabled: !!id, // Only run query if id exists
+    refetchOnMount: true,
+    staleTime: 0,
+  });
 
     useEffect(() => {
-  if (data) {
+  if (formData) {
     reset({
-      CompanyRegistration: data?.company_reg_details || "",
-      CompanyRegistrationFile: data?.company_reg_doc || "", // Files can't be pre-filled
+      CompanyRegistration: formData?.data?.company_reg_details || "",
+      CompanyRegistrationFile: formData?.data?.company_reg_doc || "", // Files can't be pre-filled
     });
   }
-}, [data, reset]);
+}, [formData, reset]);
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     console.log("Form submitted:", data);
     // Call API to submit form data
-    setActiveSection(4);
+        const formData = new FormData();
+        formData.append("company_reg_details", data.CompanyRegistration);
+        formData.append("company_reg_doc", data.CompanyRegistrationFile);
+        formData.append('step', '3');
+        formData.append('id', id);
+        const response = await postRequest("film/feature-update", formData);
+        if (response.statusCode == 200) {
+            setActiveSection(4);
+        }
   };
 
   return (

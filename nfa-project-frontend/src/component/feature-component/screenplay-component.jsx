@@ -1,9 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
-// import "./../styles/FeatureFilmForm.css";
-import Select from "react-dropdown-select";
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useParams } from "react-router-dom";
+import {
+  getRequestById,
+  postRequest,
+} from "../../common/services/requestService";
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
@@ -41,49 +45,89 @@ const filmSchema = z.object({
 });
 
 const ScreenPlaySection = ({ setActiveSection, data }) => {
+  const { id } = useParams();
+
   const {
     register,
     handleSubmit,
     control,
     formState: { errors },
-    reset
+    reset,
   } = useForm({
     resolver: zodResolver(filmSchema),
-    // defaultValues: {
-    // },
     mode: "onTouched",
     // shouldFocusError: false,
   });
 
+  const { data: formData } = useQuery({
+    queryKey: ["userForm", id],
+    queryFn: () => getRequestById("film/feature-entry-by", id),
+    enabled: !!id, // Only run query if id exists
+    // staleTime: 1000 * 60 * 5, // 5 minutes - consider this data fresh for 5 mins
+    // initialData: () => queryClient.getQueryData(["userForm", id]), // optional
+    refetchOnMount: true,
+    staleTime: 0,
+  });
+
   useEffect(() => {
-    if(data) {
+    if (formData) {
       reset({
-        originalScreenplay: data.original_screenplay_name,
-        adaptedScreenplay: data.adapted_screenplay_name,
-        storyWriter: data.story_writer_name,
-        isPublicDomain: data.work_under_public_domain == 1 ? "Yes" : "No",
-        originalCopy: data.original_work_copy,
-        dialogues: data.dialogue,
-        effectsCreater: data.effectsCreater,
-        cinemetographer: data.cinemetographer,
-        isDigitalVideo: data.shot_digital_video_format == 1 ? "Yes" : "No",
-        editor: data.editor,
-        productionDesigner: data.production_designer,
-        costumeDesigner: data.costume_designer,
-        makeup: data.make_up_director,
-        animator: data.animator,
-        choreographer: data.choreographer,
-        stuntChoreographer: data.stunt_choreographer,
-        musicDirector: data.music_director,
+        originalScreenplay: formData?.data.original_screenplay_name,
+        adaptedScreenplay: formData?.data.adapted_screenplay_name,
+        storyWriter: formData?.data.story_writer_name,
+        isPublicDomain:
+          formData?.data.work_under_public_domain == 1 ? "Yes" : "No",
+        originalCopy: formData?.data.original_work_copy,
+        dialogues: formData?.data.dialogue,
+        effectsCreater: formData?.data.effectsCreater,
+        cinemetographer: formData?.data.cinemetographer,
+        isDigitalVideo:
+          formData?.data.shot_digital_video_format == 1 ? "Yes" : "No",
+        editor: formData?.data.editor,
+        productionDesigner: formData?.data.production_designer,
+        costumeDesigner: formData?.data.costume_designer,
+        makeup: formData?.data.make_up_director,
+        animator: formData?.data.animator,
+        choreographer: formData?.data.choreographer,
+        stuntChoreographer: formData?.data.stunt_choreographer,
+        musicDirector: formData?.data.music_director,
       });
     }
+  }, [formData, reset]);
 
-  }, [data, reset]);
-
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     console.log("Form submitted:", data);
     // Call API to submit form data
-    setActiveSection(10)
+    const formData = new FormData();
+    formData.append("original_screenplay_name", data.originalScreenplay);
+    formData.append("adapted_screenplay_name", data.adaptedScreenplay);
+    formData.append("story_writer_name", data.storyWriter);
+    formData.append(
+      "work_under_public_domain",
+      data.isPublicDomain == "Yes" ? 1 : 0
+    );
+    formData.append("original_work_copy", data.originalCopy);
+    formData.append("dialogue", data.dialogues);
+    formData.append("effectsCreater", data.effectsCreater);
+    formData.append("cinemetographer", data.cinemetographer);
+    formData.append(
+      "shot_digital_video_format",
+      data.isDigitalVideo == "Yes" ? 1 : 0
+    );
+    formData.append("editor", data.editor);
+    formData.append("production_designer", data.productionDesigner);
+    formData.append("costume_designer", data.costumeDesigner);
+    formData.append("make_up_director", data.makeup);
+    formData.append("animator", data.animator);
+    formData.append("choreographer", data.choreographer);
+    formData.append("stunt_choreographer", data.stuntChoreographer);
+    formData.append("music_director", data.musicDirector);
+    formData.append("step", "9");
+    formData.append("id", id);
+    const response = await postRequest("film/feature-update", formData);
+    if (response.statusCode == 200) {
+      setActiveSection(10);
+    }
   };
 
   return (
@@ -396,23 +440,23 @@ const ScreenPlaySection = ({ setActiveSection, data }) => {
           )}
         </div>
 
-      <div className="d-flex justify-content-between">
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => setActiveSection(8)}
-        >
-          <i className="bi bi-arrow-left me-2"></i>
-          Back to Prev
-        </button>
-        <button
-          type="submit"
-          className="btn btn-primary"
-          // onClick={() => setActiveSection(10)}
-        >
-          Next <i className="bi bi-arrow-right ms-2"></i>
-        </button>
-      </div>
+        <div className="d-flex justify-content-between">
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => setActiveSection(8)}
+          >
+            <i className="bi bi-arrow-left me-2"></i>
+            Back to Prev
+          </button>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            // onClick={() => setActiveSection(10)}
+          >
+            Next <i className="bi bi-arrow-right ms-2"></i>
+          </button>
+        </div>
       </div>
     </form>
   );

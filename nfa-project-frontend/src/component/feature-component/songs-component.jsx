@@ -4,6 +4,17 @@ import { z } from "zod";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import {
+  getRequestById,
+  postRequest,
+} from "../../common/services/requestService";
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../common/services/toastService";
+import { useQuery } from "@tanstack/react-query";
+import Swal from "sweetalert2";
 
 const filmSchema = z.object({
   songTitle: z.string().trim().min(1, "This field is required"),
@@ -18,6 +29,7 @@ const SongsFormSection = ({ setActiveSection, data }) => {
   const [songsData, setSongsData] = useState([]); // your producer list
   const [showForm, setShowForm] = useState(songsData.length === 0);
   const [editingIndex, setEditingIndex] = useState(null);
+  const { id } = useParams();
 
   const {
     register,
@@ -39,51 +51,152 @@ const SongsFormSection = ({ setActiveSection, data }) => {
     mode: "onTouched",
     // shouldFocusError: false,
   });
-  useEffect(() => {
-    if (data?.songs?.length > 0) {
-      const updatedSongs = data.songs.map((item) => ({
-        songTitle: item?.song_title,
-        musicDirector: item?.music_director,
-        backgroundMusic: item?.music_director_bkgd_music,
-        lyricist: item?.lyricist,
-        singerMale: item?.playback_singer_male,
-        singerFemale: item?.playback_singer_female,
-      }));
 
-      setSongsData(updatedSongs);
+  useEffect(() => {
+    getSongList();
+  }, [id]);
+
+  const getSongList = async () => {
+    try {
+      const response = await postRequest("film/song-list", { id });
+      if (response.statusCode === 200) {
+        setSongsData(response.data);
+      } else {
+        showErrorToast(response.message);
+      }
+    } catch (error) {
+      showErrorToast(error);
     }
-  }, [data?.songs]);
+  };
+
+  const { data: formData } = useQuery({
+    queryKey: ["userForm", id],
+    queryFn: () => getRequestById("film/feature-entry-by", id),
+    enabled: !!id, // Only run query if id exists
+    refetchOnMount: true,
+    staleTime: 0,
+  });
+
+  // useEffect(() => {
+  //   if (data?.songs?.length > 0) {
+  //     const updatedSongs = data.songs.map((item) => ({
+  //       songTitle: item?.song_title,
+  //       musicDirector: item?.music_director,
+  //       backgroundMusic: item?.music_director_bkgd_music,
+  //       lyricist: item?.lyricist,
+  //       singerMale: item?.playback_singer_male,
+  //       singerFemale: item?.playback_singer_female,
+  //     }));
+
+  //     setSongsData(updatedSongs);
+  //   }
+  // }, [data?.songs]);
+
   useEffect(() => {
     setShowForm(songsData.length === 0);
   }, [songsData.length]);
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
+    const formData = new FormData();
+    formData.append("song_title", data.songTitle);
+    formData.append("music_director", data.musicDirector);
+    formData.append("music_director_bkgd_music", data.backgroundMusic);
+    formData.append("lyricist", data.lyricist);
+    formData.append("playback_singer_male", data.singerMale);
+    formData.append("playback_singer_female", data.singerFemale);
+    formData.append("nfa_feature_id", id);
     if (editingIndex !== null) {
-      const updated = [...songsData];
-      updated[editingIndex] = data;
-      setSongsData(updated);
-      setEditingIndex(null);
-    } else {
-      setSongsData([...songsData, data]);
+      formData.append("songId", editingIndex);
     }
 
-    reset();
+    try {
+      const response = await postRequest("film/store-song", formData);
+      if (response.statusCode === 200) {
+        showSuccessToast(response.message);
+        await getSongList();
+        setEditingIndex(null);
+      } else {
+        showErrorToast(response.message);
+      }
+    } catch (error) {
+      showErrorToast(error);
+    }
+
+    reset({
+      songTitle: "",
+      musicDirector: "",
+      backgroundMusic: "",
+      lyricist: "",
+      singerMale: "",
+      singerFemale: "",
+    });
     setShowForm(false);
   };
+
   const handleEdit = (index) => {
-    const data = songsData[index];
-    Object.entries(data).forEach(([key, value]) => {
-      setValue(key, value);
+    const data = songsData.find((item) => item._id === index);
+    reset({
+      songTitle: data.song_title,
+      musicDirector: data.music_director,
+      backgroundMusic: data.music_director_bkgd_music,
+      lyricist: data.lyricist,
+      singerMale: data.playback_singer_male,
+      singerFemale: data.playback_singer_female,
     });
     setEditingIndex(index);
     setShowForm(true);
   };
 
   const handleDelete = (index) => {
-    const updated = [...songsData];
-    updated.splice(index, 1);
-    setSongsData(updated);
-    if (songsData.length === 1) setShowForm(true); // Show form if all deleted
+    Swal.fire({
+      title: "Confirm Deletion",
+      text: "Are you sure you want to delete Song?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        //  const updated = [...songsData];
+        //   updated.splice(index, 1);
+        //   setSongsData(updated);
+        //   if (songsData.length === 1) setShowForm(true);
+
+        const formData = new FormData();
+        formData.append("songId", index);
+        formData.append("nfa_feature_id", id);
+        try {
+          const response = await postRequest("film/delete-song", formData);
+          if (response.statusCode === 200) {
+            showSuccessToast(response.message);
+            await getSongList();
+            setEditingIndex(null);
+            Swal.fire("Deleted!", "song has been deleted.", "success");
+          } else {
+            showErrorToast(response.message);
+          }
+        } catch (error) {
+          showErrorToast(error);
+        }
+      }
+    });
+  };
+
+  const onNext = async () => {
+    const isValid = await trigger(); // validate the form
+    if (isValid || !showForm) {
+      const formData = new FormData();
+      formData.append("step", "7");
+      formData.append("id", id);
+      const response = await postRequest("film/feature-update", formData);
+      if (response.statusCode == 200) {
+         setActiveSection(8);
+      }
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
+      showSuccessToast("Atleast one diector is required");
+    }
   };
 
   return (
@@ -120,25 +233,25 @@ const SongsFormSection = ({ setActiveSection, data }) => {
                   songsData.map((song, index) => (
                     <tr key={index}>
                       <td>{index + 1}</td>
-                      <td>{song.songTitle}</td>
-                      <td>{song.musicDirector}</td>
-                      <td>{song.backgroundMusic}</td>
+                      <td>{song.song_title}</td>
+                      <td>{song.music_director}</td>
+                      <td>{song.music_director_bkgd_music}</td>
                       <td> {song.lyricist}</td>
-                      <td>{song.singerMale}</td>
-                      <td> {song.singerFemale}</td>
+                      <td>{song.playback_singer_male}</td>
+                      <td> {song.playback_singer_female}</td>
 
                       <td>
                         <button
                           className="action-btn delete-btn"
                           title="Delete"
-                          onClick={() => handleDelete(index)}
+                          onClick={() => handleDelete(song._id)}
                         >
                           <Trash2 size={16} />
                         </button>
                         <button
                           className="action-btn edit-btn"
                           title="Edit"
-                          onClick={() => handleEdit(index)}
+                          onClick={() => handleEdit(song._id)}
                         >
                           <Pencil size={16} />
                         </button>
@@ -292,14 +405,7 @@ const SongsFormSection = ({ setActiveSection, data }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={async () => {
-            const isValid = await trigger(); // validate the form
-            if (isValid || !showForm) {
-              setActiveSection(8);
-            } else {
-              window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
-            }
-          }}
+          onClick={ () => onNext()}
         >
           Next <i className="bi bi-arrow-right ms-2"></i>
         </button>

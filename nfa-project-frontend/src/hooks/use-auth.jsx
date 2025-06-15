@@ -2,7 +2,7 @@ import { createContext, use, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 // import { getQueryFn, queryClient } from "../lib/queryClient";
 import { showErrorToast, showSuccessToast } from "../common/services/toastService";
-import { postRequest } from "../common/services/requestService";
+import { getRequest, postRequest } from "../common/services/requestService";
 import { useNavigate } from "react-router-dom";
 import { queryClient } from "../lib/queryClient";
 
@@ -40,7 +40,7 @@ const {
     onSuccess: (res) => {      
     const userData = res.data;
       localStorage.setItem("userData", JSON.stringify(userData));
-      // queryClient.setQueryData(["/api/user"], user);
+      queryClient.setQueryData(["user/login"], res);
       navigate('/dashboard')
       showSuccessToast(`Welcome, ${res.message}!`);
     },
@@ -55,7 +55,6 @@ const {
       return res;
     },
     onSuccess: (res) => {
-      // queryClient.setQueryData(["/api/user"], user);
       showSuccessToast(`Welcome, ${res.message}!`);
       navigate('/')
     },
@@ -67,7 +66,6 @@ const {
   const logoutMutation = useMutation({
     mutationFn: async () => {
       console.log('jjjjjjjjjjj', user);
-      
         sessionStorage.clear();
         localStorage.clear();
         navigate('/')
@@ -88,8 +86,8 @@ const {
     <AuthContext.Provider
       value={{
         user: userData ?? null,
-        // isLoading,
-        // error,
+        isLoading,
+        error,
         loginMutation,
         logoutMutation,
         registerMutation,

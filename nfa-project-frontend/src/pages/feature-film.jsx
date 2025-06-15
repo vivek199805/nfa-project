@@ -224,19 +224,19 @@ const steps = [
 const FeatureFilmPage = () => {
   const [activeSection, setActiveSection] = useState(1);
   const { id } = useParams();
-
   const { data: formData } = useQuery({
-    queryKey: ["userForm", id],
-    queryFn: () => getRequestById("feature", id),
+    queryKey: ["film/feature-entry-by", id],
+    queryFn: () => getRequestById("film/feature-entry-by", id),
     enabled: !!id,
-    initialData: staticForms, // sets mock data
+    // initialData: staticForms, // sets mock data
+    refetchOnMount: true,
+    staleTime: 0,
   });
 
   useEffect(() => {
     console.log("Form cards data:", formData);
-    if (id && formData?.active_step !== undefined) {
-      setActiveSection(+formData.active_step + 1);
-      console.log("Form cards data:", formData);
+    if (id && formData?.data?.active_step !== undefined) {
+      setActiveSection(+formData?.data?.active_step + 1);
     }
   }, [id, formData]);
 

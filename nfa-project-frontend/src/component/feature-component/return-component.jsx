@@ -1,8 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useInputRestriction } from "../../hooks/useInputRestriction";
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useParams } from "react-router-dom";
+import { getRequestById, postRequest } from "../../common/services/requestService";
 const filmSchema = z.object({
   name: z.string().trim().min(1, "This field is required"),
   phone: z
@@ -23,6 +26,7 @@ const filmSchema = z.object({
 
 const ReturnSection = ({ setActiveSection, data }) => {
   const numberRestriction = useInputRestriction("number");
+  const {id} = useParams();
   const {
     register,
     handleSubmit,
@@ -35,24 +39,46 @@ const ReturnSection = ({ setActiveSection, data }) => {
     // shouldFocusError: false,
   });
 
+    const { data: formData } = useQuery({
+    queryKey: ["userForm", id],
+    queryFn: () => getRequestById("film/feature-entry-by", id),
+    enabled: !!id, // Only run query if id exists
+    // staleTime: 1000 * 60 * 5, // 5 minutes - consider this data fresh for 5 mins
+    // initialData: () => queryClient.getQueryData(["userForm", id]), // optional
+    refetchOnMount: true,
+    staleTime: 0,
+  });
+
   useEffect(() =>{
-    if(data){
+    if(formData){
       reset({
-         name: data?.return_name,
-         phone: data?.return_mobile,
-         email: data?.return_email,
-         website: data?.return_website,
-         address: data?.return_address,
-         pinCode: data.return_pincode       
+         name: formData?.data?.return_name,
+         phone: formData?.data?.return_mobile,
+         email: formData?.data?.return_email,
+         website: formData?.data?.return_website,
+         address: formData?.data?.return_address,
+         pinCode: formData?.data.return_pincode       
       });
     }
 
-  }, [data, reset]);
+  }, [formData, reset]);
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     console.log("Form submitted:", data);
     // Call API to submit form data
-    setActiveSection(11);
+       const formData = new FormData();
+       formData.append("return_name", data.name);
+       formData.append("return_mobile", data.phone);
+       formData.append("return_email", data.email);
+       formData.append("return_website", data.website);
+       formData.append("return_address", data.address);
+       formData.append("return_pincode", data.pinCode);
+       formData.append("step", "10");
+       formData.append("id", id);
+       const response = await postRequest("film/feature-update", formData);
+       if (response.statusCode == 200) {
+         setActiveSection(11);
+       }
   };
 
   return (

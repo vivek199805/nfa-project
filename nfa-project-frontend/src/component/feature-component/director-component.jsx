@@ -5,6 +5,11 @@ import { useInputRestriction } from "../../hooks/useInputRestriction";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { getRequestById, postRequest } from "../../common/services/requestService";
+import { showErrorToast, showSuccessToast } from "../../common/services/toastService";
+import { useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import Swal from "sweetalert2";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
@@ -53,10 +58,11 @@ const filmSchema = z.object({
 });
 
 const DirectorDetailsSection = ({ setActiveSection, data }) => {
-  const [directors, setDirectors] = useState([]); // your producer list
+  const [directors, setDirectors] = useState([]);
   const [showForm, setShowForm] = useState(directors.length === 0);
   const numberRestriction = useInputRestriction("number");
   const [editingIndex, setEditingIndex] = useState(null);
+  const {id} = useParams();
 
   const {
     register,
@@ -72,57 +78,156 @@ const DirectorDetailsSection = ({ setActiveSection, data }) => {
     mode: "onTouched",
     // shouldFocusError: false,
   });
-  useEffect(() => {
-    if (data?.directors?.length > 0) {
-      const updatedDirectors = data.directors.map((item, index) => {
-        // const idProofDoc = item.documents?.find((doc) => doc.document_type === 5 && doc.form_type === 1);
-        const idProofDoc = item.documents[index];
-        return {
-          indianNationality: item?.indian_national == 1 ? "Yes" : "No",
-          directorName: item?.name,
-          phone: item?.contact_nom,
-          email: item?.email,
-          address: item?.address,
-          pinCode: item?.pincode,
-          idProofFile: idProofDoc?.file || null,
-        };
-      });
 
-      setDirectors(updatedDirectors);
+  useEffect(() => {
+    getDirector();
+  }, [id]);
+
+  const getDirector = async () => {
+    try {
+      const response = await postRequest("film/director-list", { id });
+      if (response.statusCode === 200) {
+        setDirectors(response.data);
+      } else {
+        showErrorToast(response.message);
+      }
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
     }
-  }, [data?.directors]);
+  };
+
+  const { data: formData } = useQuery({
+    queryKey: ["userForm", id],
+    queryFn: () => getRequestById("film/feature-entry-by", id),
+    enabled: !!id, // Only run query if id exists
+    refetchOnMount: true,
+    staleTime: 0,
+  });
+
+  // useEffect(() => {
+  //   if (data?.directors?.length > 0) {
+  //     const updatedDirectors = data.directors.map((item, index) => {
+  //       // const idProofDoc = item.documents?.find((doc) => doc.document_type === 5 && doc.form_type === 1);
+  //       const idProofDoc = item.documents[index];
+  //       return {
+  //         indianNationality: item?.indian_national == 1 ? "Yes" : "No",
+  //         directorName: item?.name,
+  //         phone: item?.contact_nom,
+  //         email: item?.email,
+  //         address: item?.address,
+  //         pinCode: item?.pincode,
+  //         idProofFile: idProofDoc?.file || null,
+  //       };
+  //     });
+
+  //     setDirectors(updatedDirectors);
+  //   }
+  // }, [data?.directors]);
+
   useEffect(() => {
     setShowForm(directors.length === 0);
   }, [directors.length]);
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
+    const formData = new FormData();
+    formData.append("indian_national",data.indianNationality === "Yes" ? 1 : 0);
+    formData.append("name", data.directorName);
+    formData.append("contact_nom", data.phone);
+    formData.append("email", data.email);
+    formData.append("address", data.address);
+    formData.append("pincode", data.pinCode);
+    formData.append("producer_self_attested_doc", data.idProofFile);
+    formData.append("nfa_feature_id", id);
     if (editingIndex !== null) {
-      const updated = [...directors];
-      updated[editingIndex] = data;
-      setDirectors(updated);
-      setEditingIndex(null);
-    } else {
-      setDirectors([...directors, data]);
+      // const updated = [...producers];
+      // updated[editingIndex] = data;
+      // setProducers(updated);
+      formData.append("id", editingIndex);
+    }
+
+    try {
+      const response = await postRequest("film/store-director", formData);
+      if (response.statusCode === 200) {
+        showSuccessToast(response.message);
+        await getDirector();
+        setEditingIndex(null);
+      } else {
+        showErrorToast(response.message);
+      }
+    } catch (error) {
+      showErrorToast(error);
     }
 
     reset();
     setShowForm(false);
-    setActiveSection(5);
   };
+
   const handleEdit = (index) => {
-    const data = directors[index];
-    Object.entries(data).forEach(([key, value]) => {
-      setValue(key, value);
+    console.log("hhfhh", index);
+    //  const data = directors[index];
+    const data = directors.find((item) => item._id === index);
+    reset({
+      indianNationality: data.indian_national === 1 ? "Yes" : "No",
+      directorName: data.name,
+      phone: data.contact_nom,
+      email: data.email,
+      address: data.address,
+      pinCode: data.pincode,
+      idProofFile: data?.producer_self_attested_doc ?? null,
     });
     setEditingIndex(index);
     setShowForm(true);
   };
 
   const handleDelete = (index) => {
-    const updated = [...directors];
-    updated.splice(index, 1);
-    setDirectors(updated);
-    if (directors.length === 1) setShowForm(true); // Show form if all deleted
+    Swal.fire({
+      title: "Confirm Deletion",
+      text: "Are you sure you want to delete producer?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        // const updated = [...directors];
+        // updated.splice(index, 1);
+        // setDirectors(updated);
+        // if (directors.length === 1) setShowForm(true);
+        const formData = new FormData();
+        formData.append("producerId", index);
+        formData.append("nfa_feature_id", id);
+        try {
+          const response = await postRequest("film/delete-director", formData);
+          if (response.statusCode === 200) {
+            showSuccessToast(response.message);
+            await getDirector();
+            setEditingIndex(null);
+            Swal.fire("Deleted!", "director has been deleted.", "success");
+          } else {
+            showErrorToast(response.message);
+          }
+        } catch (error) {
+          showErrorToast(error);
+        }
+      }
+    });
+  };
+
+  const onNext = async () => {
+    const isValid = await trigger(); // validate the form
+    if (isValid || !showForm) {
+      const formData = new FormData();
+      formData.append("step", "5");
+      formData.append("id", id);
+      const response = await postRequest("film/feature-update", formData);
+      if (response.statusCode == 200) {
+        setActiveSection(6);
+      }
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
+      showSuccessToast("Atleast one diector is required");
+    }
   };
 
   return (
@@ -161,19 +266,17 @@ const DirectorDetailsSection = ({ setActiveSection, data }) => {
                 </tr>
               </thead>
               <tbody>
-                {directors.map((producer, index) => (
+                {directors.map((director, index) => (
                   <tr key={index}>
                     <td>{index + 1}</td>
                     <td>
                       <span className="nationality-badge">
-                        {producer.indianNationality === "Yes"
-                          ? "Indian"
-                          : "Foreign"}
+                        {director.indian_national == 1 ? "Indian": "Foreign"}
                       </span>
                     </td>
-                    <td>{producer.ProducerName}</td>
-                    <td>{producer.email}</td>
-                    <td>{producer.phone}</td>
+                    <td>{director.name}</td>
+                    <td>{director.email}</td>
+                    <td>{director.contact_nom}</td>
                     <td>
                       <input
                         type="checkbox"
@@ -183,21 +286,21 @@ const DirectorDetailsSection = ({ setActiveSection, data }) => {
                     </td>
                     <td>
                       <span className="id-proof-status">
-                        {producer.idProofFile?.name || "Not Provided"}
+                        {director.idProofFile?.name || "Not Provided"}
                       </span>{" "}
                     </td>
                     <td>
                       <button
                         className="action-btn delete-btn"
                         title="Delete"
-                        onClick={() => handleDelete(index)}
+                        onClick={() => handleDelete(director?._id)}
                       >
                         <Trash2 size={16} />
                       </button>
                       <button
                         className="action-btn edit-btn"
                         title="Edit"
-                        onClick={() => handleEdit(index)}
+                        onClick={() => handleEdit(director?._id)}
                       >
                         <Pencil size={16} />
                       </button>
@@ -351,7 +454,7 @@ const DirectorDetailsSection = ({ setActiveSection, data }) => {
                         field.onChange(e.target.files?.[0] || null)
                       }
                     />
-                    {typeof field.value === "string" && field.value !== "" && (                   
+                    {typeof field.value === "string" && field.value !== "" && (
                       <a
                         href={field.value}
                         target="_blank"
@@ -392,15 +495,7 @@ const DirectorDetailsSection = ({ setActiveSection, data }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={async () => {
-            const isValid = await trigger(); // validate the form
-            if (isValid || !showForm) {
-              setActiveSection(6);
-            } else {
-              window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
-            }
-          }}
-        >
+          onClick={() => onNext()}>
           Next <i className="bi bi-arrow-right ms-2"></i>
         </button>
       </div>

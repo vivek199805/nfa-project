@@ -7,6 +7,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import "../styles/dashboard.css";
 import { useAuth } from "../hooks/use-auth";
 import { useEffect } from "react";
+import { getRequest } from "../common/services/requestService";
 const slides = [
   { image: "/images/login-01.jpg" },
   { image: "/images/login-02.jpg" },
@@ -234,8 +235,8 @@ const staticForms = {
   ],
 };
 export const getUserForms = async () => {
-  // const res = await api.get("/user/forms"); // Update this endpoint based on your backend
-  // return res.data;
+  const res = await getRequest("/film/entry-list",); // Update this endpoint based on your backend
+  return res.data;
 };
 const DashboardPage = () => {
   const [showModal, setShowModal] = useState(false);
@@ -248,10 +249,10 @@ const DashboardPage = () => {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["userForms"],
+    queryKey: ["/film/entry-list"],
     queryFn: getUserForms,
-    enabled: false, // disables automatic query
-    initialData: staticForms, // sets mock data
+    // enabled: true, // disables automatic query
+    // initialData: staticForms, // sets mock data
   });
   useEffect(() => {
     console.log('dashboard', user);

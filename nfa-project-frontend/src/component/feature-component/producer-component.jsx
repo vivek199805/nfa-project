@@ -5,6 +5,17 @@ import { useInputRestriction } from "../../hooks/useInputRestriction";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import {
+  getRequestById,
+  postRequest,
+} from "../../common/services/requestService";
+import { useParams } from "react-router-dom";
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../common/services/toastService";
+import Swal from "sweetalert2";
+import { useQuery } from "@tanstack/react-query";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
@@ -44,6 +55,7 @@ const filmSchema = z.object({
 });
 
 const ProducerDetailsSection = ({ setActiveSection, data }) => {
+  const { id } = useParams();
   const [producers, setProducers] = useState([]); // your producer list
   const [showForm, setShowForm] = useState(producers.length === 0);
   const numberRestriction = useInputRestriction("number");
@@ -71,51 +83,162 @@ const ProducerDetailsSection = ({ setActiveSection, data }) => {
     mode: "onTouched",
     // shouldFocusError: false,
   });
-  useEffect(() => {
-    if (data?.producers?.length > 0) {
-    const updatedProducers = data.producers.map(item => ({
-      producerName: item?.name, 
-      phone: item?.contact_nom,
-      indianNationality: item?.nationality == 1? 'Yes' : 'No',
-      pinCode: item?.pincode,
-      producerCompany: item?.production_company,
-      ...item,
-    }));    
 
-    setProducers(updatedProducers);
+  useEffect(() => {
+    getProducer();
+  }, [id]);
+
+  const getProducer = async () => {
+    try {
+      const response = await postRequest("film/producer-list", { id });
+      if (response.statusCode === 200) {
+        setProducers(response.data);
+      } else {
+        showErrorToast(response.message);
+      }
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
     }
-  }, [data?.producers]);
+  };
+
+  const { data: formData } = useQuery({
+    queryKey: ["userForm", id],
+    queryFn: () => getRequestById("film/feature-entry-by", id),
+    enabled: !!id, // Only run query if id exists
+    refetchOnMount: true,
+    staleTime: 0,
+  });
+
+  // useEffect(() => {
+  //   if (data?.producers?.length > 0) {
+  //     const updatedProducers = data.producers.map((item) => ({
+  //       producerName: item?.name,
+  //       phone: item?.contact_nom,
+  //       indianNationality: item?.nationality == 1 ? "Yes" : "No",
+  //       pinCode: item?.pincode,
+  //       producerCompany: item?.production_company,
+  //       ...item,
+  //     }));
+
+  //     setProducers(updatedProducers);
+  //   }
+  // }, [data?.producers]);
+
   useEffect(() => {
     setShowForm(producers.length === 0);
   }, [producers.length]);
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
+    const formData = new FormData();
+    formData.append(
+      "indian_national",
+      data.indianNationality === "Yes" ? 1 : 0
+    );
+    formData.append("name", data.producerName);
+    formData.append("production_company", data.producerCompany);
+    formData.append("contact_nom", data.phone);
+    formData.append("email", data.email);
+    formData.append("address", data.address);
+    formData.append("pincode", data.pinCode);
+    formData.append("producer_self_attested_doc", data.idProofFile);
+    formData.append("nfa_feature_id", id);
     if (editingIndex !== null) {
-      const updated = [...producers];
-      updated[editingIndex] = data;
-      setProducers(updated);
-      setEditingIndex(null);
-    } else {
-      setProducers([...producers, data]);
+      // const updated = [...producers];
+      // updated[editingIndex] = data;
+      // setProducers(updated);
+      formData.append("id", editingIndex);
+    }
+
+    try {
+      const response = await postRequest("film/store-producer", formData);
+      if (response.statusCode === 200) {
+        showSuccessToast(response.message);
+        await getProducer();
+        setEditingIndex(null);
+      } else {
+        showErrorToast(response.message);
+      }
+    } catch (error) {
+      showErrorToast(error);
     }
 
     reset();
     setShowForm(false);
   };
   const handleEdit = (index) => {
-    const data = producers[index];
-    Object.entries(data).forEach(([key, value]) => {
-      setValue(key, value);
+    console.log("hhfhh", index);
+    //  const data = producers[index];
+    const data = producers.find((item) => item._id === index);
+    // Object.entries(data).forEach(([key, value]) => {
+    //   setValue(key, value);
+    // });
+    reset({
+      producerName: data.name,
+      producerCompany: data.production_company,
+      phone: data.contact_nom,
+      email: data.email,
+      address: data.address,
+      pinCode: data.pincode,
+      idProofFile: data.producer_self_attested_doc,
+      indianNationality: data.indian_national === 1 ? "Yes" : "No",
     });
     setEditingIndex(index);
     setShowForm(true);
   };
 
   const handleDelete = (index) => {
-    const updated = [...producers];
-    updated.splice(index, 1);
-    setProducers(updated);
-    if (producers.length === 1) setShowForm(true); // Show form if all deleted
+    Swal.fire({
+      title: "Confirm Deletion",
+      text: "Are you sure you want to delete producer?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        // const updated = [...producers];
+        // updated.splice(index, 1);
+        // setProducers(updated);
+
+        // if (updated.length === 0) {
+        //   setShowForm(true);
+        // }
+        const formData = new FormData();
+        formData.append("producerId", index);
+        formData.append("nfa_feature_id", id);
+        try {
+          const response = await postRequest("film/delete-producer", formData);
+          if (response.statusCode === 200) {
+            showSuccessToast(response.message);
+            await getProducer();
+            setEditingIndex(null);
+            Swal.fire("Deleted!", "Producer has been deleted.", "success");
+          } else {
+            showErrorToast(response.message);
+          }
+        } catch (error) {
+          showErrorToast(error);
+        }
+      }
+    });
+  };
+
+  const onNext = async () => {
+    const isValid = await trigger(); // validate the form
+    if (isValid || !showForm) {
+      const formData = new FormData();
+      formData.append("step", "4");
+      formData.append("id", id);
+      const response = await postRequest("film/feature-update", formData);
+      if (response.statusCode == 200) {
+        setActiveSection(5);
+      }
+
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
+       showSuccessToast('Atleast one producer is required');
+    }
   };
 
   return (
@@ -164,15 +287,15 @@ const ProducerDetailsSection = ({ setActiveSection, data }) => {
                           : "Foreign"}
                       </span>
                     </td>
-                    <td>{producer.producerName}</td>
+                    <td>{producer.name}</td>
                     <td>{producer.email}</td>
-                    <td>{producer.phone}</td>
+                    <td>{producer.contact_nom}</td>
                     <td>
                       <input
                         type="checkbox"
                         className="award-checkbox"
                         disabled
-                         checked={producer.receive_producer_award}
+                        checked={producer.receive_producer_award}
                       />
                     </td>
                     <td>
@@ -184,14 +307,14 @@ const ProducerDetailsSection = ({ setActiveSection, data }) => {
                       <button
                         className="action-btn delete-btn"
                         title="Delete"
-                        onClick={() => handleDelete(index)}
+                        onClick={() => handleDelete(producer?._id)}
                       >
                         <Trash2 size={16} />
                       </button>
                       <button
                         className="action-btn edit-btn"
                         title="Edit"
-                        onClick={() => handleEdit(index)}
+                        onClick={() => handleEdit(producer?._id)}
                       >
                         <Pencil size={16} />
                       </button>
@@ -374,7 +497,9 @@ const ProducerDetailsSection = ({ setActiveSection, data }) => {
 
             <div className="col-12 text-center mt-3">
               <button type="submit" className="btn btn-primary">
-                {editingIndex ? "Update Producer" : "Create Producer"}
+                {editingIndex != undefined
+                  ? "Update Producer"
+                  : "Create Producer"}
               </button>
             </div>
           </div>
@@ -392,14 +517,7 @@ const ProducerDetailsSection = ({ setActiveSection, data }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={async () => {
-            const isValid = await trigger(); // validate the form
-            if (isValid || !showForm) {
-              setActiveSection(5);
-            } else {
-              window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
-            }
-          }}
+          onClick={() => onNext()}
         >
           Next <i className="bi bi-arrow-right ms-2"></i>
         </button>
