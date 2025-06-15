@@ -2,7 +2,7 @@
 import mongoose from 'mongoose';
 
 const actorSchema = new mongoose.Schema({
-  nfa_feature_id: Number,
+  nfa_feature_id: String,
   actor_category_id: Number,
   name: String,
   screen_name: String,

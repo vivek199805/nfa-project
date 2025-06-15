@@ -3,8 +3,7 @@ import mongoose from 'mongoose';
 import documentSchema from '../mongodbModels/document.js';
 
 const directorSchema = new mongoose.Schema({
-  client_id: Number,
-  nfa_feature_id: Number,
+  nfa_feature_id: String,
   name: String,
   email: String,
   contact_nom: String,
@@ -12,7 +11,7 @@ const directorSchema = new mongoose.Schema({
   pincode: String,
   director_self_attested_doc: String,
   receive_director_award: Boolean,
-  indian_national: Boolean,
+  indian_national: String,
   country_of_nationality: String,
   production_company: String,
   documents: [documentSchema],

@@ -3,17 +3,16 @@ import mongoose from 'mongoose';
 import documentSchema from '../mongodbModels/document.js';
 
 const producerSchema = new mongoose.Schema({
-  client_id: Number,
-  nfa_feature_id: Number,
+  address: String,
+  contact_nom: String,
+  country_of_nationality: String,
   name: String,
   email: String,
-  contact_nom: String,
-  address: String,
   pincode: String,
+  nfa_feature_id: String,
   producer_self_attested_doc: String,
-  indian_national: Boolean,
-  country_of_nationality: String,
-  receive_producer_award: Boolean,
+  indian_national: Number,
+  receive_producer_award: Number,
   production_company: String,
   documents: [documentSchema],
 }, { timestamps: true });

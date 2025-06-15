@@ -17,7 +17,7 @@ dotenv.config();
 const app = express();
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 
 mongoose.set('strictQuery', true);
 // Uncomment and update this with valid credentials if needed

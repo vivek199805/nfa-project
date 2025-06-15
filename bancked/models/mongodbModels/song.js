@@ -2,7 +2,7 @@
 import mongoose from 'mongoose';
 
 const songSchema = new mongoose.Schema({
-  nfa_feature_id: Number,
+  nfa_feature_id: String,
   song_title: String,
   music_director: String,
   music_director_bkgd_music: String,
