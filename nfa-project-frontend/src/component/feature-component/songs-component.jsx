@@ -220,7 +220,7 @@ const SongsFormSection = ({ setActiveSection, data }) => {
                       onClick={() => {
                         reset();
                         setEditingIndex(null);
-                        setShowForm(true);
+                       setShowForm((prev) => !prev);
                       }}
                     >
                       ADD SONG

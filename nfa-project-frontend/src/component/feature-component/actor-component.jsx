@@ -218,7 +218,7 @@ const ActorSection = ({ setActiveSection, data }) => {
                 isVoiceDubbed: false,
               });
               setEditingIndex(null);
-              setShowForm(true);
+             setShowForm((prev) => !prev);
             }}
           >
             ADD ACTOR

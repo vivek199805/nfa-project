@@ -54,7 +54,7 @@ const filmSchema = z.object({
     }),
 });
 
-const ProducerDetailsSection = ({ setActiveSection, data }) => {
+const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
   const { id } = useParams();
   const [producers, setProducers] = useState([]); // your producer list
   const [showForm, setShowForm] = useState(producers.length === 0);
@@ -103,26 +103,11 @@ const ProducerDetailsSection = ({ setActiveSection, data }) => {
 
   const { data: formData } = useQuery({
     queryKey: ["userForm", id],
-    queryFn: () => getRequestById("film/feature-entry-by", id),
+    queryFn: () => getRequestById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id),
     enabled: !!id, // Only run query if id exists
     refetchOnMount: true,
     staleTime: 0,
   });
-
-  // useEffect(() => {
-  //   if (data?.producers?.length > 0) {
-  //     const updatedProducers = data.producers.map((item) => ({
-  //       producerName: item?.name,
-  //       phone: item?.contact_nom,
-  //       indianNationality: item?.nationality == 1 ? "Yes" : "No",
-  //       pinCode: item?.pincode,
-  //       producerCompany: item?.production_company,
-  //       ...item,
-  //     }));
-
-  //     setProducers(updatedProducers);
-  //   }
-  // }, [data?.producers]);
 
   useEffect(() => {
     setShowForm(producers.length === 0);
@@ -225,12 +210,13 @@ const ProducerDetailsSection = ({ setActiveSection, data }) => {
   };
 
   const onNext = async () => {
+    let url = filmType == 'feature' ? "film/feature-update" :"film/non-feature-update";
     const isValid = await trigger(); // validate the form
     if (isValid || !showForm) {
       const formData = new FormData();
       formData.append("step", "4");
       formData.append("id", id);
-      const response = await postRequest("film/feature-update", formData);
+      const response = await postRequest(url, formData);
       if (response.statusCode == 200) {
         setActiveSection(5);
       }
@@ -254,7 +240,7 @@ const ProducerDetailsSection = ({ setActiveSection, data }) => {
             onClick={() => {
               reset();
               setEditingIndex(null);
-              setShowForm(true);
+              setShowForm((prev) => !prev);
             }}
           >
             ADD PRODUCER
@@ -467,7 +453,8 @@ const ProducerDetailsSection = ({ setActiveSection, data }) => {
               )}
             </div>
 
-            <div className="col-md-6">
+            <div className="col-md-12">
+              <p>For Indian nationality, self attested copy of producer adhar card is mandatory & for foreign nationality, self attested copy of producer passport is mandatory.</p>
               <label className="form-label">
                 Id Proof
                 <span className="text-danger">*</span>

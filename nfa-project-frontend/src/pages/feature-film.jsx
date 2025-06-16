@@ -244,95 +244,95 @@ const FeatureFilmPage = () => {
     <>
       <Navbar />
 
-        <div className="row form-div">
-          <div className="col-lg-12 mt-5">
-            <div className="film-form-container">
-              <StepIndicator
-                currentStep={activeSection}
-                onStepClick={(stepNumber) => setActiveSection(stepNumber)}
-              />
-              <div className="form-box">
-                <h2 className="form-title">{steps[activeSection - 1]}</h2>
-                <h3 className="form-subtitle">
-                  Feature Film Registration | Step {activeSection}
-                </h3>
+      <div className="row form-div">
+        <div className="col-lg-12 mt-5">
+          <div className="film-form-container">
+            <StepIndicator
+              currentStep={activeSection}
+              onStepClick={(stepNumber) => setActiveSection(stepNumber)}
+            />
+            <div className="form-box">
+              <h2 className="form-title">{steps[activeSection - 1]}</h2>
+              <h3 className="form-subtitle">
+                Feature Film Registration | Step {activeSection}
+              </h3>
 
-                {activeSection == 1 && (
-                  <FilmDetailsSection
-                    data={formData}
-                    setActiveSection={setActiveSection}
-                  />
-                )}
-                {activeSection == 2 && (
-                  <CensorSection
-                    data={formData}
-                    setActiveSection={setActiveSection}
-                  />
-                )}
-                {activeSection == 3 && (
-                  <CompanyRegistrationSection
-                    data={formData}
-                    setActiveSection={setActiveSection}
-                  />
-                )}
-                {activeSection == 4 && (
-                  <ProducerDetailsSection
-                    data={formData}
-                    setActiveSection={setActiveSection}
-                  />
-                )}
-                {activeSection == 5 && (
-                  <DirectorDetailsSection
-                    data={formData}
-                    setActiveSection={setActiveSection}
-                  />
-                )}
-                {activeSection == 6 && (
-                  <ActorSection
-                    data={formData}
-                    setActiveSection={setActiveSection}
-                  />
-                )}
-                {activeSection == 7 && (
-                  <SongsFormSection
-                    data={formData}
-                    setActiveSection={setActiveSection}
-                  />
-                )}
-                {activeSection == 8 && (
-                  <AudiographerSection
-                    data={formData}
-                    setActiveSection={setActiveSection}
-                  />
-                )}
-                {activeSection == 9 && (
-                  <ScreenPlaySection
-                    data={formData}
-                    setActiveSection={setActiveSection}
-                  />
-                )}
-                {activeSection == 10 && (
-                  <ReturnSection
-                    data={formData}
-                    setActiveSection={setActiveSection}
-                  />
-                )}
-                {activeSection == 11 && (
-                  <DeclarationSection
-                    data={formData}
-                    setActiveSection={setActiveSection}
-                  />
-                )}
-                {activeSection == 12 && (
-                  <PaymentSection
-                    data={formData}
-                    setActiveSection={setActiveSection}
-                  />
-                )}
-              </div>
+              {activeSection == 1 && (
+                <FilmDetailsSection
+                  filmType={'feature'}
+                  setActiveSection={setActiveSection}
+                />
+              )}
+              {activeSection == 2 && (
+                <CensorSection
+                  filmType={'feature'}
+                  setActiveSection={setActiveSection}
+                />
+              )}
+              {activeSection == 3 && (
+                <CompanyRegistrationSection
+                   filmType={'feature'}
+                  setActiveSection={setActiveSection}
+                />
+              )}
+              {activeSection == 4 && (
+                <ProducerDetailsSection
+                   filmType={'feature'}
+                  setActiveSection={setActiveSection}
+                />
+              )}
+              {activeSection == 5 && (
+                <DirectorDetailsSection
+                   filmType={'feature'}
+                  setActiveSection={setActiveSection}
+                />
+              )}
+              {activeSection == 6 && (
+                <ActorSection
+                   filmType={'feature'}
+                  setActiveSection={setActiveSection}
+                />
+              )}
+              {activeSection == 7 && (
+                <SongsFormSection
+                   filmType={'feature'}
+                  setActiveSection={setActiveSection}
+                />
+              )}
+              {activeSection == 8 && (
+                <AudiographerSection
+                   filmType={'feature'}
+                  setActiveSection={setActiveSection}
+                />
+              )}
+              {activeSection == 9 && (
+                <ScreenPlaySection
+                   filmType={'feature'}
+                  setActiveSection={setActiveSection}
+                />
+              )}
+              {activeSection == 10 && (
+                <ReturnSection
+                   filmType={'feature'}
+                  setActiveSection={setActiveSection}
+                />
+              )}
+              {activeSection == 11 && (
+                <DeclarationSection
+                   filmType={'feature'}
+                  setActiveSection={setActiveSection}
+                />
+              )}
+              {activeSection == 12 && (
+                <PaymentSection
+                  filmType={'feature'}
+                  setActiveSection={setActiveSection}
+                />
+              )}
             </div>
           </div>
         </div>
+      </div>
     </>
   );
 };

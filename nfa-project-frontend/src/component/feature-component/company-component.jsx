@@ -25,7 +25,7 @@ const companySchema = z.object({
     }),
 });
 
-const CompanyRegistrationSection = ({ setActiveSection, data }) => {
+const CompanyRegistrationSection = ({ setActiveSection, filmType }) => {
     const { id } = useParams();
   const {
     register,
@@ -43,7 +43,7 @@ const CompanyRegistrationSection = ({ setActiveSection, data }) => {
   
     const { data: formData, } = useQuery({
     queryKey: ["userForm", id],
-    queryFn: () => getRequestById("film/feature-entry-by", id),
+    queryFn: () => getRequestById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id),
     enabled: !!id, // Only run query if id exists
     refetchOnMount: true,
     staleTime: 0,
@@ -61,12 +61,14 @@ const CompanyRegistrationSection = ({ setActiveSection, data }) => {
   const onSubmit = async (data) => {
     console.log("Form submitted:", data);
     // Call API to submit form data
+          let url = filmType == 'feature' ? "film/feature-update": "film/non-feature-update";
         const formData = new FormData();
         formData.append("company_reg_details", data.CompanyRegistration);
         formData.append("company_reg_doc", data.CompanyRegistrationFile);
         formData.append('step', '3');
         formData.append('id', id);
-        const response = await postRequest("film/feature-update", formData);
+
+        const response = await postRequest(url, formData);
         if (response.statusCode == 200) {
             setActiveSection(4);
         }

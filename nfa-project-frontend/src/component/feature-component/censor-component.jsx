@@ -30,7 +30,7 @@ const censorSchema = z.object({
     }),
 });
 
-const CensorSection = ({ setActiveSection, data }) => {
+const CensorSection = ({ setActiveSection, filmType }) => {
   const dispatch = useDispatch();
   const storedFilmData = useSelector((state) => state.featureFilm.data);
   const { id } = useParams();
@@ -54,7 +54,7 @@ const CensorSection = ({ setActiveSection, data }) => {
   
   const { data: formData, } = useQuery({
     queryKey: ["userForm", id],
-    queryFn: () => getRequestById("film/feature-entry-by", id),
+    queryFn: () => getRequestById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id),
     enabled: !!id, // Only run query if id exists
     // staleTime: 1000 * 60 * 5, // 5 minutes - consider this data fresh for 5 mins
     // initialData: () => queryClient.getQueryData(["userForm", id]), // optional
@@ -76,13 +76,15 @@ const CensorSection = ({ setActiveSection, data }) => {
     console.log("Form submitted:", data);
     //  dispatch(setFormData(data));
     // Call API to submit form data
+    let url = ""
     const formData = new FormData();
     formData.append("censor_certificate_nom", data.certificateNumber);
     formData.append("censor_certificate_date", data.certificateDate);
     formData.append("censor_certificate_file", data.certificateFile);
-    formData.append('step', '3');
+    formData.append('step', '2');
     formData.append('id', id);
-    const response = await postRequest("film/feature-update", formData);
+      filmType == 'feature' ? url = "film/feature-update" : url = "film/non-feature-update";
+    const response = await postRequest(url, formData);
     if (response.statusCode == 200) {
       setActiveSection(3);
     }

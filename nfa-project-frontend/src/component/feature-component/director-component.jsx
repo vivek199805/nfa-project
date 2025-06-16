@@ -57,12 +57,12 @@ const filmSchema = z.object({
     ),
 });
 
-const DirectorDetailsSection = ({ setActiveSection, data }) => {
+const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
   const [directors, setDirectors] = useState([]);
   const [showForm, setShowForm] = useState(directors.length === 0);
   const numberRestriction = useInputRestriction("number");
   const [editingIndex, setEditingIndex] = useState(null);
-  const {id} = useParams();
+  const { id } = useParams();
 
   const {
     register,
@@ -98,7 +98,7 @@ const DirectorDetailsSection = ({ setActiveSection, data }) => {
 
   const { data: formData } = useQuery({
     queryKey: ["userForm", id],
-    queryFn: () => getRequestById("film/feature-entry-by", id),
+    queryFn: () => getRequestById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id),
     enabled: !!id, // Only run query if id exists
     refetchOnMount: true,
     staleTime: 0,
@@ -130,7 +130,7 @@ const DirectorDetailsSection = ({ setActiveSection, data }) => {
 
   const onSubmit = async (data) => {
     const formData = new FormData();
-    formData.append("indian_national",data.indianNationality === "Yes" ? 1 : 0);
+    formData.append("indian_national", data.indianNationality === "Yes" ? 1 : 0);
     formData.append("name", data.directorName);
     formData.append("contact_nom", data.phone);
     formData.append("email", data.email);
@@ -216,11 +216,12 @@ const DirectorDetailsSection = ({ setActiveSection, data }) => {
 
   const onNext = async () => {
     const isValid = await trigger(); // validate the form
+       let url = filmType == 'feature' ? "film/feature-update" :"film/non-feature-update";
     if (isValid || !showForm) {
       const formData = new FormData();
       formData.append("step", "5");
       formData.append("id", id);
-      const response = await postRequest("film/feature-update", formData);
+      const response = await postRequest(url, formData);
       if (response.statusCode == 200) {
         setActiveSection(6);
       }
@@ -243,7 +244,7 @@ const DirectorDetailsSection = ({ setActiveSection, data }) => {
             onClick={() => {
               reset();
               setEditingIndex(null);
-              setShowForm(true);
+              setShowForm((prev) => !prev);
             }}
           >
             ADD DIRECTOR
@@ -271,7 +272,7 @@ const DirectorDetailsSection = ({ setActiveSection, data }) => {
                     <td>{index + 1}</td>
                     <td>
                       <span className="nationality-badge">
-                        {director.indian_national == 1 ? "Indian": "Foreign"}
+                        {director.indian_national == 1 ? "Indian" : "Foreign"}
                       </span>
                     </td>
                     <td>{director.name}</td>
@@ -357,9 +358,8 @@ const DirectorDetailsSection = ({ setActiveSection, data }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.directorName ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.directorName ? "is-invalid" : ""
+                  }`}
                 placeholder="Director Name"
                 {...register("directorName")}
               />
@@ -447,9 +447,8 @@ const DirectorDetailsSection = ({ setActiveSection, data }) => {
                     <input
                       type="file"
                       accept=".pdf,.jpg,.jpeg,.png,.webp"
-                      className={`form-control ${
-                        errors.idProofFile ? "is-invalid" : ""
-                      }`}
+                      className={`form-control ${errors.idProofFile ? "is-invalid" : ""
+                        }`}
                       onChange={(e) =>
                         field.onChange(e.target.files?.[0] || null)
                       }

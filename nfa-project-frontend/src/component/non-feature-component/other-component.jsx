@@ -15,7 +15,7 @@ const filmSchema = z.object({
   sound_recordist: z.string().optional(),
 });
 
-const OtherSection = ({ setActiveSection, data }) => {
+const OtherSection = ({ setActiveSection, filmType }) => {
   const {
     register,
     handleSubmit,
@@ -28,6 +28,17 @@ const OtherSection = ({ setActiveSection, data }) => {
     mode: "onTouched",
     // shouldFocusError: false,
   });
+
+  const { data: formData } = useQuery({
+    queryKey: ["userForm", id],
+    queryFn: () => getRequestById("film/non-feature-entry-by", id),
+    enabled: !!id, // Only run query if id exists
+    // staleTime: 1000 * 60 * 5, // 5 minutes - consider this data fresh for 5 mins
+    // initialData: () => queryClient.getQueryData(["userForm", id]), // optional
+    refetchOnMount: true,
+    staleTime: 0,
+  });
+
 
   useEffect(() => {
     if (data) {
@@ -57,13 +68,12 @@ const OtherSection = ({ setActiveSection, data }) => {
       style={{ padding: 20, maxWidth: 900, margin: "auto" }}
     >
       <div className="row g-3">
-                <div className="col-md-6">
+        <div className="col-md-6">
           <label className="form-label"> Cinemetographer(s)</label>
           <input
             type="text"
-            className={`form-control ${
-              errors.cinemetographer ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.cinemetographer ? "is-invalid" : ""
+              }`}
             placeholder=" Enter Cinemetographer"
             {...register("cinemetographer")}
           />
@@ -73,7 +83,7 @@ const OtherSection = ({ setActiveSection, data }) => {
             </div>
           )}
         </div>
-                <div className="col-md-6">
+        <div className="col-md-6">
           <label className="form-label">Editor</label>
           <input
             type="text"
@@ -91,9 +101,8 @@ const OtherSection = ({ setActiveSection, data }) => {
           </label>
           <input
             type="text"
-            className={`form-control ${
-              errors.audiographer ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.audiographer ? "is-invalid" : ""
+              }`}
             placeholder=" Enter Audiographer"
             {...register("audiographer")}
           />
@@ -110,9 +119,8 @@ const OtherSection = ({ setActiveSection, data }) => {
           </label>
           <input
             type="text"
-            className={`form-control ${
-              errors.music_director ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.music_director ? "is-invalid" : ""
+              }`}
             placeholder="Enter Music Director"
             {...register("music_director")}
           />
@@ -169,9 +177,8 @@ const OtherSection = ({ setActiveSection, data }) => {
           <label className="form-label"> Choreographers</label>
           <input
             type="text"
-            className={`form-control ${
-              errors.choreographer ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.choreographer ? "is-invalid" : ""
+              }`}
             placeholder=" Enter choreographer"
             {...register("choreographer")}
           />
@@ -186,9 +193,8 @@ const OtherSection = ({ setActiveSection, data }) => {
           <label className="form-label"> Narrator/Voice Over artist</label>
           <input
             type="text"
-            className={`form-control ${
-              errors.voice_over_artist ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.voice_over_artist ? "is-invalid" : ""
+              }`}
             placeholder=" Enter Narrator/Voice Over artist"
             {...register("voice_over_artist")}
           />
@@ -224,7 +230,7 @@ const OtherSection = ({ setActiveSection, data }) => {
           <button
             type="submit"
             className="btn btn-primary"
-            // onClick={() => setActiveSection(10)}
+          // onClick={() => setActiveSection(10)}
           >
             Next <i className="bi bi-arrow-right ms-2"></i>
           </button>
