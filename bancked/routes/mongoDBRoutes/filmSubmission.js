@@ -39,4 +39,7 @@ router.get('/non-feature-list', requireAuth, FilmController.getNonFeatureSubmiss
 router.get('/non-feature-entry-by/:id',requireAuth, FilmController.getFilmDetailsById);
 router.post('/non-feature-update', requireAuth, upload.any(), FilmController.updateFeatureNonfeatureById);
 
+// final submission
+router.post('/final-submit', requireAuth, upload.any(), FilmController.finalSubmit);
+
 export default router;

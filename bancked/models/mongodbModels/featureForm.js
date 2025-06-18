@@ -105,6 +105,7 @@ const featureFormSchema = new mongoose.Schema(
     actors: { type: [actorSchema], default: [] },
     audiographer: { type: [audiographerSchema], default: [] },
     documents: { type: [documentSchema], default: [] },
+     non_audiographer: { type: String, default: '' },
 
     payment_response: { type: mongoose.Schema.Types.Mixed, default: null },
   },

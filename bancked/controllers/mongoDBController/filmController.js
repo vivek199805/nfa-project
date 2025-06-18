@@ -740,6 +740,35 @@ const deleteAudiographerById = async (req, res) => {
 };
 
 
+const finalSubmit = async (req, res) => {
+  try {
+    const { id: _id } = req.body;
+    // Find the document by ID
+    const existingEntry = await FeatureForm.findById(_id);
+
+    if (!existingEntry) {
+      return res.status(404).json({ statusCode: 404, message: "Feature submission not found" });
+    }
+
+    // Update the document with request body
+    Object.assign(existingEntry, req.body);
+
+    // Save updated document
+    const updated = await existingEntry.save();
+
+    res.status(200).json({
+      statusCode: 200,
+      message: "Payment submitted successfully",
+      data: updated,
+    });
+  } catch (error) {
+    res.status(500).json({
+      statusCode: 500,
+      message: "Error payment submission",
+      error: error.message,
+    });
+  }
+};
 
 // Get all Non-Feature Submissions
 const getNonFeatureSubmissions = async (req, res) => {
@@ -775,4 +804,5 @@ export default {
   addAudiographerToFeature,
   deleteAudiographerById,
   getNonFeatureSubmissions,
+  finalSubmit
 };
