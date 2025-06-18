@@ -2,6 +2,8 @@
 import axios from "axios";
 import { showErrorToast } from "./toastService";
 import { navigateTo } from "../navigate";
+import { store } from "../../store/store";
+import { hideLoader, showLoader } from "../../store/loaderSlice";
 
 // Create the Axios instance
 const api = axios.create({
@@ -21,6 +23,7 @@ api.interceptors.request.use(
     );
 
     if (!isExcluded) {
+          store.dispatch(showLoader());
       const tokenData = JSON.parse(localStorage.getItem("userData"));      
       if (tokenData) {
         config.headers.Authorization = `Bearer ${tokenData?.token}`;
@@ -29,16 +32,21 @@ api.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+    (error) => {
+    store.dispatch(hideLoader());
+    return Promise.reject(error);
+  }
 );
 
 // ❗️Response interceptor to handle 401
 api.interceptors.response.use(
-  (response) => response,
+   (response) => {
+    store.dispatch(hideLoader());
+    return response;
+  },
   (error) => {
+       store.dispatch(hideLoader());
     if (error.response?.status === 401) {
-      console.warn("Unauthorized - logging out user...", error);
-
       // Clear user data
       localStorage.removeItem("userData");
       localStorage.clear();

@@ -3,9 +3,9 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useInputRestriction } from "../../hooks/useInputRestriction";
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { getRequestById, postRequest } from "../../common/services/requestService";
+import { useFetchById } from "../../hooks/useFetchById";
+import { postRequest } from "../../common/services/requestService";
 const filmSchema = z.object({
   name: z.string().trim().min(1, "This field is required"),
   phone: z
@@ -24,9 +24,12 @@ const filmSchema = z.object({
     .regex(/^[0-9]{6}$/, "Pin Code must be numeric"),
 });
 
-const ReturnSection = ({ setActiveSection, data }) => {
+const ReturnSection = ({ setActiveSection, filmType }) => {
   const numberRestriction = useInputRestriction("number");
-  const {id} = useParams();
+  const { id } = useParams();
+
+  const { data: formData } = useFetchById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id);
+
   const {
     register,
     handleSubmit,
@@ -39,25 +42,15 @@ const ReturnSection = ({ setActiveSection, data }) => {
     // shouldFocusError: false,
   });
 
-    const { data: formData } = useQuery({
-    queryKey: ["userForm", id],
-    queryFn: () => getRequestById("film/feature-entry-by", id),
-    enabled: !!id, // Only run query if id exists
-    // staleTime: 1000 * 60 * 5, // 5 minutes - consider this data fresh for 5 mins
-    // initialData: () => queryClient.getQueryData(["userForm", id]), // optional
-    refetchOnMount: true,
-    staleTime: 0,
-  });
-
-  useEffect(() =>{
-    if(formData){
+  useEffect(() => {
+    if (formData) {
       reset({
-         name: formData?.data?.return_name,
-         phone: formData?.data?.return_mobile,
-         email: formData?.data?.return_email,
-         website: formData?.data?.return_website,
-         address: formData?.data?.return_address,
-         pinCode: formData?.data.return_pincode       
+        name: formData?.data?.return_name,
+        phone: formData?.data?.return_mobile,
+        email: formData?.data?.return_email,
+        website: formData?.data?.return_website,
+        address: formData?.data?.return_address,
+        pinCode: formData?.data.return_pincode
       });
     }
 
@@ -66,19 +59,20 @@ const ReturnSection = ({ setActiveSection, data }) => {
   const onSubmit = async (data) => {
     console.log("Form submitted:", data);
     // Call API to submit form data
-       const formData = new FormData();
-       formData.append("return_name", data.name);
-       formData.append("return_mobile", data.phone);
-       formData.append("return_email", data.email);
-       formData.append("return_website", data.website);
-       formData.append("return_address", data.address);
-       formData.append("return_pincode", data.pinCode);
-       formData.append("step", "10");
-       formData.append("id", id);
-       const response = await postRequest("film/feature-update", formData);
-       if (response.statusCode == 200) {
-         setActiveSection(11);
-       }
+    let url = filmType == 'feature' ? "film/feature-update" : "film/non-feature-update";
+    const formData = new FormData();
+    formData.append("return_name", data.name);
+    formData.append("return_mobile", data.phone);
+    formData.append("return_email", data.email);
+    formData.append("return_website", data.website);
+    formData.append("return_address", data.address);
+    formData.append("return_pincode", data.pinCode);
+    formData.append("step", filmType == 'feature' ? '10' : '7');
+    formData.append("id", id);
+    const response = await postRequest(url, formData);
+    if (response.statusCode == 200) {
+      filmType == 'feature' ? setActiveSection(11) : setActiveSection(8);
+    }
   };
 
   return (
@@ -183,7 +177,7 @@ const ReturnSection = ({ setActiveSection, data }) => {
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => setActiveSection(9)}
+            onClick={() => filmType == 'feature' ? setActiveSection(9) : setActiveSection(6)}
           >
             <i className="bi bi-arrow-left me-2"></i>
             Back to Prev

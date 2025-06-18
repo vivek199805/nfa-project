@@ -1,46 +1,49 @@
-import { createContext, use, useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { createContext, use, useEffect, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 // import { getQueryFn, queryClient } from "../lib/queryClient";
 import { showErrorToast, showSuccessToast } from "../common/services/toastService";
-import { getRequest, postRequest } from "../common/services/requestService";
+import { postRequest } from "../common/services/requestService";
 import { useNavigate } from "react-router-dom";
-import { queryClient } from "../lib/queryClient";
+// import { queryClient } from "../lib/queryClient";
 
 export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, ] = useState(() => {
-  const storedUser = localStorage.getItem("userData");
-  return storedUser ? JSON.parse(storedUser) : null;
-});
   const navigate = useNavigate();
-  const storedUser = localStorage.getItem("userData");
-const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-const getCurrentUser = async () => {
-  const response = await getRequest('user/current'); // replace with your actual API
-  return response.data;
-};
+  const [user, setUser] = useState(() => {
+    const stored = localStorage.getItem('user');
+    return stored ? JSON.parse(stored) : null;
+  });
+  // const getCurrentUser = async () => {
+  //   const response = await getRequest('user/current'); // replace with your actual API
+  //   return response.data;
+  // };
+    useEffect(() => {
+    localStorage.setItem('user', JSON.stringify(user));
+  }, [user]);
 
-const {
-  data: userData,
-  error,
-  isLoading,
-} = useQuery({
-  queryKey: ["user/currentUser"],
-  queryFn: getCurrentUser,
-  enabled: !parsedUser,  // Only run if not in localStorage
-  initialData: parsedUser,
-});
+  // const {
+  //   data: userData,
+  //   error,
+  //   isLoading,
+  // } = useQuery({
+  //   queryKey: ["user/currentUser"],
+  //   queryFn: getCurrentUser,
+  //   enabled: !!parsedUser,  // Only run if not in localStorage
+  //   initialData: parsedUser,
+  //   staleTime: 5 * 60 * 1000,       // Optional: cache for 5 minutes
+  // });
 
   const loginMutation = useMutation({
     mutationFn: async (credentials) => {
       const res = await postRequest("user/login", credentials);
       return res;
     },
-    onSuccess: (res) => {      
-    const userData = res.data;
+    onSuccess: (res) => {
+      const userData = res.data;
       localStorage.setItem("userData", JSON.stringify(userData));
-      queryClient.setQueryData(["user/login"], res);
+      // queryClient.setQueryData(["user/currentUser"], res);
+      setUser(res)
       navigate('/dashboard')
       showSuccessToast(`Welcome, ${res.message}!`);
     },
@@ -65,16 +68,12 @@ const {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      console.log('jjjjjjjjjjj', user);
-        sessionStorage.clear();
-        localStorage.clear();
-        navigate('/')
-      
-      // const res = await postRequest("/api/logout");
-      // if (!res.ok) throw new Error("Logout failed");
+      sessionStorage.clear();
+      localStorage.clear();
+      navigate('/');
     },
     onSuccess: () => {
-      // queryClient.setQueryData(["/api/user"], null);
+      // queryClient.setQueryData(["user/currentUser"], null);
       showSuccessToast("You have been successfully logged out.");
     },
     onError: (error) => {
@@ -85,9 +84,9 @@ const {
   return (
     <AuthContext.Provider
       value={{
-        user: userData ?? null,
-        isLoading,
-        error,
+        user: user?.data,
+        // isLoading,
+        // error,
         loginMutation,
         logoutMutation,
         registerMutation,

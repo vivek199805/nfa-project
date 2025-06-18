@@ -6,12 +6,10 @@ import { useEffect, useState } from "react";
 import { countWords } from "../../common/common-function";
 import {
   getRequest,
-  getRequestById,
   postRequest,
 } from "../../common/services/requestService";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { queryClient } from "../../lib/queryClient";
+import { useFetchById } from "../../hooks/useFetchById";
 
 const filmSchema = z.object({
   titleRoman: z.string().min(1, "This field is required"),
@@ -148,10 +146,7 @@ const FilmDetailsSection = ({ setActiveSection, filmType }) => {
   const [languageOptions, setLanguageOptions] = useState([]);
   const { id } = useParams();
   const navigate = useNavigate()
-  // const languageOptions = options.map((lang) => ({
-  //   label: lang.name,
-  //   value: String(lang.id),
-  // }));
+    const { data:formData } = useFetchById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id);
 
   const {
     register,
@@ -166,16 +161,18 @@ const FilmDetailsSection = ({ setActiveSection, filmType }) => {
     // shouldFocusError: false,
   });
 
-  const { data: formData, refetch } = useQuery({
-    queryKey: ["userForm", id],
-    queryFn: () => getRequestById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id),
-    enabled: !!id,  // Only run query if id exists
-    // staleTime: 1000 * 60 * 5, // 5 minutes - consider this data fresh for 5 mins
-    // initialData: staticForms, // sets mock data
-    // initialData: () => queryClient.getQueryData(["userForm", id]), // optional
-    refetchOnMount: true,
-    staleTime: 0,
-  });
+
+
+  // const { data: formData, refetch } = useQuery({
+  //   queryKey: ["userForm", id],
+  //   queryFn: () => getRequestById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id),
+  //   enabled: !!id,  // Only run query if id exists
+  //   // staleTime: 1000 * 60 * 5, // 5 minutes - consider this data fresh for 5 mins
+  //   // initialData: staticForms, // sets mock data
+  //   // initialData: () => queryClient.getQueryData(["userForm", id]), // optional
+  //   refetchOnMount: true,
+  //   staleTime: 0,
+  // });
 
   // Call refetch manually on mount
   // useEffect(() => {

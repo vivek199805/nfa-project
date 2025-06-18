@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import "../../styles/accordion.css";
 import { ChevronDown, Pencil } from "lucide-react";
+import { useParams } from "react-router-dom";
+import { useFetchById } from "../../hooks/useFetchById";
 
-const ViewSection = ({ setActiveSection, data }) => {
+const ViewSection = ({ setActiveSection, filmType }) => {
   const [activeIndex, setActiveIndex] = useState(null);
+  const { id } = useParams();
 
   const steps = [
     "General",
@@ -15,13 +18,15 @@ const ViewSection = ({ setActiveSection, data }) => {
     "Return",
   ];
 
+  const { data: formData } = useFetchById("film/non-feature-entry-by", id);
+
   const toggle = (index) => {
     setActiveIndex(activeIndex === index ? null : index);
   };
 
   useEffect(() => {
     // Optional data initialization if needed
-  }, [data]);
+  }, [formData]);
 
   return (
     <>
@@ -37,19 +42,19 @@ const ViewSection = ({ setActiveSection, data }) => {
           >
             {/* Placeholder for content */}
             {step === "Return" ? (
-              <ReturnView data={data} />
+              <ReturnView data={formData?.data} />
             ) : step === "General" ? (
-              <GeneralView data={data} />
+              <GeneralView data={formData?.data} />
             ) : step === "Censor" ? (
-              <CensorView data={data} />
+              <CensorView data={formData?.data} />
             ) : step === "Company Registration" ? (
-              <CompanyRegistrationView data={data} />
+              <CompanyRegistrationView data={formData?.data} />
             ) : step === "Producer(s) Details" ? (
-              <ProducerView data={data} />
+              <ProducerView data={formData?.data} />
             ) : step === "Director(s) Details" ? (
-              <DirectorView data={data} />
+              <DirectorView data={formData?.data} />
             ) : step === "Other" ? (
-              <OtherView data={data} />
+              <OtherView data={formData?.data} />
             ) : (
               <p>This is content for {step} section.</p>
             )}
@@ -205,10 +210,10 @@ const GeneralView = ({ data }) => {
             {data?.sound_system == 1
               ? "Optional Mono"
               : data?.sound_system == 2
-              ? "Dolby"
-              : data?.sound_system == 3
-              ? "DTS"
-              : "Other"}
+                ? "Dolby"
+                : data?.sound_system == 3
+                  ? "DTS"
+                  : "Other"}
           </div>
           <div>{data.running_time}</div>
           <div>{data.color_bw == 1 ? "Color" : "Black and White"}</div>
@@ -285,7 +290,7 @@ const ProducerView = ({ data }) => {
           <div className="fw-semibold mb-2">({index + 1}) Producer Details</div>
           <div className="row">
             <div className="col-md-4 col-sm-6 mb-2">
-              <strong>Nationality:</strong> {producer?.nationality == 1? 'Yes' : 'No'}
+              <strong>Nationality:</strong> {producer?.nationality == 1 ? 'Yes' : 'No'}
             </div>
             <div className="col-md-4 col-sm-6 mb-2">
               <strong>Name:</strong> {producer.name}
@@ -323,7 +328,7 @@ const DirectorView = ({ data }) => {
           <div className="fw-semibold mb-2">({index + 1}) Director Details</div>
           <div className="row">
             <div className="col-md-4 col-sm-6 mb-2">
-              <strong>Nationality:</strong> {director?.nationality == 1? 'Yes' : 'No'}
+              <strong>Nationality:</strong> {director?.nationality == 1 ? 'Yes' : 'No'}
             </div>
             <div className="col-md-4 col-sm-6 mb-2">
               <strong>Name:</strong> {director.name}

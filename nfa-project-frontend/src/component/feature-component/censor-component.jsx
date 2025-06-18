@@ -3,14 +3,10 @@ import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
 import { z } from "zod";
-import { setFormData } from "../../store/featureFormSlice";
-import {
-  getRequestById,
-  postRequest,
-} from "../../common/services/requestService";
-import { useQuery } from "@tanstack/react-query";
+import {postRequest} from "../../common/services/requestService";
 import { useParams } from "react-router-dom";
 import { formatDate } from "../../common/common-function";
+import { useFetchById } from "../../hooks/useFetchById";
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
@@ -34,6 +30,7 @@ const CensorSection = ({ setActiveSection, filmType }) => {
   const dispatch = useDispatch();
   const storedFilmData = useSelector((state) => state.featureFilm.data);
   const { id } = useParams();
+  const { data: formData } = useFetchById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id);
 
   const {
     register,
@@ -50,16 +47,6 @@ const CensorSection = ({ setActiveSection, filmType }) => {
     },
     mode: "onTouched",
     // shouldFocusError: false,
-  });
-  
-  const { data: formData, } = useQuery({
-    queryKey: ["userForm", id],
-    queryFn: () => getRequestById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id),
-    enabled: !!id, // Only run query if id exists
-    // staleTime: 1000 * 60 * 5, // 5 minutes - consider this data fresh for 5 mins
-    // initialData: () => queryClient.getQueryData(["userForm", id]), // optional
-    refetchOnMount: true,
-    staleTime: 0,
   });
 
   useEffect(() => {
@@ -83,7 +70,7 @@ const CensorSection = ({ setActiveSection, filmType }) => {
     formData.append("censor_certificate_file", data.certificateFile);
     formData.append('step', '2');
     formData.append('id', id);
-      filmType == 'feature' ? url = "film/feature-update" : url = "film/non-feature-update";
+    filmType == 'feature' ? url = "film/feature-update" : url = "film/non-feature-update";
     const response = await postRequest(url, formData);
     if (response.statusCode == 200) {
       setActiveSection(3);
@@ -103,9 +90,8 @@ const CensorSection = ({ setActiveSection, filmType }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${
-                errors.certificateNumber ? "is-invalid" : ""
-              }`}
+              className={`form-control ${errors.certificateNumber ? "is-invalid" : ""
+                }`}
               placeholder="Censor Certificate Number"
               {...register("certificateNumber")}
             />
@@ -122,9 +108,8 @@ const CensorSection = ({ setActiveSection, filmType }) => {
             </label>
             <input
               type="date"
-              className={`form-control ${
-                errors.certificateDate ? "is-invalid" : ""
-              }`}
+              className={`form-control ${errors.certificateDate ? "is-invalid" : ""
+                }`}
               placeholder="Censor Certification Date"
               {...register("certificateDate")}
             />
@@ -147,9 +132,8 @@ const CensorSection = ({ setActiveSection, filmType }) => {
                 <input
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png,.webp"
-                  className={`form-control ${
-                    errors.certificateFile ? "is-invalid" : ""
-                  }`}
+                  className={`form-control ${errors.certificateFile ? "is-invalid" : ""
+                    }`}
                   onChange={(e) => field.onChange(e.target.files?.[0] || null)}
                 />
               )}

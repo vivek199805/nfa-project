@@ -96,14 +96,6 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
     }
   };
 
-  const { data: formData } = useQuery({
-    queryKey: ["userForm", id],
-    queryFn: () => getRequestById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id),
-    enabled: !!id, // Only run query if id exists
-    refetchOnMount: true,
-    staleTime: 0,
-  });
-
   // useEffect(() => {
   //   if (data?.directors?.length > 0) {
   //     const updatedDirectors = data.directors.map((item, index) => {

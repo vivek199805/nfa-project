@@ -42,9 +42,9 @@ const NonFeatureFilmPage = () => {
   });
 
   useEffect(() => {
-    console.log("Form cards data:", formData);
-    if (id && formData?.data?.active_step !== undefined) {
-      setActiveSection(+formData?.data?.active_step + 1);
+    if (id && formData?.data?.active_step != null) {
+      const step = +formData.data.active_step;
+      setActiveSection(step < steps.length ? step + 1 : steps.length);
     }
   }, [id, formData]);
 

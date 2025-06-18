@@ -83,14 +83,6 @@ const ActorSection = ({ setActiveSection, data }) => {
     }
   };
 
-  const { data: formData } = useQuery({
-    queryKey: ["userForm", id],
-    queryFn: () => getRequestById("film/feature-entry-by", id),
-    enabled: !!id, // Only run query if id exists
-    refetchOnMount: true,
-    staleTime: 0,
-  });
-
   // useEffect(() => {
   //   if (data?.actors?.length > 0) {
   //     const updatedSongs = data.actors.map((item) => ({

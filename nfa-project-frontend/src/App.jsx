@@ -12,6 +12,8 @@ import FeatureFilmPage from "./pages/feature-film";
 import NonFeatureFilmPage from "./pages/non-feature-film";
 import { store } from "./store/store";
 import { Provider } from "react-redux";
+import Loader from "./component/loader-component";
+import FilmSubmissionView from "./component/feature-component/FilmSubmissionView";
 
 function App() {
   const router = createBrowserRouter([
@@ -41,22 +43,22 @@ function App() {
           path: "dashboard",
           element: <DashboardPage />,
         },
-        {
-          path: "feature",
-          element: <FeatureFilmPage />,
-        },
-        {
-          path: "feature/:id",
-          element: <FeatureFilmPage />,
-        },
-        {
-          path: "non-feature",
-          element: <NonFeatureFilmPage />,
-        },
-        {
-          path: "non-feature/:id",
-          element: <NonFeatureFilmPage />,
-        },
+      {
+        path: "feature",
+        children: [
+          { path: "", element: <FeatureFilmPage /> }, // /feature
+          { path: ":id", element: <FeatureFilmPage /> }, // /feature/9
+          { path: "view/:id", element: <FilmSubmissionView /> }, // /feature/view/9
+        ],
+      },
+
+      {
+        path: "non-feature",
+        children: [
+          { path: "", element: <NonFeatureFilmPage /> },
+          { path: ":id", element: <NonFeatureFilmPage /> },
+        ],
+      },
       ],
     },
   ]);
@@ -71,6 +73,7 @@ function App() {
         duration={3000}
         expand={true}
       />
+      <Loader />
       <RouterProvider router={router} />
       </Provider>
     </QueryClientProvider>
