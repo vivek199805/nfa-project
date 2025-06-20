@@ -1,10 +1,10 @@
 
 import { ID, Query } from 'appwrite';
-import { account, databases } from '../appWrite/client.js';
-import { hashPassword } from '../utils/hashPassword.js';
-import { generateToken } from '../utils/jwt.util.js';
+import { account, databases } from '../../appWrite/client.js';
+import { hashPassword } from '../../utils/hashPassword.js';
+import { generateToken } from '../../utils/jwt.util.js';
 import dotenv from "dotenv";
-import { comparePasswords } from '../utils/comparePasswords.js';
+import { comparePasswords } from '../../utils/comparePasswords.js';
 dotenv.config();
 
 function createAccountClient(jwt) {

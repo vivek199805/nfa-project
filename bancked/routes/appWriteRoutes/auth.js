@@ -1,7 +1,7 @@
 import express from 'express';
 // import checkAuth from '../middleware/check-auth.js';
 import UserController from '../controllers/user.js';
-import { requireAuth } from '../middleware/requireAuth.js';
+import { requireAuth } from '../../middleware/requireAuth.js';
 
 const router = express.Router();
 

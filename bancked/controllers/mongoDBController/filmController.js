@@ -1,4 +1,5 @@
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
+import Common from "../../services/common.js"
 
 // Create Feature Submission
 const createFeatureSubmission = async (req, res) => {
@@ -149,9 +150,48 @@ const getFilmDetailsById = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+ const handleCensorStep = async (data, payload) => {
+    const lastId = payload.last_id;
+
+      if (!data.active_step || data.active_step < CONSTANT.stepsFeature().CENSOR) {
+        data.active_step = CONSTANT.stepsFeature().CENSOR;
+      }
+
+      if (payload.files && Array.isArray(payload.files)) {
+        const censorFile = payload.files.find((file) => file.fieldname === "censor_certificate_file");
+        if (censorFile) {
+          const fileUpload = await ImageLib.imageUpload({
+            id: lastId,
+            image_key: "censor_certificate_file",
+            websiteType: "NFA",
+            formType: "FEATURE",
+            image: censorFile,
+          });
+
+          if (!fileUpload.status) {
+            return response("exception", { message: "Image not uploaded.!!" });
+          }
+
+          data.censor_certificate_file = censorFile.originalname ?? null;
+        } else {
+          data.censor_certificate_file = null;
+        }
+      } else {
+        data.censor_certificate_file = null;
+      }
+       return data;
+
+  }
 
 const updateFeatureNonfeatureById = async (req, res) => {
   try {
+    console.log("hhhhhhhh", req.body);
+
+    const payload = {
+        ...req.body,
+        files: req.files,
+      };
+    
     const { id: _id, step: newStep } = req.body;
     // Find the document by ID
     const existingEntry = await FeatureForm.findById(_id);
@@ -161,6 +201,13 @@ const updateFeatureNonfeatureById = async (req, res) => {
         .status(404)
         .json({ statusCode: 404, message: "Feature submission not found" });
     }
+
+       const stepHandler={
+     [Common.stepsFeature().CENSOR]: async (existingEntry, payload) => await handleCensorStep(existingEntry, payload),
+    }
+     if (stepHandler[req.body.step]) {
+             const result = await stepHandler[req.body.step](existingEntry, payload);
+     }
 
     // If new step is different, increment step
     if (newStep && newStep != existingEntry.step) {
@@ -781,6 +828,8 @@ const getNonFeatureSubmissions = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+
 
 export default {
   createFeatureSubmission,
