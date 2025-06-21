@@ -5,11 +5,9 @@ import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
-  getRequestById,
   postRequest,
 } from "../../common/services/requestService";
 import { showErrorToast, showSuccessToast } from "../../common/services/toastService";
-import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import Swal from "sweetalert2";
 
@@ -59,26 +57,6 @@ const AudiographerSection = ({ setActiveSection, data }) => {
       showErrorToast(error);
     }
   };
-
-  const { data: formData } = useQuery({
-    queryKey: ["userForm", id],
-    queryFn: () => getRequestById("film/feature-entry-by", id),
-    enabled: !!id, // Only run query if id exists
-    refetchOnMount: true,
-    staleTime: 0,
-  });
-
-  // useEffect(() => {
-  //   if (data?.audiographer?.length > 0) {
-  //     const updatedAudiographer = data.audiographer.map((item) => ({
-  //       soundRecordist: item?.production_sound_recordist,
-  //       soundDesigner: item?.sound_designer,
-  //       reRecordist: item?.re_recordist_filnal,
-  //     }));
-
-  //     setAudioGrapherData(updatedAudiographer);
-  //   }
-  // }, [data?.audiographer]);
 
   useEffect(() => {
     setShowForm(audioGrapherData.length === 0);
@@ -197,7 +175,7 @@ const AudiographerSection = ({ setActiveSection, data }) => {
                       onClick={() => {
                         reset();
                         setEditingIndex(null);
-                        setShowForm(true);
+                        setShowForm((prev) => !prev);
                       }}
                     >
                       ADD AUDIOGRAPHER

@@ -1,5 +1,5 @@
 import { ID, Query } from "appwrite";
-import { databases } from "../appWrite/client.js";
+import { databases } from "../../appWrite/client.js";
 import dotenv from "dotenv";
 dotenv.config();
 

@@ -1,10 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useParams } from "react-router-dom";
 import { z } from "zod";
-import { getRequestById, postRequest } from "../../common/services/requestService";
+import {postRequest } from "../../common/services/requestService";
+import { useFetchById } from "../../hooks/useFetchById";
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 
@@ -25,8 +25,11 @@ const companySchema = z.object({
     }),
 });
 
-const CompanyRegistrationSection = ({ setActiveSection, data }) => {
-    const { id } = useParams();
+const CompanyRegistrationSection = ({ setActiveSection, filmType }) => {
+  const { id } = useParams();
+
+  const { data: formData } = useFetchById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id);
+
   const {
     register,
     control,
@@ -40,36 +43,38 @@ const CompanyRegistrationSection = ({ setActiveSection, data }) => {
     mode: "onTouched",
     // shouldFocusError: false,
   });
-  
-    const { data: formData, } = useQuery({
-    queryKey: ["userForm", id],
-    queryFn: () => getRequestById("film/feature-entry-by", id),
-    enabled: !!id, // Only run query if id exists
-    refetchOnMount: true,
-    staleTime: 0,
-  });
 
-    useEffect(() => {
-  if (formData) {
-    reset({
-      CompanyRegistration: formData?.data?.company_reg_details || "",
-      CompanyRegistrationFile: formData?.data?.company_reg_doc || "", // Files can't be pre-filled
-    });
-  }
-}, [formData, reset]);
+  // const { data: formData, } = useQuery({
+  //   queryKey: ["userForm", id],
+  //   queryFn: () => getRequestById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id),
+  //   enabled: !!id, // Only run query if id exists
+  //   refetchOnMount: true,
+  //   staleTime: 0,
+  // });
+
+  useEffect(() => {
+    if (formData) {
+      reset({
+        CompanyRegistration: formData?.data?.company_reg_details || "",
+        CompanyRegistrationFile: formData?.data?.company_reg_doc || "", // Files can't be pre-filled
+      });
+    }
+  }, [formData, reset]);
 
   const onSubmit = async (data) => {
     console.log("Form submitted:", data);
     // Call API to submit form data
-        const formData = new FormData();
-        formData.append("company_reg_details", data.CompanyRegistration);
-        formData.append("company_reg_doc", data.CompanyRegistrationFile);
-        formData.append('step', '3');
-        formData.append('id', id);
-        const response = await postRequest("film/feature-update", formData);
-        if (response.statusCode == 200) {
-            setActiveSection(4);
-        }
+    let url = filmType == 'feature' ? "film/feature-update" : "film/non-feature-update";
+    const formData = new FormData();
+    formData.append("company_reg_details", data.CompanyRegistration);
+    formData.append("company_reg_doc", data.CompanyRegistrationFile);
+    formData.append('step', '3');
+    formData.append('id', id);
+
+    const response = await postRequest(url, formData);
+    if (response.statusCode == 200) {
+      setActiveSection(4);
+    }
   };
 
   return (
@@ -84,9 +89,8 @@ const CompanyRegistrationSection = ({ setActiveSection, data }) => {
           </label>
           <input
             type="text"
-            className={`form-control ${
-              errors.CompanyRegistration ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.CompanyRegistration ? "is-invalid" : ""
+              }`}
             placeholder="Censor Certificate Number"
             {...register("CompanyRegistration")}
           />
@@ -109,9 +113,8 @@ const CompanyRegistrationSection = ({ setActiveSection, data }) => {
               <input
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png,.webp"
-                className={`form-control ${
-                  errors.CompanyRegistrationFile ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.CompanyRegistrationFile ? "is-invalid" : ""
+                  }`}
                 onChange={(e) => field.onChange(e.target.files?.[0] || null)}
               />
             )}

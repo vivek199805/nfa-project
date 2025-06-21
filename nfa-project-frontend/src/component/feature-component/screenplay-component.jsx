@@ -2,12 +2,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import {
-  getRequestById,
   postRequest,
 } from "../../common/services/requestService";
+import { useFetchById } from "../../hooks/useFetchById";
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
@@ -44,8 +43,10 @@ const filmSchema = z.object({
   musicDirector: z.string().optional(),
 });
 
-const ScreenPlaySection = ({ setActiveSection, data }) => {
+const ScreenPlaySection = ({ setActiveSection, filmType }) => {
   const { id } = useParams();
+    const { data: formData } = useFetchById("film/feature-entry-by", id);
+
 
   const {
     register,
@@ -57,16 +58,6 @@ const ScreenPlaySection = ({ setActiveSection, data }) => {
     resolver: zodResolver(filmSchema),
     mode: "onTouched",
     // shouldFocusError: false,
-  });
-
-  const { data: formData } = useQuery({
-    queryKey: ["userForm", id],
-    queryFn: () => getRequestById("film/feature-entry-by", id),
-    enabled: !!id, // Only run query if id exists
-    // staleTime: 1000 * 60 * 5, // 5 minutes - consider this data fresh for 5 mins
-    // initialData: () => queryClient.getQueryData(["userForm", id]), // optional
-    refetchOnMount: true,
-    staleTime: 0,
   });
 
   useEffect(() => {

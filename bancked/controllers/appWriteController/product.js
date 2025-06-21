@@ -1,4 +1,4 @@
-import { fetchFeaturedProducts, fetchProductById, fetchProducts, getSpecialOfferProducts, searchProducts } from "../services/products.js";
+import { fetchFeaturedProducts, fetchProductById, fetchProducts, getSpecialOfferProducts, searchProducts } from "../../services/products.js";
 
 
   const fetchAllProducts = async (req, res) => {

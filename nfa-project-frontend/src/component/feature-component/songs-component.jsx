@@ -6,14 +6,12 @@ import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
-  getRequestById,
   postRequest,
 } from "../../common/services/requestService";
 import {
   showErrorToast,
   showSuccessToast,
 } from "../../common/services/toastService";
-import { useQuery } from "@tanstack/react-query";
 import Swal from "sweetalert2";
 
 const filmSchema = z.object({
@@ -68,29 +66,6 @@ const SongsFormSection = ({ setActiveSection, data }) => {
       showErrorToast(error);
     }
   };
-
-  const { data: formData } = useQuery({
-    queryKey: ["userForm", id],
-    queryFn: () => getRequestById("film/feature-entry-by", id),
-    enabled: !!id, // Only run query if id exists
-    refetchOnMount: true,
-    staleTime: 0,
-  });
-
-  // useEffect(() => {
-  //   if (data?.songs?.length > 0) {
-  //     const updatedSongs = data.songs.map((item) => ({
-  //       songTitle: item?.song_title,
-  //       musicDirector: item?.music_director,
-  //       backgroundMusic: item?.music_director_bkgd_music,
-  //       lyricist: item?.lyricist,
-  //       singerMale: item?.playback_singer_male,
-  //       singerFemale: item?.playback_singer_female,
-  //     }));
-
-  //     setSongsData(updatedSongs);
-  //   }
-  // }, [data?.songs]);
 
   useEffect(() => {
     setShowForm(songsData.length === 0);
@@ -220,7 +195,7 @@ const SongsFormSection = ({ setActiveSection, data }) => {
                       onClick={() => {
                         reset();
                         setEditingIndex(null);
-                        setShowForm(true);
+                       setShowForm((prev) => !prev);
                       }}
                     >
                       ADD SONG

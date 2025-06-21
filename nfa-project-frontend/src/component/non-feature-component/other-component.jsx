@@ -1,7 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { postRequest } from "../../common/services/requestService";
+import { useFetchById } from "../../hooks/useFetchById";
 
 const filmSchema = z.object({
   cinemetographer: z.string().optional(),
@@ -15,7 +18,10 @@ const filmSchema = z.object({
   sound_recordist: z.string().optional(),
 });
 
-const OtherSection = ({ setActiveSection, data }) => {
+const OtherSection = ({ setActiveSection, filmType }) => {
+  const { id } = useParams();
+    const { data: formData } = useFetchById("film/non-feature-entry-by", id);
+
   const {
     register,
     handleSubmit,
@@ -30,25 +36,40 @@ const OtherSection = ({ setActiveSection, data }) => {
   });
 
   useEffect(() => {
-    if (data) {
+    if (formData) {
       reset({
-        cinemetographer: data.cinemetographer,
-        editor: data.editor,
-        audiographer: data.audiographer,
-        music_director: data.music_director,
-        shot_digital_video_format: data.shot_digital_video_format == 1 ? "Yes" : "No",
-        production_designer: data.production_designer,
-        choreographer: data.choreographer,
-        voice_over_artist: data.voice_over_artist,
-        sound_recordist: data.sound_recordist,
+        cinemetographer: formData?.data?.cinemetographer,
+        editor: formData?.data?.editor,
+        audiographer: formData?.data?.non_audiographer,
+        music_director: formData?.data?.music_director,
+        shot_digital_video_format: formData?.data?.shot_digital_video_format == 1 ? "Yes" : "No",
+        production_designer: formData?.data?.production_designer,
+        choreographer: formData?.data?.choreographer,
+        voice_over_artist: formData?.data?.voice_over_artist,
+        sound_recordist: formData?.data?.sound_recordist,
       });
     }
-  }, [data, reset]);
+  }, [formData, reset]);
 
-  const onSubmit = (data) => {
+  const onSubmit =  async (data) => {
     console.log("Form submitted:", data);
     // Call API to submit form data
-    setActiveSection(10);
+    const formData = new FormData();
+    formData.append("cinemetographer", data.cinemetographer);
+    formData.append("editor", data.editor);
+    formData.append("non_audiographer", data.audiographer);
+    formData.append("music_director", data.music_director);
+    formData.append("shot_digital_video_format", data.shot_digital_video_format == 'Yes' ? true : false);
+    formData.append("production_designer", data.production_designer);
+    formData.append("choreographer", data.choreographer);
+    formData.append("voice_over_artist", data.voice_over_artist);
+    formData.append("sound_recordist", data.sound_recordist);
+    formData.append("step", "6");
+    formData.append("id", id);
+    const response = await postRequest("film/non-feature-update", formData);
+    if (response.statusCode == 200) {
+      setActiveSection(7);
+    }
   };
 
   return (
@@ -57,13 +78,12 @@ const OtherSection = ({ setActiveSection, data }) => {
       style={{ padding: 20, maxWidth: 900, margin: "auto" }}
     >
       <div className="row g-3">
-                <div className="col-md-6">
+        <div className="col-md-6">
           <label className="form-label"> Cinemetographer(s)</label>
           <input
             type="text"
-            className={`form-control ${
-              errors.cinemetographer ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.cinemetographer ? "is-invalid" : ""
+              }`}
             placeholder=" Enter Cinemetographer"
             {...register("cinemetographer")}
           />
@@ -73,7 +93,7 @@ const OtherSection = ({ setActiveSection, data }) => {
             </div>
           )}
         </div>
-                <div className="col-md-6">
+        <div className="col-md-6">
           <label className="form-label">Editor</label>
           <input
             type="text"
@@ -85,15 +105,14 @@ const OtherSection = ({ setActiveSection, data }) => {
             <div className="invalid-feedback">{errors.editor.message}</div>
           )}
         </div>
-        <div className="col-md-6">r
+        <div className="col-md-6">
           <label className="form-label">
-            Audiographer
+            Audiographer (Re-recordistof the final mixed track)
           </label>
           <input
             type="text"
-            className={`form-control ${
-              errors.audiographer ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.audiographer ? "is-invalid" : ""
+              }`}
             placeholder=" Enter Audiographer"
             {...register("audiographer")}
           />
@@ -106,13 +125,12 @@ const OtherSection = ({ setActiveSection, data }) => {
 
         <div className="col-md-6">
           <label className="form-label">
-            Music Director
+            Music Directors (Plese state the musical score is original)
           </label>
           <input
             type="text"
-            className={`form-control ${
-              errors.music_director ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.music_director ? "is-invalid" : ""
+              }`}
             placeholder="Enter Music Director"
             {...register("music_director")}
           />
@@ -169,9 +187,8 @@ const OtherSection = ({ setActiveSection, data }) => {
           <label className="form-label"> Choreographers</label>
           <input
             type="text"
-            className={`form-control ${
-              errors.choreographer ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.choreographer ? "is-invalid" : ""
+              }`}
             placeholder=" Enter choreographer"
             {...register("choreographer")}
           />
@@ -186,9 +203,8 @@ const OtherSection = ({ setActiveSection, data }) => {
           <label className="form-label"> Narrator/Voice Over artist</label>
           <input
             type="text"
-            className={`form-control ${
-              errors.voice_over_artist ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.voice_over_artist ? "is-invalid" : ""
+              }`}
             placeholder=" Enter Narrator/Voice Over artist"
             {...register("voice_over_artist")}
           />
@@ -216,7 +232,7 @@ const OtherSection = ({ setActiveSection, data }) => {
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => setActiveSection(8)}
+            onClick={() => setActiveSection(5)}
           >
             <i className="bi bi-arrow-left me-2"></i>
             Back to Prev
@@ -224,7 +240,7 @@ const OtherSection = ({ setActiveSection, data }) => {
           <button
             type="submit"
             className="btn btn-primary"
-            // onClick={() => setActiveSection(10)}
+          // onClick={() => setActiveSection(10)}
           >
             Next <i className="bi bi-arrow-right ms-2"></i>
           </button>

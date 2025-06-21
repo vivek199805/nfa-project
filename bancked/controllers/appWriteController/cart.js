@@ -1,7 +1,7 @@
 import { ID, Query } from "appwrite";
-import { databases } from "../appWrite/client.js";
+import { databases } from "../../appWrite/client.js";
 import dotenv from "dotenv";
-import { fetchProductById } from "../services/products.js";
+import { fetchProductById } from "../../services/products.js";
 dotenv.config();
 
 const databaseId = process.env.APPWRITE_DATABASE_ID;

@@ -1,4 +1,5 @@
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
+import Common from "../../services/common.js"
 
 // Create Feature Submission
 const createFeatureSubmission = async (req, res) => {
@@ -10,9 +11,9 @@ const createFeatureSubmission = async (req, res) => {
       film_title_english,
       language_id,
       english_subtitle,
-      colorFormat,
-      aspectRatio,
-      runningTime,
+      color_bw,
+      aspect_ratio,
+      running_time,
       format,
       director_debut,
       sound_system,
@@ -20,31 +21,29 @@ const createFeatureSubmission = async (req, res) => {
       step,
     } = req.body;
 
-    const submission = await new FeatureForm({
+    const filmData = new FeatureForm({
       film_title_roman,
       film_title_devnagri,
       film_title_english,
       language_id,
       english_subtitle,
-      colorFormat,
-      aspectRatio,
-      runningTime,
+      color_bw,
+      aspect_ratio,
+      running_time,
       format,
       director_debut,
       sound_system,
       film_synopsis,
-      step: +step,
+      step,
       active_step: "1",
+      film_type: 'feature'
     });
-    await submission.save();
-    const finalData = {
-      id: submission?._id,
-      ...submission,
-    };
+    await filmData.save();
+    const finalData = filmData.toObject(); // Convert Mongoose document to plain JS object
+      finalData.id = finalData._id;
+      delete finalData._id;
 
-    res
-      .status(200)
-      .json({ message: "Submit successful", statusCode: 200, data: finalData });
+    res.status(200).json({ message: "Submit successful", statusCode: 200, data: finalData });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -53,31 +52,72 @@ const createFeatureSubmission = async (req, res) => {
 // Create Non-Feature Submission
 const createNonFeatureSubmission = async (req, res) => {
   try {
-    const submission = await FeatureForm.create(req.body);
-    res.status(201).json(submission);
+    const {
+      film_title_roman,
+      film_title_devnagri,
+      film_title_english,
+      language_id,
+      english_subtitle,
+      color_bw,
+      aspect_ratio,
+      running_time,
+      format,
+      director_debut,
+      sound_system,
+      film_synopsis,
+      step,
+    } = req.body;
+
+    const filmData = new FeatureForm({
+      film_title_roman,
+      film_title_devnagri,
+      film_title_english,
+      language_id,
+      english_subtitle,
+      color_bw,
+      aspect_ratio,
+      running_time,
+      format,
+      director_debut,
+      sound_system,
+      film_synopsis,
+      step,
+      active_step: "1",
+      film_type: 'non-feature'
+    });
+    await filmData.save();
+    const finalData = filmData.toObject(); // Convert Mongoose document to plain JS object
+      finalData.id = finalData._id;
+      delete finalData._id;
+    res.status(200).json({ message: "Submit successful", statusCode: 200, data: finalData });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
-// Get all Feature Submissions
-const getFeatureSubmissions = async (req, res) => {
+// Get all Feature & non-feature List
+const getFilmEntryList = async (req, res) => {
   try {
-    const submissions = await FeatureForm.find().populate(
+    const filmEntryData = await FeatureForm.find().populate(
       "producers directors songs actors audiographer documents"
     );
 
-    const formattedSubmissions = submissions.map((item) => {
-      const obj = item.toObject(); // Convert Mongoose document to plain JS object
+    const formattedData = filmEntryData.map((item) => {
+      const obj = item.toObject();
       obj.id = obj._id;
-      delete obj._id; // optional: remove _id if not needed
+      delete obj._id;
       return obj;
     });
 
+    // Separate feature and non-feature films
+    const featureFilmData = formattedData.filter(item => item.film_type !== 'non-feature');
+    const nonFeatureFilmData = formattedData.filter(item => item.film_type === 'non-feature');
+
     const finalData = {
-      feature: formattedSubmissions,
-      "non-feature": [],
+      feature: featureFilmData,
+      "non-feature": nonFeatureFilmData,
     };
+
     res.status(200).json({
       message: "Fetch successfully",
       statusCode: 200,
@@ -87,9 +127,71 @@ const getFeatureSubmissions = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-const updateFeatureSubmissionById = async (req, res) => {
+// Get  Feature & non-feature List by id
+const getFilmDetailsById = async (req, res) => {
   try {
+    const { id } = req.params;
+    // Find the document by ID
+    const existingEntry = await FeatureForm.findById(id).populate(
+      "producers directors songs actors audiographer documents"
+    );
+
+    if (!existingEntry) {
+      return res
+        .status(404)
+        .json({ statusCode: 404, message: "Feature submission not found" });
+    }
+    res.status(200).json({
+      message: "Fetch successfully",
+      statusCode: 200,
+      data: existingEntry,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+ const handleCensorStep = async (data, payload) => {
+    const lastId = payload.last_id;
+
+      if (!data.active_step || data.active_step < CONSTANT.stepsFeature().CENSOR) {
+        data.active_step = CONSTANT.stepsFeature().CENSOR;
+      }
+
+      if (payload.files && Array.isArray(payload.files)) {
+        const censorFile = payload.files.find((file) => file.fieldname === "censor_certificate_file");
+        if (censorFile) {
+          const fileUpload = await ImageLib.imageUpload({
+            id: lastId,
+            image_key: "censor_certificate_file",
+            websiteType: "NFA",
+            formType: "FEATURE",
+            image: censorFile,
+          });
+
+          if (!fileUpload.status) {
+            return response("exception", { message: "Image not uploaded.!!" });
+          }
+
+          data.censor_certificate_file = censorFile.originalname ?? null;
+        } else {
+          data.censor_certificate_file = null;
+        }
+      } else {
+        data.censor_certificate_file = null;
+      }
+       return data;
+
+  }
+
+const updateFeatureNonfeatureById = async (req, res) => {
+  try {
+    console.log("hhhhhhhh", req.body);
+
+    const payload = {
+        ...req.body,
+        files: req.files,
+      };
+    
     const { id: _id, step: newStep } = req.body;
     // Find the document by ID
     const existingEntry = await FeatureForm.findById(_id);
@@ -99,6 +201,13 @@ const updateFeatureSubmissionById = async (req, res) => {
         .status(404)
         .json({ statusCode: 404, message: "Feature submission not found" });
     }
+
+       const stepHandler={
+     [Common.stepsFeature().CENSOR]: async (existingEntry, payload) => await handleCensorStep(existingEntry, payload),
+    }
+     if (stepHandler[req.body.step]) {
+             const result = await stepHandler[req.body.step](existingEntry, payload);
+     }
 
     // If new step is different, increment step
     if (newStep && newStep != existingEntry.step) {
@@ -155,10 +264,10 @@ const getAllProducersByFeatureId = async (req, res) => {
 };
 
 const addProducerToFeature = async (req, res) => {
-  const { nfa_feature_id:_id, id:producerId } = req.body; // Producer data from client
+  const { nfa_feature_id: _id, id: producerId } = req.body; // Producer data from client
 
   console.log("producerData", req.body);
- console.log("producerData", producerId);
+  console.log("producerData", producerId);
   try {
     // Find the feature form by ID
     const feature = await FeatureForm.findById(_id);
@@ -205,7 +314,7 @@ const addProducerToFeature = async (req, res) => {
 };
 
 const deleteProducerById = async (req, res) => {
-  const { nfa_feature_id:_id, producerId } = req.body;
+  const { nfa_feature_id: _id, producerId } = req.body;
 
   try {
     const feature = await FeatureForm.findById(_id);
@@ -258,17 +367,17 @@ const getAllDirectorsByFeatureId = async (req, res) => {
     }
 
     res.status(200).json({
-        message: "data fetch successfully",
-        data: feature.directors,
-        statusCode: 200,
-      });
+      message: "data fetch successfully",
+      data: feature.directors,
+      statusCode: 200,
+    });
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch Directors", message: error.message });
   }
 };
 
 const addDirectorToFeature = async (req, res) => {
-  const { nfa_feature_id:_id, id:directorId } = req.body; // Producer data from client
+  const { nfa_feature_id: _id, id: directorId } = req.body; // Producer data from client
   try {
     // Find the feature form by ID
     const feature = await FeatureForm.findById(_id);
@@ -314,7 +423,7 @@ const addDirectorToFeature = async (req, res) => {
   }
 };
 const deleteDirectorById = async (req, res) => {
-  const { nfa_feature_id:_id, directorId } = req.body;
+  const { nfa_feature_id: _id, directorId } = req.body;
 
   try {
     const feature = await FeatureForm.findById(_id);
@@ -369,17 +478,17 @@ const getAllActorsByFeatureId = async (req, res) => {
     }
 
     res.status(200).json({
-        message: "data fetch successfully",
-        data: feature.actors,
-        statusCode: 200,
-      });
+      message: "data fetch successfully",
+      data: feature.actors,
+      statusCode: 200,
+    });
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch Directors", message: error.message });
   }
 };
 
 const addActorToFeature = async (req, res) => {
-  const { nfa_feature_id:_id, actorId } = req.body; // Producer data from client
+  const { nfa_feature_id: _id, actorId } = req.body; // Producer data from client
   try {
     // Find the feature form by ID
     const feature = await FeatureForm.findById(_id);
@@ -427,7 +536,7 @@ const deleteActorById = async (req, res) => {
   const { nfa_feature_id, actorId } = req.body;
 
   try {
-    const feature = await FeatureForm.findById({_id:nfa_feature_id});
+    const feature = await FeatureForm.findById({ _id: nfa_feature_id });
 
     if (!feature) {
       return res.status(200).json({
@@ -476,17 +585,17 @@ const getAllSongByFeatureId = async (req, res) => {
     }
 
     res.status(200).json({
-        message: "data fetch successfully",
-        data: feature.songs,
-        statusCode: 200,
-      });
+      message: "data fetch successfully",
+      data: feature.songs,
+      statusCode: 200,
+    });
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch Songs", message: error.message });
   }
 };
 
 const addSongToFeature = async (req, res) => {
-  const { nfa_feature_id:_id, songId } = req.body; // Song data from client
+  const { nfa_feature_id: _id, songId } = req.body; // Song data from client
   try {
     // Find the feature form by ID
     const feature = await FeatureForm.findById(_id);
@@ -534,7 +643,7 @@ const deleteSongById = async (req, res) => {
   const { nfa_feature_id, songId } = req.body;
 
   try {
-    const feature = await FeatureForm.findById({_id:nfa_feature_id});
+    const feature = await FeatureForm.findById({ _id: nfa_feature_id });
 
     if (!feature) {
       return res.status(200).json({
@@ -583,17 +692,17 @@ const getAllAudiographerByFeatureId = async (req, res) => {
     }
 
     res.status(200).json({
-        message: "data fetch successfully",
-        data: feature.audiographer,
-        statusCode: 200,
-      });
+      message: "data fetch successfully",
+      data: feature.audiographer,
+      statusCode: 200,
+    });
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch audiographer", message: error.message });
   }
 };
 
 const addAudiographerToFeature = async (req, res) => {
-  const { nfa_feature_id:_id, audiographerId } = req.body; // audiographer data from client
+  const { nfa_feature_id: _id, audiographerId } = req.body; // audiographer data from client
   try {
     // Find the feature form by ID
     const feature = await FeatureForm.findById(_id);
@@ -641,7 +750,7 @@ const deleteAudiographerById = async (req, res) => {
   const { nfa_feature_id, audiographerId } = req.body;
 
   try {
-    const feature = await FeatureForm.findById({_id:nfa_feature_id});
+    const feature = await FeatureForm.findById({ _id: nfa_feature_id });
 
     if (!feature) {
       return res.status(200).json({
@@ -677,26 +786,34 @@ const deleteAudiographerById = async (req, res) => {
   }
 };
 
-const getFeatureSubmissionById = async (req, res) => {
+
+const finalSubmit = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id: _id } = req.body;
     // Find the document by ID
-    const existingEntry = await FeatureForm.findById(id).populate(
-      "producers directors songs actors audiographer documents"
-    );
+    const existingEntry = await FeatureForm.findById(_id);
 
     if (!existingEntry) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Feature submission not found" });
+      return res.status(404).json({ statusCode: 404, message: "Feature submission not found" });
     }
+
+    // Update the document with request body
+    Object.assign(existingEntry, req.body);
+
+    // Save updated document
+    const updated = await existingEntry.save();
+
     res.status(200).json({
-      message: "Fetch successfully",
       statusCode: 200,
-      data: existingEntry,
+      message: "Payment submitted successfully",
+      data: updated,
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      statusCode: 500,
+      message: "Error payment submission",
+      error: error.message,
+    });
   }
 };
 
@@ -712,12 +829,14 @@ const getNonFeatureSubmissions = async (req, res) => {
   }
 };
 
+
+
 export default {
   createFeatureSubmission,
   createNonFeatureSubmission,
-  getFeatureSubmissions,
-  updateFeatureSubmissionById,
-  getFeatureSubmissionById,
+  getFilmEntryList,
+  updateFeatureNonfeatureById,
+  getFilmDetailsById,
   getAllProducersByFeatureId,
   addProducerToFeature,
   deleteProducerById,
@@ -734,4 +853,5 @@ export default {
   addAudiographerToFeature,
   deleteAudiographerById,
   getNonFeatureSubmissions,
+  finalSubmit
 };

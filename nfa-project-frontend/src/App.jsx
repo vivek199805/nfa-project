@@ -16,6 +16,8 @@ import ChangePasswordPage from "./pages/auth/change-password";
 import ResetPasswordPage from "./pages/auth/reset-password";
 import NotFoundPage from "./pages/not-found-page";
 import ErrorPage from "./pages/error-page";
+import Loader from "./component/loader-component";
+import FilmSubmissionView from "./component/feature-component/FilmSubmissionView";
 
 function App() {
   const router = createBrowserRouter([
@@ -71,6 +73,22 @@ function App() {
           element: <NonFeatureFilmPage />,
         },
 
+      {
+        path: "feature",
+        children: [
+          { path: "", element: <FeatureFilmPage /> }, // /feature
+          { path: ":id", element: <FeatureFilmPage /> }, // /feature/9
+          { path: "view/:id", element: <FilmSubmissionView /> }, // /feature/view/9
+        ],
+      },
+
+      {
+        path: "non-feature",
+        children: [
+          { path: "", element: <NonFeatureFilmPage /> },
+          { path: ":id", element: <NonFeatureFilmPage /> },
+        ],
+      },
       ],
     },
       { path: "*", element: <NotFoundPage /> },
@@ -78,15 +96,16 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Provider store={store}>
-        <Toaster
-          position="top-right"
-          richColors
-          closeButton
-          duration={3000}
-          expand={true}
-        />
-        <RouterProvider router={router} />
+       <Provider store={store}>
+      <Toaster
+        position="top-right"
+        richColors
+        closeButton
+        duration={3000}
+        expand={true}
+      />
+      <Loader />
+      <RouterProvider router={router} />
       </Provider>
     </QueryClientProvider>
   );

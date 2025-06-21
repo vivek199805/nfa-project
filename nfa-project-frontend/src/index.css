@@ -637,3 +637,18 @@ h6 {
   min-width: 300px;
   z-index: 1000;
 }
+
+
+.card-box {
+  border-radius: 10px;
+  border: 1px solid #eff2f7;
+  background: #fff;
+  box-shadow: 0px 1.082px 6.492px 0px rgba(0, 0, 0, 0.13);
+  color: black;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

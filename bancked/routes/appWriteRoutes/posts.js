@@ -1,6 +1,6 @@
   const  express = require("express");
   const Post = require('../models/post');
-  const generateCounter = require("../utils/counter.util");
+  const generateCounter = require("../../utils/counter.util");
   // const PostController = require("../controllers/posts");
   const extractFile = require("../middleware/file");
 
