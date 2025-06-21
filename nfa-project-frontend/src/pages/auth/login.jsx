@@ -21,6 +21,9 @@ const loginSchema = z.object({
 const LoginPage = () => {
   const { loginMutation } = useAuth();
   const [isVerify, setIsVerify] = useState(false);
+  // useEffect(() =>{
+  //   localStorage.clear();
+  // }, [])
 
   const loginForm = useForm({
     resolver: zodResolver(loginSchema),

@@ -13,7 +13,7 @@ const forgotSchema = z.object({
 });
 
 const ForgotPasswordPage = () => {
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [showOtp, setShowOtp] = useState(false);
   const {
     register,

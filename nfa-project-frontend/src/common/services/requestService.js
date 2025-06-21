@@ -35,17 +35,17 @@ export const updateFormById = async (url, id, payload, config = {}) => {
 };
 
 const handleError = (error) => {
+    let message = "Something went wrong!";
   if (error.response) {
     // Server responded with a status
-    console.error("API error:", error.response.data.message || error.response.statusText);
-    throw new Error(error.response.data.message || "API request failed");
+     message = error.response.data.message || error.response.statusText;
   } else if (error.request) {
     // No response received
-    console.error("No response from API:", error.request);
-    throw new Error("No response from API");
+    message = "No response from API";
   } else {
     // Other errors
-    console.error("Request error:", error.message);
-    throw new Error(error.message);
-  }
+    message = error.message;
+    }
+  return { error: true, message };
+
 };

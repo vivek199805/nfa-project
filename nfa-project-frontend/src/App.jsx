@@ -12,12 +12,17 @@ import FeatureFilmPage from "./pages/feature-film";
 import NonFeatureFilmPage from "./pages/non-feature-film";
 import { store } from "./store/store";
 import { Provider } from "react-redux";
+import ChangePasswordPage from "./pages/auth/change-password";
+import ResetPasswordPage from "./pages/auth/reset-password";
+import NotFoundPage from "./pages/not-found-page";
+import ErrorPage from "./pages/error-page";
 
 function App() {
   const router = createBrowserRouter([
     {
       path: "/",
       element: <AppLayout />,
+       errorElement: <ErrorPage />,
       children: [
         {
           path: "/",
@@ -34,6 +39,14 @@ function App() {
             {
               path: "forgot-password",
               element: <ForgotPasswordPage />,
+            },
+            {
+              path: "change-password",
+              element: <ChangePasswordPage />,
+            },
+            {
+              path: "reset-password",
+              element: <ResetPasswordPage />,
             },
           ],
         },
@@ -57,21 +70,23 @@ function App() {
           path: "non-feature/:id",
           element: <NonFeatureFilmPage />,
         },
+
       ],
     },
+      { path: "*", element: <NotFoundPage /> },
   ]);
 
   return (
     <QueryClientProvider client={queryClient}>
-       <Provider store={store}>
-      <Toaster
-        position="top-right"
-        richColors
-        closeButton
-        duration={3000}
-        expand={true}
-      />
-      <RouterProvider router={router} />
+      <Provider store={store}>
+        <Toaster
+          position="top-right"
+          richColors
+          closeButton
+          duration={3000}
+          expand={true}
+        />
+        <RouterProvider router={router} />
       </Provider>
     </QueryClientProvider>
   );
