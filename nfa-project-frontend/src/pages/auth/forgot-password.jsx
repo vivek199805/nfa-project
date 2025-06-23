@@ -1,10 +1,13 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import CustomOtp from "../../component/CustomOtp";
 import { useState, useTransition } from "react";
-import { showErrorToast, showSuccessToast } from "../../common/services/toastService";
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../common/services/toastService";
 import { postRequest } from "../../common/services/requestService";
 
 // Zod schema for email validation
@@ -15,11 +18,13 @@ const forgotSchema = z.object({
 const ForgotPasswordPage = () => {
   const [, startTransition] = useTransition();
   const [showOtp, setShowOtp] = useState(false);
+  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
     formState: { errors },
-    getValues
+    getValues,
+    reset,
   } = useForm({
     resolver: zodResolver(forgotSchema),
     mode: "onTouched",
@@ -33,7 +38,7 @@ const ForgotPasswordPage = () => {
         setShowOtp(true);
         showSuccessToast(res.message);
       } else {
-        showErrorToast(res.message)
+        showErrorToast(res.message);
       }
     });
   };
@@ -41,14 +46,20 @@ const ForgotPasswordPage = () => {
   const handleOtpSubmit = async (otp) => {
     const credentials = {
       email: getValues().email,
-      otp
-    }
+      otp,
+    };
 
     const res = await postRequest("user/verify-otp", credentials);
     if (res?.statusCode == 200) {
-      showSuccessToast(res.message)
+      showSuccessToast(res.message);
+      reset({
+        email: "",
+      });
+      setShowOtp(false);
+      // Redirect to the next step (e.g., password reset)
+      navigate("/reset-password");
     } else {
-      showErrorToast('Invalid OTP')
+      showErrorToast(res.message);
     }
   };
 
@@ -59,7 +70,7 @@ const ForgotPasswordPage = () => {
       if (res.statusCode == 200) {
         showSuccessToast(res.message);
       } else {
-        showErrorToast(res.message)
+        showErrorToast(res.message);
       }
     });
   };
