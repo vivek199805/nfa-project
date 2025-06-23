@@ -1,24 +1,27 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 // import jwt from 'jsonwebtoken'
-import {hashPassword} from '../../utils/hashPassword.js'
+import { hashPassword } from "../../utils/hashPassword.js";
 
- const userSchema = new mongoose.Schema({
-  firstName: { type: String, required: true },
-  lastName:  { type: String, required: true },
-  email:     { type: String, required: true, unique: true },
-  phone:     { type: String, required: true },
-  address:   { type: String, required: true },
-  pinCode:   { type: String, required: true },
-  aadharNumber: { type: String, required: true },
-  category:  { type: String, required: true },
-  password:  { type: String, required: true },
-  //  tokens:[{
-  //   token:{
-  //     type:String,
-  //     required: true
-  //   }
-  //  }]
-},{ timestamps: true });
+const userSchema = new mongoose.Schema(
+  {
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    phone: { type: String, required: true },
+    address: { type: String, required: true },
+    pinCode: { type: String, required: true },
+    aadharNumber: { type: String, required: true },
+    category: { type: String, required: true },
+    password: { type: String, required: true, select: false },
+    //  tokens:[{
+    //   token:{
+    //     type:String,
+    //     required: true
+    //   }
+    //  }]
+  },
+  { timestamps: true }
+);
 
 // userSchema.methods.toJSON = async function(){
 //   const user = this
@@ -63,7 +66,6 @@ import {hashPassword} from '../../utils/hashPassword.js'
 
 // collection creation
 
-  const User = new mongoose.model("User", userSchema );
+const User = new mongoose.model("User", userSchema);
 
-  export default User
-
+export default User;

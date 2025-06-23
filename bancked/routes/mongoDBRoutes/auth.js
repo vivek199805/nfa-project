@@ -1,7 +1,7 @@
 import express from 'express';
 // import checkAuth from '../middleware/check-auth.js';
 import UserController from '../../controllers/mongoDBController/authController.js';
-// import { requireAuth } from '../middleware/requireAuth.js';
+import { requireAuth } from '../../middleware/requireAuth.js';
 
 const router = express.Router();
 
@@ -10,11 +10,11 @@ const router = express.Router();
 router.post("/register", UserController.registerUser);
 router.post("/login", UserController.loginUser);
 router.post('/verify-email', UserController.verifyEmail);
-router.post('/reset-password', UserController.resetPassword);
+router.post('/reset-password', UserController.forgotPassword);
 router.post('/verify-otp', UserController.verifyOtp);
 // router.post("/logout",requireAuth, UserController.logoutUser);
 // router.get("/currentUser", UserController.getCurrentUser);
 // router.post("/updateProfile", UserController.updateProfile);
-// router.post("/update-password",requireAuth, UserController.updatePassword);
+router.post("/change-password",requireAuth, UserController.changePassword);
 
 export default router;
