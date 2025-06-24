@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const documentSchema = new mongoose.Schema({
-  context_id: Number,
+  context_id: String,
   form_type: Number,
   document_type: Number,
   website_type: Number,

@@ -1,3 +1,4 @@
+import { Document } from "../../models/mongodbModels/document.js";
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
 import Common from "../../services/common.js"
 
@@ -40,8 +41,8 @@ const createFeatureSubmission = async (req, res) => {
     });
     await filmData.save();
     const finalData = filmData.toObject(); // Convert Mongoose document to plain JS object
-      finalData.id = finalData._id;
-      delete finalData._id;
+    finalData.id = finalData._id;
+    delete finalData._id;
 
     res.status(200).json({ message: "Submit successful", statusCode: 200, data: finalData });
   } catch (error) {
@@ -87,8 +88,8 @@ const createNonFeatureSubmission = async (req, res) => {
     });
     await filmData.save();
     const finalData = filmData.toObject(); // Convert Mongoose document to plain JS object
-      finalData.id = finalData._id;
-      delete finalData._id;
+    finalData.id = finalData._id;
+    delete finalData._id;
     res.status(200).json({ message: "Submit successful", statusCode: 200, data: finalData });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -150,83 +151,64 @@ const getFilmDetailsById = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
- const handleCensorStep = async (data, payload) => {
-    const lastId = payload.last_id;
 
-      if (!data.active_step || data.active_step < CONSTANT.stepsFeature().CENSOR) {
-        data.active_step = CONSTANT.stepsFeature().CENSOR;
-      }
-
-      if (payload.files && Array.isArray(payload.files)) {
-        const censorFile = payload.files.find((file) => file.fieldname === "censor_certificate_file");
-        if (censorFile) {
-          const fileUpload = await ImageLib.imageUpload({
-            id: lastId,
-            image_key: "censor_certificate_file",
-            websiteType: "NFA",
-            formType: "FEATURE",
-            image: censorFile,
-          });
-
-          if (!fileUpload.status) {
-            return response("exception", { message: "Image not uploaded.!!" });
-          }
-
-          data.censor_certificate_file = censorFile.originalname ?? null;
-        } else {
-          data.censor_certificate_file = null;
-        }
-      } else {
-        data.censor_certificate_file = null;
-      }
-       return data;
-
-  }
 
 const updateFeatureNonfeatureById = async (req, res) => {
   try {
-    console.log("hhhhhhhh", req.body);
-
     const payload = {
-        ...req.body,
-        files: req.files,
-      };
-    
-    const { id: _id, step: newStep } = req.body;
+      ...req.body,
+      files: req.files,
+    };
+
+    const { id: _id, } = req.body;
     // Find the document by ID
     const existingEntry = await FeatureForm.findById(_id);
-
     if (!existingEntry) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Feature submission not found" });
+      return res.status(200).json({ statusCode: 203, message: "Feature submission not found" });
+    }
+    let stepHandler = {};
+    if (req.body.film_type === 'feature') {
+      stepHandler = {
+        [Common.stepsFeature().GENERAL]: async (existingEntry, payload) => await handleGeneralStep(existingEntry, payload),
+        [Common.stepsFeature().CENSOR]: async (existingEntry, payload) => await handleCensorStep(existingEntry, payload),
+        [Common.stepsFeature().COMPANY_REGISTRATION]: async (data, payload) => await handleCompanyRegistrationStep(data, payload),
+        [Common.stepsFeature().PRODUCER]: async (existingEntry, payload) => await handleProducerStep(existingEntry, payload),
+        [Common.stepsFeature().DIRECTOR]: async (existingEntry, payload) => await handleDirectorStep(existingEntry, payload),
+        [Common.stepsFeature().ACTORS]: async (existingEntry, payload) => await handleActorsStep(existingEntry, payload),
+        [Common.stepsFeature().SONGS]: async (existingEntry, payload) => await handleSongsStep(existingEntry, payload),
+        [Common.stepsFeature().AUDIOGRAPHER]: async (existingEntry, payload) => await handleAudiographerStep(existingEntry, payload),
+        [Common.stepsFeature().OTHER]: async (existingEntry, payload) => await handleOtherStep(existingEntry, payload),
+        [Common.stepsFeature().RETURN_ADDRESS]: async (existingEntry, payload) => await handleReturnAddressStep(existingEntry, payload),
+        [Common.stepsFeature().DECLARATION]: async (existingEntry, payload) => await handleDeclarationStep(existingEntry, payload),
+      };
+    } else if (req.body.film_type === 'non-feature') {
+      stepHandler = {
+        [Common.stepsNonFeature().GENERAL]: async (existingEntry, payload) => await handleGeneralStep(existingEntry, payload),
+        [Common.stepsNonFeature().CENSOR]: async (existingEntry, payload) => await handleCensorStep(existingEntry, payload),
+        [Common.stepsNonFeature().COMPANY_REGISTRATION]: async (data, payload) => await handleCompanyRegistrationStep(data, payload),
+        [Common.stepsNonFeature().PRODUCER]: async (existingEntry, payload) => await handleProducerStep(existingEntry, payload),
+        [Common.stepsNonFeature().DIRECTOR]: async (existingEntry, payload) => await handleDirectorStep(existingEntry, payload),
+        [Common.stepsNonFeature().OTHER]: async (existingEntry, payload) => await handleOtherStep(existingEntry, payload),
+        [Common.stepsNonFeature().RETURN_ADDRESS]: async (existingEntry, payload) => await handleReturnAddressStep(existingEntry, payload),
+        [Common.stepsNonFeature().DECLARATION]: async (existingEntry, payload) => await handleDeclarationStep(existingEntry, payload),
+      };
     }
 
-       const stepHandler={
-     [Common.stepsFeature().CENSOR]: async (existingEntry, payload) => await handleCensorStep(existingEntry, payload),
+    if (stepHandler[+req.body.step]) {
+      const result = await stepHandler[+req.body.step](existingEntry, payload);
+      // Update the document with request body
+      Object.assign(result, payload);
+
+      // Save updated document
+      const updated = await result.save();
+
+      res.status(200).json({
+        statusCode: 200,
+        message: "Feature submission updated successfully",
+        data: updated,
+      });
     }
-     if (stepHandler[req.body.step]) {
-             const result = await stepHandler[req.body.step](existingEntry, payload);
-     }
 
-    // If new step is different, increment step
-    if (newStep && newStep != existingEntry.step) {
-      const numericStep = parseInt(existingEntry.step, 10) || 0;
-      existingEntry.step = (numericStep + 1).toString(); // store as string if model defines it so
-      existingEntry.active_step = (parseInt(existingEntry.active_step, 10) + 1).toString();
-    }
-
-    // Update the document with request body
-    Object.assign(existingEntry, req.body);
-
-    // Save updated document
-    const updated = await existingEntry.save();
-
-    res.status(200).json({
-      statusCode: 200,
-      message: "Feature submission updated successfully",
-      data: updated,
-    });
   } catch (error) {
     res.status(500).json({
       statusCode: 500,
@@ -236,39 +218,57 @@ const updateFeatureNonfeatureById = async (req, res) => {
   }
 };
 
+// for producer Api
+
 const getAllProducersByFeatureId = async (req, res) => {
-  const { id } = req.body;
+  const { id, film_type } = req.body;
 
   try {
-    const feature = await FeatureForm.findById(id, "producers");
-    console.log(feature);
+    const producersData  = await FeatureForm.findById(id, "producers");
 
-    if (!feature) {
-      return res
-        .status(200)
-        .json({ message: "Records not found", statusCode: 201 });
+    if (!producersData) {
+      return res.status(200).json({ message: "Records not found", statusCode: 201 });
     }
+    console.log("producersData", producersData);
+    
 
-    res
-      .status(200)
-      .json({
-        message: "data fetch successfully",
-        data: feature.producers,
-        statusCode: 200,
-      });
+    // 2. Attach matching documents to each producer manually
+    const allProducerWithDocs = await Promise.all(
+      producersData?.producers.map(async (producer) => {
+        const documents = await Document.findOne({
+          context_id: producer._id, // assuming context_id links a document to a producer
+          form_type:  film_type === 'feature' ? 1 : 2,
+          website_type: 5,
+          document_type: 4,
+        });
+
+        return {
+          ...producer.toObject(),
+          documents, // attach documents manually
+        };
+      })
+    );
+
+console.log("allProducerWithDocs", allProducerWithDocs);
+
+
+    res.status(200).json({
+      message: "data fetch successfully",
+      data: allProducerWithDocs,
+      statusCode: 200,
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Failed to fetch producers", message: error.message });
+    res.status(500).json({ error: "Failed to fetch producers", message: error.message });
   }
 };
 
 const addProducerToFeature = async (req, res) => {
   const { nfa_feature_id: _id, id: producerId } = req.body; // Producer data from client
-
-  console.log("producerData", req.body);
-  console.log("producerData", producerId);
   try {
+    const payload = {
+      ...req.body,
+      files: req.files,
+    };
     // Find the feature form by ID
     const feature = await FeatureForm.findById(_id);
     if (!feature) {
@@ -300,6 +300,25 @@ const addProducerToFeature = async (req, res) => {
       delete obj._id;
       return obj;
     });
+    // Handle file upload if files are provided
+    if (payload.files && Array.isArray(payload.files)) {
+      const producerDoc = payload.files.find((file) => file.fieldname === "producer_self_attested_doc");
+
+      if (producerDoc) {
+        const fileUpload = await Common.imageUpload({
+          id: updatedData[0].id,
+          image_key: "producer_self_attested_doc",
+          websiteType: "NFA",
+          formType: payload.film_type === "non-feature" ? "NON_FEATURE" : "FEATURE",
+          image: producerDoc,
+        });
+
+        if (!fileUpload.status) {
+          return res.status(500).json({ message: "failed to upload producer document", statusCode: 500, });
+        }
+      }
+    }
+
 
     res.status(200).json({
       message: producerId ? "Producer updated successfully" : "Producer added successfully",
@@ -307,9 +326,7 @@ const addProducerToFeature = async (req, res) => {
       statusCode: 200,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Failed to add producer", message: error.message });
+    res.status(500).json({ error: "Failed to add producer", message: error.message });
   }
 };
 
@@ -828,6 +845,239 @@ const getNonFeatureSubmissions = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+const handleGeneralStep = async (data, payload) => {
+  const lastId = payload.id;
+  console.log("handleGeneralStep", data);
+  console.log("handleGeneralStep payload", payload);
+
+  if (payload?.film_type === "feature") {
+    if (!data.active_step || data.active_step < Common.stepsFeature().GENERAL) {
+      data.active_step = Common.stepsFeature().GENERAL;
+    }
+  } else if (payload?.film_type === "non-feature") {
+    if (!data.active_step || data.active_step < Common.stepsNonFeature().GENERAL) {
+      data.active_step = Common.stepsNonFeature().GENERAL;
+    }
+  }
+
+
+  // update = await checkForm.update(data);
+  // return {
+  //   status: "success",
+  //   message: "Records updated successfully.!!",
+  //   data: update,
+  // };
+  return data;
+
+
+  // data.active_step = payload.step;
+  // create = await NfaFeature.create(data);
+
+  // return {
+  //   status: "created",
+  //   data: { message: "Created successfully.!!", record: create },
+  // };
+}
+
+const handleCensorStep = async (data, payload) => {
+  const lastId = payload.id;
+
+  if (payload.film_type === "feature") {
+    if (!data.active_step || data.active_step < Common.stepsFeature().CENSOR) {
+      data.active_step = Common.stepsFeature().CENSOR;
+    }
+  } else if (payload.film_type === "non-feature") {
+    if (!data.active_step || data.active_step < Common.stepsNonFeature().CENSOR) {
+      data.active_step = Common.stepsNonFeature().CENSOR;
+    }
+  }
+
+  if (payload.files && Array.isArray(payload.files)) {
+    const censorFile = payload.files.find((file) => file.fieldname === "censor_certificate_file");
+    if (censorFile) {
+      const fileUpload = await Common.imageUpload({
+        id: lastId,
+        image_key: "censor_certificate_file",
+        websiteType: "NFA",
+        formType: payload.film_type === "non-feature" ? "NON_FEATURE" : "FEATURE",
+        image: censorFile,
+      });
+
+      if (!fileUpload.status) {
+        return response("exception", { message: "Image not uploaded.!!" });
+      }
+
+      data.censor_certificate_file = censorFile.originalname ?? null;
+    } else {
+      data.censor_certificate_file = null;
+    }
+  } else {
+    data.censor_certificate_file = null;
+  }
+  return data;
+
+}
+
+const handleCompanyRegistrationStep = async (data, payload) => {
+  const lastId = payload.id;
+
+  if (payload.film_type === "feature") {
+    if (!data.active_step || data.active_step < Common.stepsFeature().COMPANY_REGISTRATION) {
+      data.active_step = Common.stepsFeature().COMPANY_REGISTRATION;
+    }
+  } else if (payload.film_type === "non-feature") {
+    if (!data.active_step || data.active_step < Common.stepsNonFeature().COMPANY_REGISTRATION) {
+      data.active_step = Common.stepsNonFeature().COMPANY_REGISTRATION;
+    }
+  }
+
+  if (payload.files && Array.isArray(payload.files)) {
+    const censorFile = payload.files.find(
+      (file) => file.fieldname === "company_reg_doc"
+    );
+    if (censorFile) {
+      const fileUpload = await Common.imageUpload({
+        id: lastId,
+        image_key: "company_reg_doc",
+        websiteType: "NFA",
+        formType: payload.film_type === "non-feature" ? "NON_FEATURE" : "FEATURE",
+        image: censorFile,
+      });
+
+      if (!fileUpload.status) {
+        return response("exception", { message: "Image not uploaded.!!" });
+      }
+      data.company_reg_doc = censorFile.originalname ?? null;
+    } else {
+      data.company_reg_doc = null;
+    }
+  } else {
+    data.company_reg_doc = null;
+  }
+
+  // update = await checkForm.update(data);
+  // return {
+  //   status: "success",
+  //   message: "Records updated successfully.!!",
+  //   data: update,
+  // };
+  return data;
+}
+
+const handleProducerStep = async (data, payload,) => {
+  const lastId = payload.id;
+
+  if (payload.film_type === "feature") {
+    if (!data.active_step || data.active_step < Common.stepsFeature().PRODUCER) {
+      data.active_step = Common.stepsFeature().PRODUCER;
+    }
+  } else if (payload.film_type === "non-feature") {
+    if (!data.active_step || data.active_step < Common.stepsNonFeature().PRODUCER) {
+      data.active_step = Common.stepsNonFeature().PRODUCER;
+    }
+  }
+
+  return data;
+}
+
+const handleDirectorStep = async (data, payload) => {
+  const lastId = payload.last_id;
+  if (payload.film_type === "feature") {
+    if (!data.active_step || data.active_step < Common.stepsFeature().DIRECTOR) {
+      data.active_step = Common.stepsFeature().DIRECTOR;
+    }
+  } else if (payload.film_type === "non-feature") {
+    if (!data.active_step || data.active_step < Common.stepsNonFeature().DIRECTOR) {
+      data.active_step = Common.stepsNonFeature().DIRECTOR;
+    }
+  }
+  return data;
+}
+
+const handleActorsStep = async (data, payload) => {
+  const lastId = payload.last_id;
+
+  if (
+    !data.active_step ||
+    data.active_step < Common.stepsFeature().ACTORS
+  ) {
+    data.active_step = Common.stepsFeature().ACTORS;
+  }
+  return data;
+}
+
+const handleSongsStep = async (data, payload) => {
+  const lastId = payload.last_id;
+
+  if (
+    !data.active_step ||
+    data.active_step < Common.stepsFeature().SONGS
+  ) {
+    data.active_step = Common.stepsFeature().SONGS;
+  }
+  return data;
+}
+
+const handleAudiographerStep = async (data, payload) => {
+  const lastId = payload.last_id;
+
+  if (
+    !data.active_step ||
+    data.active_step < Common.stepsFeature().AUDIOGRAPHER
+  ) {
+    data.active_step = Common.stepsFeature().AUDIOGRAPHER;
+  }
+  return data;
+}
+
+const handleOtherStep = async (data, payload) => {
+  const lastId = payload.id;
+
+  if (payload.film_type === "feature") {
+    if (!data.active_step || data.active_step < Common.stepsFeature().OTHER) {
+      data.active_step = Common.stepsFeature().OTHER;
+    }
+  } else if (payload.film_type === "non-feature") {
+    if (!data.active_step || data.active_step < Common.stepsNonFeature().OTHER) {
+      data.active_step = Common.stepsNonFeature().OTHER;
+    }
+  }
+
+  return data;
+}
+
+const handleReturnAddressStep = async (data, payload) => {
+  const lastId = payload.id;
+
+  if (payload.film_type === "feature") {
+    if (!data.active_step || data.active_step < Common.stepsFeature().RETURN_ADDRESS) {
+      data.active_step = Common.stepsFeature().RETURN_ADDRESS;
+    }
+  } else if (payload.film_type === "non-feature") {
+    if (!data.active_step || data.active_step < Common.stepsNonFeature().RETURN_ADDRESS) {
+      data.active_step = Common.stepsNonFeature().RETURN_ADDRESS;
+    }
+  }
+  return data;
+}
+
+const handleDeclarationStep = async (data, payload) => {
+  const lastId = payload.id;
+  console.log("handleReturnAddressStep", data);
+  console.log("handleReturnAddressStep payload", payload);
+  if (payload.film_type === "feature") {
+    if (!data.active_step || data.active_step < Common.stepsFeature().DECLARATION) {
+      data.active_step = Common.stepsFeature().DECLARATION;
+    }
+  } else if (payload.film_type === "non-feature") {
+    if (!data.active_step || data.active_step < Common.stepsNonFeature().DECLARATION) {
+      data.active_step = Common.stepsNonFeature().DECLARATION;
+    }
+  }
+
+  return data;
+}
 
 
 

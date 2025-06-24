@@ -1,9 +1,13 @@
- import path from 'path';
- import fs from "fs"
- import {Document} from "../models/mongodbModels/document.js"
+import path from 'path';
+import fs from "fs"
+import { fileURLToPath } from 'url';
+import { Document } from "../models/mongodbModels/document.js";
+// Define __filename and __dirname manually
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const stepsFeature = () => ({
-  GENRAL: 1,
+  GENERAL: 1,
   CENSOR: 2,
   COMPANY_REGISTRATION: 3,
   PRODUCER: 4,
@@ -17,6 +21,18 @@ export const stepsFeature = () => ({
   FINAL_SUBMIT: 12,
 });
 
+export const stepsNonFeature = () => ({
+  GENERAL: 1,
+  CENSOR: 2,
+  COMPANY_REGISTRATION: 3,
+  PRODUCER: 4,
+  DIRECTOR: 5,
+  OTHER: 6,
+  RETURN_ADDRESS: 7,
+  DECLARATION: 9,
+  FINAL_SUBMIT: 10,
+});
+
 // Document type mapping
 export const documentTypeMap = {
   CENSOR_CERTIFICATE_FILE: 1,
@@ -28,70 +44,85 @@ export const documentTypeMap = {
   AUTHOR_AADHAAR_CARD: 7,
 };
 
- const  imageUpload = async (data) => {
-    try {
-      const image = data.image;
-      const originalName = image.originalname;
-      const fileName = path.parse(originalName).name;
-      const extension = path.extname(originalName);
-      const modifiedName = `${fileName}_${Date.now()}${extension}`;
-      const directory = path.join(
-        __dirname,
-        "..",
-        "public/documents",
-        data.websiteType
-      );
+export const websiteType = {
+  IP: 1,
+  OTT: 2,
+  CMOT: 3,
+  DD: 4,
+  NFA: 5,
+};
 
-      if (!fs.existsSync(directory)) {
-        fs.mkdirSync(directory, { recursive: true });
-      }
-      const filePath = path.join(directory, modifiedName);
-      fs.writeFileSync(filePath, image.buffer);
+export const formType = {
+  FEATURE: 1,
+  NON_FEATURE: 2,
+  BEST_BOOK: 3,
+  BEST_FILM_CRITIC: 4,
+};
 
-      const documentType = documentType()[data.image_key.toUpperCase()] || null;
+const imageUpload = async (data) => {
+  const websiteTypeValue = websiteType[data.websiteType] || null;
+  const formTypeValue = formType[data.formType] || null;
 
-      if (!documentType) {
-        return false;
-      }
+  try {
+    const image = data.image;
+    const originalName = image.originalname;
+    const fileName = path.parse(originalName).name;
+    const extension = path.extname(originalName);
+    const modifiedName = `${fileName}_${Date.now()}${extension}`;
+    const directory = path.join(__dirname, "..", "public/documents", data.websiteType);
 
-      const fileDetails = {
-        form_type: formType,
-        document_type: documentType,
-        file: modifiedName,
-        name: originalName,
-        website_type: websiteType,
-        context_id: data.id,
-      };
+    if (!fs.existsSync(directory)) {
+      fs.mkdirSync(directory, { recursive: true });
+    }
+    const filePath = path.join(directory, modifiedName);
+    fs.writeFileSync(filePath, image.buffer);
 
-      const args = {
-        context_id: data.id,
-        form_type: formType,
-        document_type: documentType,
-        website_type: websiteType,
-      };
+    const documentType = documentTypeMap[data.image_key.toUpperCase()] || null;
 
-    const document = await Document.findOne({ where: args });
+    if (!documentType) {
+      return false;
+    }
 
-    if (document) {
-      await document.update(fileDetails);
+    const fileDetails = {
+      form_type: formTypeValue,
+      document_type: documentType,
+      file: modifiedName,
+      name: originalName,
+      website_type: websiteTypeValue,
+      context_id: data.id,
+    };
+
+    const filter = {
+      context_id: data.id,
+      form_type: formTypeValue,
+      document_type: documentType,
+      website_type: websiteTypeValue,
+    };
+
+    const existingDoc = await Document.findOne(filter);
+
+    if (existingDoc) {
+      Object.assign(existingDoc, fileDetails);
+      await existingDoc.save();
       return {
         status: true,
         message: "File updated successfully!!",
       };
     } else {
-      await Document.create(fileDetails);
+      const newDoc = new Document(fileDetails);
+      await newDoc.save();
       return {
         status: true,
         message: "File created successfully!!",
       };
     }
-    } catch (error) {
-      console.error("Image Upload Error:", error.message);
-      return false;
-    }
+  } catch (error) {
+    return false;
   }
+}
 
-export default { 
-    stepsFeature,
-    imageUpload
+export default {
+  stepsFeature,
+  stepsNonFeature,
+  imageUpload,
 };

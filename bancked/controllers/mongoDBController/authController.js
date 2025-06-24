@@ -61,21 +61,20 @@ const loginUser = async (req, res) => {
 
     // Validate input
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required" });
+      return res.status(400).json({ message: "Email and password are required" });
     }
 
     // Find user by email
     const user = await User.findOne({ email });
+
     if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(200).json({ message: "Invalid credentials", statusCode: 203 });
     }
 
     //compare password
     const isMatch = await comparePasswords(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ error: "Invalid password" });
+      return res.status(200).json({ message: "Email or password is incorrect", statusCode: 203 });
     }
     // 🔐 Generate JWT
     const token = generateToken({ userId: user._id, email: user.email });
@@ -83,7 +82,7 @@ const loginUser = async (req, res) => {
     // user.tokens = user.tokens.concat({ token });
     // await user.save();
     delete user.password;
-
+    // Prepare user data to send in response
     const data = {
       id: user._id,
       name: `${user.firstName} ${user.lastName}`,

@@ -12,7 +12,11 @@ const userSchema = new mongoose.Schema(
     pinCode: { type: String, required: true },
     aadharNumber: { type: String, required: true },
     category: { type: String, required: true },
-    password: { type: String, required: true, select: false },
+    password: { 
+      type: String, 
+      required: true,
+      //  select: false 
+      },
     //  tokens:[{
     //   token:{
     //     type:String,
