@@ -39,14 +39,14 @@ const filmSchema = z.object({
 
   synopsis: z
     .string()
-    .min(100, "Minimum 100 words required")
+    .min(10, "Minimum 10 words required")
     .refine(
       (val) => {
         const wordCount = val.trim().split(/\s+/).filter(Boolean).length;
-        return wordCount >= 100 && wordCount <= 200;
+        return wordCount >= 10 && wordCount <= 200;
       },
       {
-        message: "Synopsis must be between 100 and 200 words",
+        message: "Synopsis must be between 10 and 200 words",
       }
     ),
 });
@@ -266,6 +266,7 @@ const FilmDetailsSection = ({ setActiveSection, filmType }) => {
     );
     formData.append("film_synopsis", data.synopsis);
     formData.append("step", "1");
+    formData.append("film_type", filmType);
     if (id) {
       formData.append("id", id);
       filmType == 'feature' ? url = "film/feature-update" : url = "film/non-feature-update";
@@ -579,7 +580,7 @@ const FilmDetailsSection = ({ setActiveSection, filmType }) => {
 
           <div className="col-md-12">
             <label className="form-label">
-              Film Synopsis (100-200 words){" "}
+              Film Synopsis (10-200 words){" "}
               <span className="text-danger">*</span>
             </label>
             <textarea

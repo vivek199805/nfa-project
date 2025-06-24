@@ -23,7 +23,7 @@ const filmSchema = z.object({
   singerFemale: z.string().trim().min(1, "This field is required"),
 });
 
-const SongsFormSection = ({ setActiveSection, data }) => {
+const SongsFormSection = ({ setActiveSection, filmType }) => {
   const [songsData, setSongsData] = useState([]); // your producer list
   const [showForm, setShowForm] = useState(songsData.length === 0);
   const [editingIndex, setEditingIndex] = useState(null);
@@ -80,6 +80,7 @@ const SongsFormSection = ({ setActiveSection, data }) => {
     formData.append("playback_singer_male", data.singerMale);
     formData.append("playback_singer_female", data.singerFemale);
     formData.append("nfa_feature_id", id);
+    formData.append("film_type", filmType);
     if (editingIndex !== null) {
       formData.append("songId", editingIndex);
     }

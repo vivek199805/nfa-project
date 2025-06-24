@@ -102,6 +102,7 @@ const DeclarationSection = ({ setActiveSection, filmType }) => {
     });
     formData.append("step", filmType == 'feature' ? '11': '9');
     formData.append("id", id);
+    formData.append("film_type", filmType);
 
     const response = await postRequest(url, formData);
     if (response.statusCode == 200) {

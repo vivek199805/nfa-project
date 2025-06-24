@@ -90,7 +90,7 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
 
   const getProducer = async () => {
     try {
-      const response = await postRequest("film/producer-list", { id });
+      const response = await postRequest("film/producer-list", { id, film_type: filmType });
       if (response.statusCode === 200) {
         setProducers(response.data);
       } else {
@@ -119,6 +119,8 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
     formData.append("pincode", data.pinCode);
     formData.append("producer_self_attested_doc", data.idProofFile);
     formData.append("nfa_feature_id", id);
+    formData.append("film_type", filmType);
+
     if (editingIndex !== null) {
       // const updated = [...producers];
       // updated[editingIndex] = data;
@@ -208,6 +210,7 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
       const formData = new FormData();
       formData.append("step", "4");
       formData.append("id", id);
+       formData.append("film_type", filmType);
       const response = await postRequest(url, formData);
       if (response.statusCode == 200) {
         setActiveSection(5);

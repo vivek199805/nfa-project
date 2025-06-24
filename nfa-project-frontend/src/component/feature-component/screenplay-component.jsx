@@ -115,6 +115,7 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
     formData.append("music_director", data.musicDirector);
     formData.append("step", "9");
     formData.append("id", id);
+    formData.append("film_type", filmType);
     const response = await postRequest("film/feature-update", formData);
     if (response.statusCode == 200) {
       setActiveSection(10);

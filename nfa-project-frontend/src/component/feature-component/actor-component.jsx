@@ -41,7 +41,7 @@ const options = [
   { label: "Child Artist", value: 5 },
 ];
 
-const ActorSection = ({ setActiveSection, data }) => {
+const ActorSection = ({ setActiveSection, filmType }) => {
   const [actorData, setActorData] = useState([]); // your producer list
   const [showForm, setShowForm] = useState(actorData.length === 0);
   const [editingIndex, setEditingIndex] = useState(null);
@@ -107,6 +107,7 @@ const ActorSection = ({ setActiveSection, data }) => {
     formData.append("screen_name", data.screenName);
     formData.append("if_voice_dubbed", data.isVoiceDubbed == true ? 1 : 0);
     formData.append("nfa_feature_id", id);
+    formData.append("film_type", filmType);
     if (editingIndex !== null) {
       // const updated = [...actorData];
       // updated[editingIndex] = data;

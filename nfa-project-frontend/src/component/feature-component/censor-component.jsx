@@ -70,6 +70,7 @@ const CensorSection = ({ setActiveSection, filmType }) => {
     formData.append("censor_certificate_file", data.certificateFile);
     formData.append('step', '2');
     formData.append('id', id);
+    formData.append("film_type", filmType);
     filmType == 'feature' ? url = "film/feature-update" : url = "film/non-feature-update";
     const response = await postRequest(url, formData);
     if (response.statusCode == 200) {

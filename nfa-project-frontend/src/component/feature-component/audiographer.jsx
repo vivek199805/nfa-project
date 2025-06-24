@@ -17,7 +17,7 @@ const filmSchema = z.object({
   reRecordist: z.string().trim().optional(),
 });
 
-const AudiographerSection = ({ setActiveSection, data }) => {
+const AudiographerSection = ({ setActiveSection, filmType }) => {
   const [audioGrapherData, setAudioGrapherData] = useState([]); // your producer list
   const [showForm, setShowForm] = useState(audioGrapherData.length === 0);
   const [editingIndex, setEditingIndex] = useState(null);
@@ -68,6 +68,7 @@ const AudiographerSection = ({ setActiveSection, data }) => {
     formData.append("sound_designer", data.soundDesigner);
     formData.append("re_recordist_filnal", data.reRecordist);
     formData.append("nfa_feature_id", id);
+    formData.append("film_type", filmType);
     if (editingIndex !== null) {
       formData.append("audiographerId", editingIndex);
     }

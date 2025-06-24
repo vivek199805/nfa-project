@@ -66,6 +66,8 @@ const OtherSection = ({ setActiveSection, filmType }) => {
     formData.append("sound_recordist", data.sound_recordist);
     formData.append("step", "6");
     formData.append("id", id);
+    formData.append("film_type", filmType);
+
     const response = await postRequest("film/non-feature-update", formData);
     if (response.statusCode == 200) {
       setActiveSection(7);

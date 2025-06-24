@@ -70,6 +70,7 @@ const CompanyRegistrationSection = ({ setActiveSection, filmType }) => {
     formData.append("company_reg_doc", data.CompanyRegistrationFile);
     formData.append('step', '3');
     formData.append('id', id);
+    formData.append("film_type", filmType);
 
     const response = await postRequest(url, formData);
     if (response.statusCode == 200) {

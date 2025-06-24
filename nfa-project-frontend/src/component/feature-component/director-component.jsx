@@ -130,6 +130,8 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
     formData.append("pincode", data.pinCode);
     formData.append("producer_self_attested_doc", data.idProofFile);
     formData.append("nfa_feature_id", id);
+    formData.append("film_type", filmType);
+
     if (editingIndex !== null) {
       // const updated = [...producers];
       // updated[editingIndex] = data;
@@ -213,6 +215,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
       const formData = new FormData();
       formData.append("step", "5");
       formData.append("id", id);
+      formData.append("film_type", filmType);
       const response = await postRequest(url, formData);
       if (response.statusCode == 200) {
         setActiveSection(6);

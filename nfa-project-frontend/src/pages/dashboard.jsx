@@ -85,20 +85,32 @@ const DashboardPage = () => {
                 {/* Show notification only if there are no forms */}
                 {(!formCards ||
                   (!formCards.feature?.length && !formCards["non-feature"]?.length)) && (
-                  <div className="notification mt-4 col-out-div">
-                    <h3>You have not created any form yet.</h3>
-                    <p>Click Here to Create</p>
-                    <p className="text-left">
-                      <a
-                        href="#"
+                    <div className="notification mt-4 col-out-div">
+                      <h3>You have not created any form yet.</h3>
+                      <p>Click Here to Create</p>
+                      <p className="text-left">
+                        <a
+                          href="#"
+                          className="btn btn-common-form"
+                          onClick={() => setShowModal(true)}
+                        >
+                          CREATE YOUR FIRST PROJECT
+                        </a>
+                      </p>
+                    </div>
+                  )}
+                {/* Add button to create new project if forms exist */}
+                {(formCards?.feature?.length > 0 ||
+                  formCards?.["non-feature"]?.length > 0) && (
+                    <div className="mt-3">
+                      <button
                         className="btn btn-common-form"
                         onClick={() => setShowModal(true)}
                       >
-                        CREATE YOUR FIRST PROJECT
-                      </a>
-                    </p>
-                  </div>
-                )}
+                        ADD NEW PROJECT
+                      </button>
+                    </div>
+                  )}
               </div>
 
               {isLoading && <p>Loading forms...</p>}
@@ -137,9 +149,8 @@ const DashboardPage = () => {
                                   className="text-decoration-none"
                                 >
                                   <i
-                                    className={`bi bi-${
-                                      card.payment_status != 2 ? "pencil" : "eye"
-                                    }`}
+                                    className={`bi bi-${card.payment_status != 2 ? "pencil" : "eye"
+                                      }`}
                                   ></i>{" "}
                                   {card.payment_status != 2 ? "Edit" : "View"}
                                 </NavLink>
@@ -158,18 +169,7 @@ const DashboardPage = () => {
                   ))
                 )}
               </div>
-              {/* Add button to create new project if forms exist */}
-              {(formCards?.feature?.length > 0 ||
-                formCards?.["non-feature"]?.length > 0) && (
-                <div className="mt-3 text-end">
-                  <button
-                    className="btn btn-common-form"
-                    onClick={() => setShowModal(true)}
-                  >
-                    ADD NEW PROJECT
-                  </button>
-                </div>
-              )}
+
             </div>
           </div>
         </div>
