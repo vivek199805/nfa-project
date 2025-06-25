@@ -1,5 +1,10 @@
 import express from 'express';
 import FilmController from '../../controllers/mongoDBController/filmController.js';
+import ProducerController from '../../controllers/mongoDBController/producerController.js';
+import DirectorController from '../../controllers/mongoDBController/directorController.js';
+import ActorController from '../../controllers/mongoDBController/actorController.js';
+import SongController from '../../controllers/mongoDBController/songController.js'; 
+import AudiographerController from '../../controllers/mongoDBController/audiographerController.js';
 import upload from '../../middleware/uploadMiddleware.js'; 
 import { requireAuth } from '../../middleware/requireAuth.js';
 
@@ -13,25 +18,25 @@ router.get('/entry-list',requireAuth, FilmController.getFilmEntryList);
 router.post('/feature-update', requireAuth, upload.any(), FilmController.updateFeatureNonfeatureById);
 router.get('/feature-entry-by/:id',requireAuth, FilmController.getFilmDetailsById);
 // ======================== for producer controller=====================
-router.post('/producer-list',requireAuth, FilmController.getAllProducersByFeatureId);
-router.post('/store-producer', requireAuth, upload.any(), FilmController.addProducerToFeature);
-router.post('/delete-producer',requireAuth, upload.any(), FilmController.deleteProducerById);
+router.post('/producer-list',requireAuth, ProducerController.getAllProducersByFeatureId);
+router.post('/store-producer', requireAuth, upload.any(), ProducerController.addProducerToFeature);
+router.post('/delete-producer',requireAuth, upload.any(), ProducerController.deleteProducerById);
 // ==================for director controllers===============
-router.post('/director-list',requireAuth, FilmController.getAllDirectorsByFeatureId);
-router.post('/store-director',requireAuth, upload.any(), FilmController.addDirectorToFeature);
-router.post('/delete-director',requireAuth, upload.any(), FilmController.deleteDirectorById);
+router.post('/director-list',requireAuth, DirectorController.getAllDirectorsByFeatureId);
+router.post('/store-director',requireAuth, upload.any(), DirectorController.addDirectorToFeature);
+router.post('/delete-director',requireAuth, upload.any(), DirectorController.deleteDirectorById);
 // ==================for actor controllers================
-router.post('/actor-list', requireAuth, FilmController.getAllActorsByFeatureId);
-router.post('/store-actor', requireAuth, upload.any(), FilmController.addActorToFeature);
-router.post('/delete-actor', requireAuth, upload.any(), FilmController.deleteActorById);
+router.post('/actor-list', requireAuth, ActorController.getAllActorsByFeatureId);
+router.post('/store-actor', requireAuth, upload.any(), ActorController.addActorToFeature);
+router.post('/delete-actor', requireAuth, upload.any(), ActorController.deleteActorById);
 // ==================for song controllers================
-router.post('/song-list',requireAuth, FilmController.getAllSongByFeatureId);
-router.post('/store-song', requireAuth, upload.any(), FilmController.addSongToFeature);
-router.post('/delete-song', requireAuth, upload.any(), FilmController.deleteSongById);
+router.post('/song-list',requireAuth, SongController.getAllSongByFeatureId);
+router.post('/store-song', requireAuth, upload.any(), SongController.addSongToFeature);
+router.post('/delete-song', requireAuth, upload.any(), SongController.deleteSongById);
 // ==================for audiographer controllers================
-router.post('/audiographer-list', requireAuth,  FilmController.getAllAudiographerByFeatureId);
-router.post('/store-audiographer', requireAuth, upload.any(), FilmController.addAudiographerToFeature);
-router.post('/delete-audiographer',requireAuth, upload.any(), FilmController.deleteAudiographerById);
+router.post('/audiographer-list', requireAuth,  AudiographerController.getAllAudiographerByFeatureId);
+router.post('/store-audiographer', requireAuth, upload.any(), AudiographerController.addAudiographerToFeature);
+router.post('/delete-audiographer',requireAuth, upload.any(), AudiographerController.deleteAudiographerById);
 
 // Non-feature film routes
 router.post('/non-feature-create', requireAuth, upload.none(), FilmController.createNonFeatureSubmission);

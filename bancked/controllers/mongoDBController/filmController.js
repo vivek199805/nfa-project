@@ -132,20 +132,43 @@ const getFilmEntryList = async (req, res) => {
 const getFilmDetailsById = async (req, res) => {
   try {
     const { id } = req.params;
-    // Find the document by ID
-    const existingEntry = await FeatureForm.findById(id).populate(
-      "producers directors songs actors audiographer documents"
-    );
-
-    if (!existingEntry) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Feature submission not found" });
+    if (!id) {
+      return res.status(200).json({
+        statusCode: 203,
+        message: "Film ID is required",
+      });
     }
+    // Step 1: Find FeatureForm by ID and populate nested arrays
+    const featureForm = await FeatureForm.findById(id).populate([
+      "producers",
+      "directors",
+      "songs",
+      "actors",
+      "audiographer",
+    ]);
+
+    if (!featureForm) {
+      return res.status(200).json({
+        statusCode: 203,
+        message: "Film submission not found",
+      });
+    }
+
+    // Step 2: Find related document(s) by context_id
+    const relatedDocuments = await Document.find({
+      context_id: featureForm._id,
+    });
+    console.log("Related Documents:", relatedDocuments);
+    // Convert Mongoose Document to plain object (optional but safer for mutation)
+    const featureData = featureForm.toObject();
+    // Add documents directly into the object
+    featureData.documents = relatedDocuments;
+
+
     res.status(200).json({
       message: "Fetch successfully",
       statusCode: 200,
-      data: existingEntry,
+      data: featureData,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -155,19 +178,29 @@ const getFilmDetailsById = async (req, res) => {
 
 const updateFeatureNonfeatureById = async (req, res) => {
   try {
+    const requiredFields = ["id", "film_type"];
+    const missingFields = requiredFields.filter((field) => !req.body[field]);
+
+    if (missingFields.length > 0) {
+      return res.status(200).json({
+        statusCode: 203,
+        message: `${missingFields.join(" and ")} ${missingFields.length > 1 ? "are" : "is"} required`,
+      });
+    }
     const payload = {
       ...req.body,
       files: req.files,
     };
 
-    const { id: _id, } = req.body;
+
+    const { id: _id, film_type } = req.body;
     // Find the document by ID
     const existingEntry = await FeatureForm.findById(_id);
     if (!existingEntry) {
       return res.status(200).json({ statusCode: 203, message: "Feature submission not found" });
     }
     let stepHandler = {};
-    if (req.body.film_type === 'feature') {
+    if (film_type === 'feature') {
       stepHandler = {
         [Common.stepsFeature().GENERAL]: async (existingEntry, payload) => await handleGeneralStep(existingEntry, payload),
         [Common.stepsFeature().CENSOR]: async (existingEntry, payload) => await handleCensorStep(existingEntry, payload),
@@ -181,7 +214,7 @@ const updateFeatureNonfeatureById = async (req, res) => {
         [Common.stepsFeature().RETURN_ADDRESS]: async (existingEntry, payload) => await handleReturnAddressStep(existingEntry, payload),
         [Common.stepsFeature().DECLARATION]: async (existingEntry, payload) => await handleDeclarationStep(existingEntry, payload),
       };
-    } else if (req.body.film_type === 'non-feature') {
+    } else if (film_type === 'non-feature') {
       stepHandler = {
         [Common.stepsNonFeature().GENERAL]: async (existingEntry, payload) => await handleGeneralStep(existingEntry, payload),
         [Common.stepsNonFeature().CENSOR]: async (existingEntry, payload) => await handleCensorStep(existingEntry, payload),
@@ -214,591 +247,6 @@ const updateFeatureNonfeatureById = async (req, res) => {
       statusCode: 500,
       message: "Error updating feature submission",
       error: error.message,
-    });
-  }
-};
-
-// for producer Api
-
-const getAllProducersByFeatureId = async (req, res) => {
-  const { id, film_type } = req.body;
-
-  try {
-    const producersData  = await FeatureForm.findById(id, "producers");
-
-    if (!producersData) {
-      return res.status(200).json({ message: "Records not found", statusCode: 201 });
-    }
-    console.log("producersData", producersData);
-    
-
-    // 2. Attach matching documents to each producer manually
-    const allProducerWithDocs = await Promise.all(
-      producersData?.producers.map(async (producer) => {
-        const documents = await Document.findOne({
-          context_id: producer._id, // assuming context_id links a document to a producer
-          form_type:  film_type === 'feature' ? 1 : 2,
-          website_type: 5,
-          document_type: 4,
-        });
-
-        return {
-          ...producer.toObject(),
-          documents, // attach documents manually
-        };
-      })
-    );
-
-console.log("allProducerWithDocs", allProducerWithDocs);
-
-
-    res.status(200).json({
-      message: "data fetch successfully",
-      data: allProducerWithDocs,
-      statusCode: 200,
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch producers", message: error.message });
-  }
-};
-
-const addProducerToFeature = async (req, res) => {
-  const { nfa_feature_id: _id, id: producerId } = req.body; // Producer data from client
-  try {
-    const payload = {
-      ...req.body,
-      files: req.files,
-    };
-    // Find the feature form by ID
-    const feature = await FeatureForm.findById(_id);
-    if (!feature) {
-      return res.status(200).json({ message: "Feature form not found", statusCode: 201 });
-    }
-    if (producerId) {
-      // ✅ Update existing producer
-      const existingProducer = feature.producers.id(producerId);
-      if (!existingProducer) {
-        return res.status(200).json({ message: "Producer not found", statusCode: 201 });
-      }
-
-      Object.entries(req.body).forEach(([key, value]) => {
-        if (key !== 'id' && key !== 'nfa_feature_id') {
-          existingProducer[key] = value;
-        }
-      });
-
-    } else {
-      // ✅ Add new producer
-      feature.producers.push(req.body);
-    }
-
-    // Save the updated document
-    await feature.save();
-    const updatedData = feature.producers.map((item) => {
-      const obj = item.toObject();
-      obj.id = obj._id;
-      delete obj._id;
-      return obj;
-    });
-    // Handle file upload if files are provided
-    if (payload.files && Array.isArray(payload.files)) {
-      const producerDoc = payload.files.find((file) => file.fieldname === "producer_self_attested_doc");
-
-      if (producerDoc) {
-        const fileUpload = await Common.imageUpload({
-          id: updatedData[0].id,
-          image_key: "producer_self_attested_doc",
-          websiteType: "NFA",
-          formType: payload.film_type === "non-feature" ? "NON_FEATURE" : "FEATURE",
-          image: producerDoc,
-        });
-
-        if (!fileUpload.status) {
-          return res.status(500).json({ message: "failed to upload producer document", statusCode: 500, });
-        }
-      }
-    }
-
-
-    res.status(200).json({
-      message: producerId ? "Producer updated successfully" : "Producer added successfully",
-      data: updatedData,
-      statusCode: 200,
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to add producer", message: error.message });
-  }
-};
-
-const deleteProducerById = async (req, res) => {
-  const { nfa_feature_id: _id, producerId } = req.body;
-
-  try {
-    const feature = await FeatureForm.findById(_id);
-
-    if (!feature) {
-      return res.status(200).json({
-        message: 'Feature form not found',
-        statusCode: 203,
-      });
-    }
-
-    // Find the producer by ID and remove it
-    const producer = feature.producers.id(producerId);
-    if (!producer) {
-      return res.status(200).json({
-        message: 'Producer not found',
-        statusCode: 203,
-      });
-    }
-
-    producer.remove(); // Remove from embedded array
-
-    await feature.save(); // Save the updated document
-
-    return res.status(200).json({
-      message: 'Producer deleted successfully',
-      statusCode: 200,
-      // data: feature.producers, // optionally return updated list
-    });
-
-  } catch (error) {
-    return res.status(500).json({
-      message: 'Error deleting producer',
-      error: error.message,
-      statusCode: 500,
-    });
-  }
-};
-
-// for director Api
-const getAllDirectorsByFeatureId = async (req, res) => {
-  const { id } = req.body;
-
-  try {
-    const feature = await FeatureForm.findById(id, "directors");
-    console.log(feature);
-
-    if (!feature) {
-      return res.status(200).json({ message: "Records not found", statusCode: 201 });
-    }
-
-    res.status(200).json({
-      message: "data fetch successfully",
-      data: feature.directors,
-      statusCode: 200,
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch Directors", message: error.message });
-  }
-};
-
-const addDirectorToFeature = async (req, res) => {
-  const { nfa_feature_id: _id, id: directorId } = req.body; // Producer data from client
-  try {
-    // Find the feature form by ID
-    const feature = await FeatureForm.findById(_id);
-    if (!feature) {
-      return res.status(200).json({ message: "Feature form not found", statusCode: 201 });
-    }
-    if (directorId) {
-      // ✅ Update existing producer
-      const existingDirector = feature.directors.id(directorId);
-      if (!existingDirector) {
-        return res.status(200).json({ message: "director not found", statusCode: 201 });
-      }
-
-      Object.entries(req.body).forEach(([key, value]) => {
-        if (key !== 'id' && key !== 'nfa_feature_id') {
-          existingDirector[key] = value;
-        }
-      });
-
-    } else {
-      // ✅ Add new producer
-      feature.directors.push(req.body);
-    }
-
-    // Save the updated document
-    await feature.save();
-    const updatedData = feature.directors.map((item) => {
-      const obj = item.toObject();
-      obj.id = obj._id;
-      delete obj._id;
-      return obj;
-    });
-
-    res.status(200).json({
-      message: directorId ? "Director updated successfully" : "Director added successfully",
-      data: updatedData,
-      statusCode: 200,
-    });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Failed to add producer", message: error.message });
-  }
-};
-const deleteDirectorById = async (req, res) => {
-  const { nfa_feature_id: _id, directorId } = req.body;
-
-  try {
-    const feature = await FeatureForm.findById(_id);
-
-    if (!feature) {
-      return res.status(200).json({
-        message: 'Feature form not found',
-        statusCode: 203,
-      });
-    }
-
-    // Find the producer by ID and remove it
-    const director = feature.directors.id(directorId);
-    if (!director) {
-      return res.status(200).json({
-        message: 'Director not found',
-        statusCode: 203,
-      });
-    }
-
-    director.remove(); // Remove from embedded array
-
-    await feature.save(); // Save the updated document
-
-    return res.status(200).json({
-      message: 'director deleted successfully',
-      statusCode: 200,
-      // data: feature.producers, // optionally return updated list
-    });
-
-  } catch (error) {
-    return res.status(500).json({
-      message: 'Error deleting producer',
-      error: error.message,
-      statusCode: 500,
-    });
-  }
-};
-
-
-
-// for Actor Api
-const getAllActorsByFeatureId = async (req, res) => {
-  const { id } = req.body;
-
-  try {
-    const feature = await FeatureForm.findById(id, "actors");
-    console.log(feature);
-
-    if (!feature) {
-      return res.status(200).json({ message: "Records not found", statusCode: 201 });
-    }
-
-    res.status(200).json({
-      message: "data fetch successfully",
-      data: feature.actors,
-      statusCode: 200,
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch Directors", message: error.message });
-  }
-};
-
-const addActorToFeature = async (req, res) => {
-  const { nfa_feature_id: _id, actorId } = req.body; // Producer data from client
-  try {
-    // Find the feature form by ID
-    const feature = await FeatureForm.findById(_id);
-    if (!feature) {
-      return res.status(200).json({ message: "Feature form not found", statusCode: 201 });
-    }
-    if (actorId) {
-      // ✅ Update existing producer
-      const existingActor = feature.actors.id(actorId);
-      if (!existingActor) {
-        return res.status(200).json({ message: "actor not found", statusCode: 201 });
-      }
-
-      Object.entries(req.body).forEach(([key, value]) => {
-        if (key !== 'id' && key !== 'nfa_feature_id') {
-          existingActor[key] = value;
-        }
-      });
-
-    } else {
-      // ✅ Add new producer
-      feature.actors.push(req.body);
-    }
-
-    // Save the updated document
-    await feature.save();
-    const updatedData = feature.actors.map((item) => {
-      const obj = item.toObject();
-      obj.id = obj._id;
-      delete obj._id;
-      return obj;
-    });
-
-    res.status(200).json({
-      message: actorId ? "actor updated successfully" : "actor added successfully",
-      data: updatedData,
-      statusCode: 200,
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to add producer", message: error.message });
-  }
-};
-
-const deleteActorById = async (req, res) => {
-  const { nfa_feature_id, actorId } = req.body;
-
-  try {
-    const feature = await FeatureForm.findById({ _id: nfa_feature_id });
-
-    if (!feature) {
-      return res.status(200).json({
-        message: 'Feature form not found',
-        statusCode: 203,
-      });
-    }
-
-    // Find the producer by ID and remove it
-    const actor = feature.actors.id(actorId);
-    if (!actor) {
-      return res.status(200).json({
-        message: 'actor not found',
-        statusCode: 203,
-      });
-    }
-
-    actor.remove(); // Remove from embedded array
-
-    await feature.save(); // Save the updated document
-
-    return res.status(200).json({
-      message: 'actor deleted successfully',
-      statusCode: 200,
-    });
-
-  } catch (error) {
-    return res.status(500).json({
-      message: 'Error deleting producer',
-      error: error.message,
-      statusCode: 500,
-    });
-  }
-};
-
-// for Songs Api
-const getAllSongByFeatureId = async (req, res) => {
-  const { id } = req.body;
-
-  try {
-    const feature = await FeatureForm.findById(id, "songs");
-    console.log(feature);
-
-    if (!feature) {
-      return res.status(200).json({ message: "Records not found", statusCode: 201 });
-    }
-
-    res.status(200).json({
-      message: "data fetch successfully",
-      data: feature.songs,
-      statusCode: 200,
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch Songs", message: error.message });
-  }
-};
-
-const addSongToFeature = async (req, res) => {
-  const { nfa_feature_id: _id, songId } = req.body; // Song data from client
-  try {
-    // Find the feature form by ID
-    const feature = await FeatureForm.findById(_id);
-    if (!feature) {
-      return res.status(200).json({ message: "Feature form not found", statusCode: 201 });
-    }
-    if (songId) {
-      // ✅ Update existing Song
-      const existingSong = feature.songs.id(songId);
-      if (!existingSong) {
-        return res.status(200).json({ message: "Song not found", statusCode: 201 });
-      }
-
-      Object.entries(req.body).forEach(([key, value]) => {
-        if (key !== 'id' && key !== 'nfa_feature_id') {
-          existingSong[key] = value;
-        }
-      });
-
-    } else {
-      // ✅ Add new Song
-      feature.songs.push(req.body);
-    }
-
-    // Save the updated document
-    await feature.save();
-    const updatedData = feature.songs.map((item) => {
-      const obj = item.toObject();
-      obj.id = obj._id;
-      delete obj._id;
-      return obj;
-    });
-
-    res.status(200).json({
-      message: songId ? "song updated successfully" : "song added successfully",
-      data: updatedData,
-      statusCode: 200,
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to add song", message: error.message });
-  }
-};
-
-const deleteSongById = async (req, res) => {
-  const { nfa_feature_id, songId } = req.body;
-
-  try {
-    const feature = await FeatureForm.findById({ _id: nfa_feature_id });
-
-    if (!feature) {
-      return res.status(200).json({
-        message: 'Feature form not found',
-        statusCode: 203,
-      });
-    }
-
-    // Find the Song by ID and remove it
-    const song = feature.songs.id(songId);
-    if (!song) {
-      return res.status(200).json({
-        message: 'song not found',
-        statusCode: 203,
-      });
-    }
-
-    song.remove(); // Remove from embedded array
-
-    await feature.save(); // Save the updated document
-
-    return res.status(200).json({
-      message: 'song deleted successfully',
-      statusCode: 200,
-    });
-
-  } catch (error) {
-    return res.status(500).json({
-      message: 'Error deleting song',
-      error: error.message,
-      statusCode: 500,
-    });
-  }
-};
-
-// for Audiographer Api
-const getAllAudiographerByFeatureId = async (req, res) => {
-  const { id } = req.body;
-
-  try {
-    const feature = await FeatureForm.findById(id, "audiographer");
-    console.log(feature);
-
-    if (!feature) {
-      return res.status(200).json({ message: "Records not found", statusCode: 201 });
-    }
-
-    res.status(200).json({
-      message: "data fetch successfully",
-      data: feature.audiographer,
-      statusCode: 200,
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch audiographer", message: error.message });
-  }
-};
-
-const addAudiographerToFeature = async (req, res) => {
-  const { nfa_feature_id: _id, audiographerId } = req.body; // audiographer data from client
-  try {
-    // Find the feature form by ID
-    const feature = await FeatureForm.findById(_id);
-    if (!feature) {
-      return res.status(200).json({ message: "Feature form not found", statusCode: 201 });
-    }
-    if (audiographerId) {
-      // ✅ Update existing audiographer
-      const existingAudiographer = feature.audiographer.id(audiographerId);
-      if (!existingAudiographer) {
-        return res.status(200).json({ message: "audiographer not found", statusCode: 201 });
-      }
-
-      Object.entries(req.body).forEach(([key, value]) => {
-        if (key !== 'id' && key !== 'nfa_feature_id') {
-          existingAudiographer[key] = value;
-        }
-      });
-
-    } else {
-      // ✅ Add new Song
-      feature.audiographer.push(req.body);
-    }
-
-    // Save the updated document
-    await feature.save();
-    const updatedData = feature.audiographer.map((item) => {
-      const obj = item.toObject();
-      obj.id = obj._id;
-      delete obj._id;
-      return obj;
-    });
-
-    res.status(200).json({
-      message: audiographerId ? "audiographer updated successfully" : "audiographer added successfully",
-      data: updatedData,
-      statusCode: 200,
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to add audiographer", message: error.message });
-  }
-};
-
-const deleteAudiographerById = async (req, res) => {
-  const { nfa_feature_id, audiographerId } = req.body;
-
-  try {
-    const feature = await FeatureForm.findById({ _id: nfa_feature_id });
-
-    if (!feature) {
-      return res.status(200).json({
-        message: 'Feature form not found',
-        statusCode: 203,
-      });
-    }
-
-    // Find the audiographer by ID and remove it
-    const audiographer = feature.audiographer.id(audiographerId);
-    if (!audiographer) {
-      return res.status(200).json({
-        message: 'audiographer not found',
-        statusCode: 203,
-      });
-    }
-
-    audiographer.remove(); // Remove from embedded array
-
-    await feature.save(); // Save the updated document
-
-    return res.status(200).json({
-      message: 'audiographer deleted successfully',
-      statusCode: 200,
-    });
-
-  } catch (error) {
-    return res.status(500).json({
-      message: 'Error deleting audiographer',
-      error: error.message,
-      statusCode: 500,
     });
   }
 };
@@ -1044,6 +492,29 @@ const handleOtherStep = async (data, payload) => {
     }
   }
 
+    if (payload.files && Array.isArray(payload.files)) {
+    const originalFile = payload.files.find((file) => file.fieldname === "original_work_copy");
+    if (originalFile) {
+      const fileUpload = await Common.imageUpload({
+        id: lastId,
+        image_key: "original_work_copy",
+        websiteType: "NFA",
+        formType: payload.film_type === "non-feature" ? "NON_FEATURE" : "FEATURE",
+        image: originalFile,
+      });
+
+      if (!fileUpload.status) {
+        return response("exception", { message: "Image not uploaded.!!" });
+      }
+
+      data.original_work_copy = originalFile.originalname ?? null;
+    } else {
+      data.original_work_copy = null;
+    }
+  } else {
+    data.original_work_copy = null;
+  }
+
   return data;
 }
 
@@ -1087,21 +558,6 @@ export default {
   getFilmEntryList,
   updateFeatureNonfeatureById,
   getFilmDetailsById,
-  getAllProducersByFeatureId,
-  addProducerToFeature,
-  deleteProducerById,
-  getAllDirectorsByFeatureId,
-  addDirectorToFeature,
-  deleteDirectorById,
-  getAllActorsByFeatureId,
-  addActorToFeature,
-  deleteActorById,
-  getAllSongByFeatureId,
-  addSongToFeature,
-  deleteSongById,
-  getAllAudiographerByFeatureId,
-  addAudiographerToFeature,
-  deleteAudiographerById,
   getNonFeatureSubmissions,
   finalSubmit
 };

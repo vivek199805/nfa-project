@@ -106,6 +106,7 @@ const imageUpload = async (data) => {
       await existingDoc.save();
       return {
         status: true,
+        data: existingDoc,
         message: "File updated successfully!!",
       };
     } else {
@@ -113,6 +114,7 @@ const imageUpload = async (data) => {
       await newDoc.save();
       return {
         status: true,
+        data: newDoc,
         message: "File created successfully!!",
       };
     }
