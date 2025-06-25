@@ -10,6 +10,15 @@ import { useFetchById } from "../../hooks/useFetchById";
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
+const fileValidation = z
+  .instanceof(File, { message: "file is required" })
+  .refine((file) => file.size <= MAX_FILE_SIZE, {
+    message: "File must be less than 2MB",
+  })
+  .refine((file) => fileTypes.includes(file.type), {
+    message: "Only PNG, JPEG, WEBP, or PDF files are allowed",
+  });
+
 const filmSchema = z.object({
   originalScreenplay: z.string().min(1, "This field is required"),
   adaptedScreenplay: z.string().min(1, "This field is required"),
@@ -17,17 +26,7 @@ const filmSchema = z.object({
   isPublicDomain: z.enum(["Yes", "No"], {
     required_error: "This field is required",
   }),
-  originalCopy: z
-    .any()
-    .refine((file) => file instanceof File, {
-      message: "Certificate file is required",
-    })
-    .refine((file) => file?.size <= MAX_FILE_SIZE, {
-      message: "File must be less than 2MB",
-    })
-    .refine((file) => fileTypes.includes(file?.type), {
-      message: "Only PNG, JPEG, or PDF files are allowed",
-    }),
+  originalCopy: z.union([fileValidation, z.string().min(1, "Existing file missing")]),
 
   dialogues: z.string().optional(),
   effectsCreater: z.string().optional(),
@@ -119,6 +118,8 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
     const response = await postRequest("film/feature-update", formData);
     if (response.statusCode == 200) {
       setActiveSection(10);
+    }else {
+      showErrorToast(response?.message || "Failed to submit form");
     }
   };
 

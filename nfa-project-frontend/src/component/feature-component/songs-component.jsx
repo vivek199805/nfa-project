@@ -161,17 +161,20 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
 
   const onNext = async () => {
     const isValid = await trigger(); // validate the form
-    if (isValid || !showForm) {
+    if ((isValid || !showForm) && songsData.length > 0) {
       const formData = new FormData();
       formData.append("step", "7");
       formData.append("id", id);
+      formData.append("film_type", filmType);
       const response = await postRequest("film/feature-update", formData);
       if (response.statusCode == 200) {
-         setActiveSection(8);
+        setActiveSection(8);
+      } else {
+        showErrorToast(response.message);
       }
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
-      showSuccessToast("Atleast one diector is required");
+      songsData.length === 0 ? showErrorToast("Atleast one song is required") : showErrorToast("Please fill all the fields");
     }
   };
 
@@ -196,7 +199,7 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
                       onClick={() => {
                         reset();
                         setEditingIndex(null);
-                       setShowForm((prev) => !prev);
+                        setShowForm((prev) => !prev);
                       }}
                     >
                       ADD SONG
@@ -252,9 +255,8 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.songTitle ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.songTitle ? "is-invalid" : ""
+                  }`}
                 placeholder="Enter Song Title"
                 {...register("songTitle")}
                 maxLength={10}
@@ -272,9 +274,8 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.musicDirector ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.musicDirector ? "is-invalid" : ""
+                  }`}
                 placeholder=" Enter Music Director"
                 {...register("musicDirector")}
               />
@@ -291,9 +292,8 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.backgroundMusic ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.backgroundMusic ? "is-invalid" : ""
+                  }`}
                 placeholder=" Enter Background Music Director"
                 {...register("backgroundMusic")}
               />
@@ -310,9 +310,8 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.lyricist ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.lyricist ? "is-invalid" : ""
+                  }`}
                 placeholder=" Enter Lyricist"
                 {...register("lyricist")}
               />
@@ -329,9 +328,8 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.singerMale ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.singerMale ? "is-invalid" : ""
+                  }`}
                 placeholder=" Enter Singer Male"
                 {...register("singerMale")}
               />
@@ -348,9 +346,8 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.singerFemale ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.singerFemale ? "is-invalid" : ""
+                  }`}
                 placeholder=" Enter singer Female"
                 {...register("singerFemale")}
               />
@@ -381,7 +378,7 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={ () => onNext()}
+          onClick={() => onNext()}
         >
           Next <i className="bi bi-arrow-right ms-2"></i>
         </button>

@@ -144,17 +144,19 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
 
   const onNext = async () => {
     const isValid = await trigger(); // validate the form
-    if (isValid || !showForm) {
+    if ((isValid || !showForm) && audioGrapherData.length > 0) {
       const formData = new FormData();
       formData.append("step", "8");
       formData.append("id", id);
+      formData.append("film_type", filmType);
       const response = await postRequest("film/feature-update", formData);
       if (response.statusCode == 200) {
         setActiveSection(9);
       }
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
-      showSuccessToast("Atleast one audiographer is required");
+      audioGrapherData.length === 0 ?   showErrorToast("Atleast one audiographer is required") :
+        showErrorToast("Please fill all required fields");
     }
   };
 

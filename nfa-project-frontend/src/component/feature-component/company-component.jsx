@@ -3,26 +3,40 @@ import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useParams } from "react-router-dom";
 import { z } from "zod";
-import {postRequest } from "../../common/services/requestService";
+import { postRequest } from "../../common/services/requestService";
 import { useFetchById } from "../../hooks/useFetchById";
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+
+const fileValidation = z
+  .instanceof(File, { message: "File is required" })
+  .refine((file) => file.size <= MAX_FILE_SIZE, {
+    message: "File must be less than 2MB",
+  })
+  .refine((file) => fileTypes.includes(file.type), {
+    message: "Only PNG, JPEG, WEBP, or PDF files are allowed",
+  });
 
 const companySchema = z.object({
   CompanyRegistration: z
     .string()
     .min(1, "Company Registration Details is required"),
-  CompanyRegistrationFile: z
-    .any()
-    .refine((file) => file instanceof File, {
-      message: "Certificate file is required",
-    })
-    .refine((file) => file?.size <= MAX_FILE_SIZE, {
-      message: "File must be less than 2MB",
-    })
-    .refine((file) => fileTypes.includes(file?.type), {
-      message: "Only PNG, JPEG, or PDF files are allowed",
-    }),
+  CompanyRegistrationFile: z.union([
+    fileValidation,
+    z.string().min(1, "Existing file missing"),
+  ]),
+
+  // CompanyRegistrationFile: z
+  //   .any()
+  //   .refine((file) => file instanceof File, {
+  //     message: "Certificate file is required",
+  //   })
+  //   .refine((file) => file?.size <= MAX_FILE_SIZE, {
+  //     message: "File must be less than 2MB",
+  //   })
+  //   .refine((file) => fileTypes.includes(file?.type), {
+  //     message: "Only PNG, JPEG, or PDF files are allowed",
+  //   }),
 });
 
 const CompanyRegistrationSection = ({ setActiveSection, filmType }) => {

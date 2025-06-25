@@ -3,27 +3,40 @@ import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
 import { z } from "zod";
-import {postRequest} from "../../common/services/requestService";
+import { postRequest } from "../../common/services/requestService";
 import { useParams } from "react-router-dom";
 import { formatDate } from "../../common/common-function";
 import { useFetchById } from "../../hooks/useFetchById";
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
+const fileValidation = z
+  .instanceof(File, { message: "Certificate file is required" })
+  .refine((file) => file.size <= MAX_FILE_SIZE, {
+    message: "File must be less than 2MB",
+  })
+  .refine((file) => fileTypes.includes(file.type), {
+    message: "Only PNG, JPEG, WEBP, or PDF files are allowed",
+  });
+
 const censorSchema = z.object({
   certificateNumber: z.string().min(1, "Censor Certificate Number is required"),
   certificateDate: z.string().optional(),
-  certificateFile: z
-    .any()
-    .refine((file) => file instanceof File, {
-      message: "Certificate file is required",
-    })
-    .refine((file) => file?.size <= MAX_FILE_SIZE, {
-      message: "File must be less than 2MB",
-    })
-    .refine((file) => fileTypes.includes(file?.type), {
-      message: "Only PNG, JPEG, or PDF files are allowed",
-    }),
+  certificateFile: z.union([
+    fileValidation,
+    z.string().min(1, "Existing file missing"),
+  ]),
+  // certificateFile: z
+  //   .any()
+  //   .refine((file) => file instanceof File, {
+  //     message: "Certificate file is required",
+  //   })
+  //   .refine((file) => file?.size <= MAX_FILE_SIZE, {
+  //     message: "File must be less than 2MB",
+  //   })
+  //   .refine((file) => fileTypes.includes(file?.type), {
+  //     message: "Only PNG, JPEG, or PDF files are allowed",
+  //   }),
 });
 
 const CensorSection = ({ setActiveSection, filmType }) => {

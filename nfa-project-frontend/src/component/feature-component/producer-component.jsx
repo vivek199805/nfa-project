@@ -19,6 +19,14 @@ import { useQuery } from "@tanstack/react-query";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+const fileValidation = z
+  .instanceof(File, { message: "File is required" })
+  .refine((file) => file.size <= MAX_FILE_SIZE, {
+    message: "File must be less than 2MB",
+  })
+  .refine((file) => fileTypes.includes(file.type), {
+    message: "Only PNG, JPEG, WEBP, or PDF files are allowed",
+  });
 
 const filmSchema = z.object({
   indianNationality: z.enum(["Yes", "No"], {
@@ -40,18 +48,22 @@ const filmSchema = z.object({
     .trim()
     .length(6, "Pin Code must be exactly 6 digits")
     .regex(/^[0-9]{6}$/, "Pin Code must be numeric"),
+  idProofFile: z.union([
+    fileValidation,
+    z.string().min(1, "Existing file missing"),
+  ]),
 
-  idProofFile: z
-    .any()
-    .refine((file) => file instanceof File, {
-      message: "Certificate file is required",
-    })
-    .refine((file) => file?.size <= MAX_FILE_SIZE, {
-      message: "File must be less than 2MB",
-    })
-    .refine((file) => fileTypes.includes(file?.type), {
-      message: "Only PNG, JPEG, or PDF files are allowed",
-    }),
+  // idProofFile: z
+  //   .any()
+  //   .refine((file) => file instanceof File, {
+  //     message: "Certificate file is required",
+  //   })
+  //   .refine((file) => file?.size <= MAX_FILE_SIZE, {
+  //     message: "File must be less than 2MB",
+  //   })
+  //   .refine((file) => fileTypes.includes(file?.type), {
+  //     message: "Only PNG, JPEG, or PDF files are allowed",
+  //   }),
 });
 
 const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
@@ -158,7 +170,7 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
       email: data.email,
       address: data.address,
       pinCode: data.pincode,
-      idProofFile: data.producer_self_attested_doc,
+      idProofFile: data.producer_self_attested_doc || "",
       indianNationality: data.indian_national === 1 ? "Yes" : "No",
     });
     setEditingIndex(index);
@@ -204,13 +216,13 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
   };
 
   const onNext = async () => {
-    let url = filmType == 'feature' ? "film/feature-update" :"film/non-feature-update";
+    let url = filmType == 'feature' ? "film/feature-update" : "film/non-feature-update";
     const isValid = await trigger(); // validate the form
-    if (isValid || !showForm) {
+    if ((isValid || !showForm) && producers.length > 0) {
       const formData = new FormData();
       formData.append("step", "4");
       formData.append("id", id);
-       formData.append("film_type", filmType);
+      formData.append("film_type", filmType);
       const response = await postRequest(url, formData);
       if (response.statusCode == 200) {
         setActiveSection(5);
@@ -218,7 +230,7 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
 
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
-       showSuccessToast('Atleast one producer is required');
+      producers.length === 0 ? showErrorToast("Atleast one producer is required") : showErrorToast("Please fill all the fields");
     }
   };
 
@@ -280,9 +292,20 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
                       />
                     </td>
                     <td>
-                      <span className="id-proof-status">
-                        {producer.idProofFile?.name || "Not Provided"}
-                      </span>{" "}
+                      {producer.producer_self_attested_doc ? (
+                        <>
+                          <a
+                            href={`/documents/${producer.producer_self_attested_doc}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-sm btn-outline-primary ms-2"
+                          >
+                            View
+                          </a>
+                        </>
+                      ) : (
+                        <span className="id-proof-status text-muted">Not Provided</span>
+                      )}
                     </td>
                     <td>
                       <button
@@ -352,9 +375,8 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.producerName ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.producerName ? "is-invalid" : ""
+                  }`}
                 placeholder="Producer Name"
                 {...register("producerName")}
               />
@@ -371,9 +393,8 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.producerCompany ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.producerCompany ? "is-invalid" : ""
+                  }`}
                 placeholder="Producer Company "
                 {...register("producerCompany")}
               />
@@ -458,16 +479,27 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
                 name="idProofFile"
                 control={control}
                 render={({ field }) => (
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png,.webp"
-                    className={`form-control ${
-                      errors.idProofFile ? "is-invalid" : ""
-                    }`}
-                    onChange={(e) =>
-                      field.onChange(e.target.files?.[0] || null)
-                    }
-                  />
+                  <>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.webp"
+                      className={`form-control ${errors.idProofFile ? "is-invalid" : ""
+                        }`}
+                      onChange={(e) =>
+                        field.onChange(e.target.files?.[0] || null)
+                      }
+                    />
+                    {typeof field.value === "string" && field.value && (
+                      <a
+                        href={`/${field.value}`} // Adjust path based on backend storage
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-sm btn-outline-primary mt-2"
+                      >
+                        View Uploaded File
+                      </a>
+                    )}
+                  </>
                 )}
               />
               {errors.idProofFile && (

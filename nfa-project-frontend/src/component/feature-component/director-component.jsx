@@ -14,6 +14,15 @@ import Swal from "sweetalert2";
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 
+const fileValidation = z
+  .instanceof(File, { message: "File is required" })
+  .refine((file) => file.size <= MAX_FILE_SIZE, {
+    message: "File must be less than 2MB",
+  })
+  .refine((file) => fileTypes.includes(file.type), {
+    message: "Only PNG, JPEG, WEBP, or PDF files are allowed",
+  });
+
 const filmSchema = z.object({
   indianNationality: z.enum(["Yes", "No"], {
     required_error: "This field is required",
@@ -33,28 +42,32 @@ const filmSchema = z.object({
     .trim()
     .length(6, "Pin Code must be exactly 6 digits")
     .regex(/^[0-9]{6}$/, "Pin Code must be numeric"),
+  idProofFile: z.union([
+    fileValidation,
+    z.string().min(1, "Existing file missing"),
+  ]),
 
-  idProofFile: z
-    .any()
-    .refine((file) => file instanceof File || typeof file === "string", {
-      message: "Id Proof is required",
-    })
-    .refine(
-      (file) =>
-        typeof file === "string" ||
-        (file instanceof File && file.size <= MAX_FILE_SIZE),
-      {
-        message: "File must be less than 2MB",
-      }
-    )
-    .refine(
-      (file) =>
-        typeof file === "string" ||
-        (file instanceof File && fileTypes.includes(file.type)),
-      {
-        message: "Only PNG, JPEG, or PDF files are allowed",
-      }
-    ),
+  // idProofFile: z
+  //   .any()
+  //   .refine((file) => file instanceof File || typeof file === "string", {
+  //     message: "Id Proof is required",
+  //   })
+  //   .refine(
+  //     (file) =>
+  //       typeof file === "string" ||
+  //       (file instanceof File && file.size <= MAX_FILE_SIZE),
+  //     {
+  //       message: "File must be less than 2MB",
+  //     }
+  //   )
+  //   .refine(
+  //     (file) =>
+  //       typeof file === "string" ||
+  //       (file instanceof File && fileTypes.includes(file.type)),
+  //     {
+  //       message: "Only PNG, JPEG, or PDF files are allowed",
+  //     }
+  //   ),
 });
 
 const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
@@ -85,7 +98,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
 
   const getDirector = async () => {
     try {
-      const response = await postRequest("film/director-list", { id });
+      const response = await postRequest("film/director-list", { id, film_type: filmType });
       if (response.statusCode === 200) {
         setDirectors(response.data);
       } else {
@@ -128,7 +141,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
     formData.append("email", data.email);
     formData.append("address", data.address);
     formData.append("pincode", data.pinCode);
-    formData.append("producer_self_attested_doc", data.idProofFile);
+    formData.append("director_self_attested_doc", data.idProofFile);
     formData.append("nfa_feature_id", id);
     formData.append("film_type", filmType);
 
@@ -167,7 +180,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
       email: data.email,
       address: data.address,
       pinCode: data.pincode,
-      idProofFile: data?.producer_self_attested_doc ?? null,
+      idProofFile: data?.director_self_attested_doc ?? null,
     });
     setEditingIndex(index);
     setShowForm(true);
@@ -176,7 +189,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
   const handleDelete = (index) => {
     Swal.fire({
       title: "Confirm Deletion",
-      text: "Are you sure you want to delete producer?",
+      text: "Are you sure you want to delete this director?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
@@ -210,8 +223,8 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
 
   const onNext = async () => {
     const isValid = await trigger(); // validate the form
-       let url = filmType == 'feature' ? "film/feature-update" :"film/non-feature-update";
-    if (isValid || !showForm) {
+    let url = filmType == 'feature' ? "film/feature-update" : "film/non-feature-update";
+    if ((isValid || !showForm) && directors.length > 0) {
       const formData = new FormData();
       formData.append("step", "5");
       formData.append("id", id);
@@ -222,7 +235,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
       }
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
-      showSuccessToast("Atleast one diector is required");
+      directors.length === 0 ? showErrorToast("Atleast one director is required") : showErrorToast("Please fill all required fields");
     }
   };
 
@@ -281,9 +294,20 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
                       />
                     </td>
                     <td>
-                      <span className="id-proof-status">
-                        {director.idProofFile?.name || "Not Provided"}
-                      </span>{" "}
+                      {director.director_self_attested_doc ? (
+                        <>
+                          <a
+                            href={`/documents/${director.director_self_attested_doc}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-sm btn-outline-primary ms-2"
+                          >
+                            View
+                          </a>
+                        </>
+                      ) : (
+                        <span className="id-proof-status text-muted">Not Provided</span>
+                      )}
                     </td>
                     <td>
                       <button
