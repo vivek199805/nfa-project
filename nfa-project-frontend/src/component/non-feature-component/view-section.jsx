@@ -248,7 +248,22 @@ const CensorView = ({ data }) => {
         <div className="col-6 value-column">
           <div>{data.censor_certificate_nom}</div>
           <div>{data.censor_certificate_date}</div>
-          <div>{data.censor_certificate_file}</div>
+          <div>
+            {data.censor_certificate_file ? (
+              <>
+                <a
+                  href={`${import.meta.env.VITE_API_URL}/${data.censor_certificate_file}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                    className="btn btn-sm btn-outline-primary ms-2"
+                >
+                  View
+                </a>
+              </>
+            ) : (
+              <span className="id-proof-status text-muted">Not Provided</span>
+            )}
+          </div>
         </div>
       </div>
     </div>

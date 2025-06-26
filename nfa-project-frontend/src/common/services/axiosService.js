@@ -12,7 +12,7 @@ const api = axios.create({
 });
 
 // List of routes that do not require token
-const excludedRoutes = ["login", "/register"];
+const excludedRoutes = ["login", "/register", 'forgot-password', '/reset-password', 'verify-email'];
 
 // Request interceptor for token
 api.interceptors.request.use(

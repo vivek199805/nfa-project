@@ -54,11 +54,13 @@ const LoginPage = () => {
       password: ''
     }
     const res = await postRequest("user/verify-email", credentials);
-    if (res.statusCode == 200) {
+    if (res?.statusCode == 200) {
+      console.log("Email verification successful", res);
+      
       setIsVerify(true);
-      showSuccessToast(res.message);
+      showSuccessToast(res?.message);
     } else {
-      showErrorToast(res.message)
+      showErrorToast(res?.message)
     }
 
   }

@@ -67,7 +67,7 @@ const CensorSection = ({ setActiveSection, filmType }) => {
       reset({
         certificateNumber: formData?.data?.censor_certificate_nom || "",
         certificateDate: formatDate(formData?.data?.censor_certificate_date) || "",
-        certificateFile: formData?.data?.censor_certificate_file || "", // Files can't be pre-filled
+        certificateFile: formData?.data?.censor_certificate_file ? formData?.data?.censor_certificate_file.split("/").pop() : "", // Files can't be pre-filled
       });
     }
   }, [formData, reset, storedFilmData]);
@@ -76,11 +76,12 @@ const CensorSection = ({ setActiveSection, filmType }) => {
     console.log("Form submitted:", data);
     //  dispatch(setFormData(data));
     // Call API to submit form data
+
     let url = ""
     const formData = new FormData();
     formData.append("censor_certificate_nom", data.certificateNumber);
     formData.append("censor_certificate_date", data.certificateDate);
-    formData.append("censor_certificate_file", data.certificateFile);
+     formData.append("censor_certificate_file", data.certificateFile);
     formData.append('step', '2');
     formData.append('id', id);
     formData.append("film_type", filmType);
@@ -143,13 +144,25 @@ const CensorSection = ({ setActiveSection, filmType }) => {
               name="certificateFile"
               control={control}
               render={({ field }) => (
-                <input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.webp"
-                  className={`form-control ${errors.certificateFile ? "is-invalid" : ""
-                    }`}
-                  onChange={(e) => field.onChange(e.target.files?.[0] || null)}
-                />
+                <>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.webp"
+                    className={`form-control ${errors.certificateFile ? "is-invalid" : ""
+                      }`}
+                    onChange={(e) => field.onChange(e.target.files?.[0] || null)}
+                  />
+                  {typeof  formData?.data?.censor_certificate_file === "string" &&  formData?.data?.censor_certificate_file && (
+                    <a
+                      href={`${import.meta.env.VITE_API_URL}/${ formData?.data?.censor_certificate_file.trim()}`} // Adjust path based on backend storage
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-sm btn-outline-primary mt-2"
+                    >
+                      View Uploaded File
+                    </a>
+                  )}
+                </>
               )}
             />
             {errors.certificateFile && (

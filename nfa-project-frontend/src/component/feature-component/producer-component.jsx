@@ -129,7 +129,11 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
     formData.append("email", data.email);
     formData.append("address", data.address);
     formData.append("pincode", data.pinCode);
-    formData.append("producer_self_attested_doc", data.idProofFile);
+    if (data.idProofFile instanceof File) {
+      formData.append("producer_self_attested_doc", data.idProofFile);
+    } else {
+      formData.append("producer_self_attested_doc", data.idProofFile.split("/").pop());
+    }
     formData.append("nfa_feature_id", id);
     formData.append("film_type", filmType);
 
@@ -157,7 +161,6 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
     setShowForm(false);
   };
   const handleEdit = (index) => {
-    console.log("hhfhh", index);
     //  const data = producers[index];
     const data = producers.find((item) => item._id === index);
     // Object.entries(data).forEach(([key, value]) => {
@@ -295,7 +298,7 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
                       {producer.producer_self_attested_doc ? (
                         <>
                           <a
-                            href={`/documents/${producer.producer_self_attested_doc}`}
+                            href={`${import.meta.env.VITE_API_URL}/${producer.producer_self_attested_doc}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="btn btn-sm btn-outline-primary ms-2"
@@ -489,16 +492,17 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
                         field.onChange(e.target.files?.[0] || null)
                       }
                     />
-                    {typeof field.value === "string" && field.value && (
-                      <a
-                        href={`/${field.value}`} // Adjust path based on backend storage
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-sm btn-outline-primary mt-2"
-                      >
-                        View Uploaded File
-                      </a>
-                    )}
+
+                  {typeof field.value === "string" && field.value && (
+                    <a
+                      href={`${import.meta.env.VITE_API_URL}/${field.value.trim()}`} // Adjust path based on backend storage
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-sm btn-outline-primary mt-2"
+                    >
+                      View Uploaded File
+                    </a>
+                  )}
                   </>
                 )}
               />

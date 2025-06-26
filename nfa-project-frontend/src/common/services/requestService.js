@@ -23,6 +23,7 @@ export const getRequestById = async (url, id, config = {}) => {
 export const postRequest = async (url, data = {}, config = {}) => {
   try {
     const response = await api.post(url, data, config);
+      console.log("POST Request URL:", response);
     return response.data;
   } catch (error) {
     handleError(error);

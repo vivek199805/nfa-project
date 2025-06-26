@@ -70,7 +70,7 @@ const CompanyRegistrationSection = ({ setActiveSection, filmType }) => {
     if (formData) {
       reset({
         CompanyRegistration: formData?.data?.company_reg_details || "",
-        CompanyRegistrationFile: formData?.data?.company_reg_doc || "", // Files can't be pre-filled
+        CompanyRegistrationFile: formData?.data?.company_reg_doc ? formData?.data?.company_reg_doc.split("/").pop() : "", // Files can't be pre-filled
       });
     }
   }, [formData, reset]);
@@ -125,13 +125,25 @@ const CompanyRegistrationSection = ({ setActiveSection, filmType }) => {
             name="CompanyRegistrationFile"
             control={control}
             render={({ field }) => (
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png,.webp"
-                className={`form-control ${errors.CompanyRegistrationFile ? "is-invalid" : ""
-                  }`}
-                onChange={(e) => field.onChange(e.target.files?.[0] || null)}
-              />
+              <>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp"
+                  className={`form-control ${errors.CompanyRegistrationFile ? "is-invalid" : ""
+                    }`}
+                  onChange={(e) => field.onChange(e.target.files?.[0] || null)}
+                />
+                  {typeof  formData?.data?.company_reg_doc === "string" &&  formData?.data?.company_reg_doc && (
+                    <a
+                      href={`${import.meta.env.VITE_API_URL}/${ formData?.data?.company_reg_doc.trim()}`} // Adjust path based on backend storage
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-sm btn-outline-primary mt-2"
+                    >
+                      View Uploaded File
+                    </a>
+                  )}
+              </>
             )}
           />
           {errors.CompanyRegistrationFile && (

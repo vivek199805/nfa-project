@@ -141,7 +141,11 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
     formData.append("email", data.email);
     formData.append("address", data.address);
     formData.append("pincode", data.pinCode);
-    formData.append("director_self_attested_doc", data.idProofFile);
+    if (data.idProofFile instanceof File) {
+      formData.append("idProofFile", data.idProofFile);
+    } else {
+      formData.append("idProofFile", data.idProofFile.split("/").pop()); // Extract filename if it's a string
+    }
     formData.append("nfa_feature_id", id);
     formData.append("film_type", filmType);
 
@@ -297,7 +301,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
                       {director.director_self_attested_doc ? (
                         <>
                           <a
-                            href={`/documents/${director.director_self_attested_doc}`}
+                          href= {`${import.meta.env.VITE_API_URL}/${director.director_self_attested_doc}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="btn btn-sm btn-outline-primary ms-2"
@@ -474,7 +478,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
                     />
                     {typeof field.value === "string" && field.value !== "" && (
                       <a
-                        href={field.value}
+                        href= {`${import.meta.env.VITE_API_URL}/${field.value}`}
                         target="_blank"
                         rel="noreferrer"
                         className="mt-2 d-block"
