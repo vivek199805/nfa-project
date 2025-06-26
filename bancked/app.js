@@ -17,6 +17,7 @@ dotenv.config();
 const app = express();
 
 app.use(express.json());
+app.use(express.static("public")); // Serve static files from the "public" directory
 app.use(express.urlencoded({ extended: true }));
 
 mongoose.set('strictQuery', true);

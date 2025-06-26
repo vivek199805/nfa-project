@@ -1,3 +1,4 @@
+import { all } from "axios";
 import { Document } from "../../models/mongodbModels/document.js";
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
 import Common from "../../services/common.js"
@@ -28,6 +29,15 @@ const getAllProducersByFeatureId = async (req, res) => {
         };
       })
     );
+
+    allProducerWithDocs.forEach((producer) => {
+      if (producer?.documents?.file) {
+      producer.documents.file = `documents/NFA/${producer.documents.file}`;
+      }
+      if (producer?.producer_self_attested_doc) {
+      producer.producer_self_attested_doc = `documents/NFA/${producer.producer_self_attested_doc}`;
+      }
+    });
 
     res.status(200).json({
       message: "data fetch successfully",

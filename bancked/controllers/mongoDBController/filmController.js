@@ -158,13 +158,15 @@ const getFilmDetailsById = async (req, res) => {
     const relatedDocuments = await Document.find({
       context_id: featureForm._id,
     });
-    console.log("Related Documents:", relatedDocuments);
     // Convert Mongoose Document to plain object (optional but safer for mutation)
     const featureData = featureForm.toObject();
     // Add documents directly into the object
-    featureData.documents = relatedDocuments;
-
-
+    featureData.documents = relatedDocuments || [];
+        const fileBasePath = "documents/NFA/";
+    if (featureData.censor_certificate_file) featureData.censor_certificate_file = `${fileBasePath}${featureData.censor_certificate_file}`;
+    if (featureData.company_reg_doc) featureData.company_reg_doc = `${fileBasePath}${featureData.company_reg_doc}`;
+    if (featureData.original_work_copy) featureData.original_work_copy = `${fileBasePath}${featureData.original_work_copy}`;
+    // Step 3: Return the feature data with documents
     res.status(200).json({
       message: "Fetch successfully",
       statusCode: 200,
@@ -356,7 +358,7 @@ const handleCensorStep = async (data, payload) => {
         return response("exception", { message: "Image not uploaded.!!" });
       }
 
-      data.censor_certificate_file = censorFile.originalname ?? null;
+      data.censor_certificate_file = fileUpload?.data?.file ?? null;
     } else {
       data.censor_certificate_file = null;
     }
@@ -396,7 +398,7 @@ const handleCompanyRegistrationStep = async (data, payload) => {
       if (!fileUpload.status) {
         return response("exception", { message: "Image not uploaded.!!" });
       }
-      data.company_reg_doc = censorFile.originalname ?? null;
+      data.company_reg_doc = fileUpload?.data?.file ?? null;
     } else {
       data.company_reg_doc = null;
     }
@@ -492,7 +494,7 @@ const handleOtherStep = async (data, payload) => {
     }
   }
 
-    if (payload.files && Array.isArray(payload.files)) {
+  if (payload.files && Array.isArray(payload.files)) {
     const originalFile = payload.files.find((file) => file.fieldname === "original_work_copy");
     if (originalFile) {
       const fileUpload = await Common.imageUpload({

@@ -105,14 +105,22 @@ const loginUser = async (req, res) => {
 const verifyEmail = async (req, res) => {
   try {
     const { email, password } = req.body;
+        console.log("user", email);
+    // Validate input
+    if (!email) {
+      return res.status(200).json({ message: "Email are required", statusCode: 203 });
+    }
 
     // Find user by email
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "Invalid credentials" });
+    const user = await User.findOne({email});
+    if (!user) return res.status(200).json({ message: "Invalid credentials", statusCode: 203 });
 
-    res
-      .status(200)
-      .json({ message: "Email verified successfully", statusCode: 200 });
+    
+
+    res.status(200).json({
+       message: "Email verified successfully",
+        statusCode: 200
+       });
   } catch (err) {
     res
       .status(400)

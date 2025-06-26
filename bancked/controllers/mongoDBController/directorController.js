@@ -29,6 +29,14 @@ const getAllDirectorsByFeatureId = async (req, res) => {
         };
       })
     );
+    allDirectorWithDocs.forEach((director) => {
+      if (director?.documents?.file) {
+        director.documents.file = `documents/NFA/${director.documents.file}`;
+      }
+      if (director?.director_self_attested_doc) {
+        director.director_self_attested_doc = `documents/NFA/${director.director_self_attested_doc}`;
+      }
+    });
 
     res.status(200).json({
       message: "data fetch successfully",
