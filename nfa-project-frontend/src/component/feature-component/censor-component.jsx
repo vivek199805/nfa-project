@@ -7,6 +7,8 @@ import { postRequest } from "../../common/services/requestService";
 import { useParams } from "react-router-dom";
 import { formatDate } from "../../common/common-function";
 import { useFetchById } from "../../hooks/useFetchById";
+import CustomDatePicker from "../../common/CustomDatePicker";
+import dayjs from "dayjs";
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
@@ -21,7 +23,12 @@ const fileValidation = z
 
 const censorSchema = z.object({
   certificateNumber: z.string().min(1, "Censor Certificate Number is required"),
-  certificateDate: z.string().optional(),
+  // certificateDate: z.string().optional(),
+  certificateDate: z
+    .any()
+    .refine((val) => val && dayjs(val).isValid(), {
+      message: "Valid date is required",
+    }),
   certificateFile: z.union([
     fileValidation,
     z.string().min(1, "Existing file missing"),
@@ -55,7 +62,7 @@ const CensorSection = ({ setActiveSection, filmType }) => {
     resolver: zodResolver(censorSchema),
     defaultValues: {
       certificateNumber: "",
-      certificateDate: "",
+      certificateDate: null,
       certificateFile: null, // this will typically be a File object when uploaded
     },
     mode: "onTouched",
@@ -81,7 +88,7 @@ const CensorSection = ({ setActiveSection, filmType }) => {
     const formData = new FormData();
     formData.append("censor_certificate_nom", data.certificateNumber);
     formData.append("censor_certificate_date", data.certificateDate);
-     formData.append("censor_certificate_file", data.certificateFile);
+    formData.append("censor_certificate_file", data.certificateFile);
     formData.append('step', '2');
     formData.append('id', id);
     formData.append("film_type", filmType);
@@ -121,12 +128,26 @@ const CensorSection = ({ setActiveSection, filmType }) => {
             <label className="form-label">
               Censor Certification Date<span className="text-danger">*</span>
             </label>
-            <input
+            {/* <input
               type="date"
               className={`form-control ${errors.certificateDate ? "is-invalid" : ""
                 }`}
               placeholder="Censor Certification Date"
               {...register("certificateDate")}
+            /> */}
+            <Controller
+              name="certificateDate"
+              control={control}
+              render={({ field }) => (
+                <CustomDatePicker
+                  type="single"
+                  // label="Censor Certification Date"
+                  value={field.value}
+                  onChange={(date) => field.onChange(date ?? null)}
+                  error={!!errors.date}
+                  helperText={errors.date?.message}
+                />
+              )}
             />
             {errors.certificateDate && (
               <div className="invalid-feedback">
@@ -152,9 +173,9 @@ const CensorSection = ({ setActiveSection, filmType }) => {
                       }`}
                     onChange={(e) => field.onChange(e.target.files?.[0] || null)}
                   />
-                  {typeof  formData?.data?.censor_certificate_file === "string" &&  formData?.data?.censor_certificate_file && (
+                  {typeof formData?.data?.censor_certificate_file === "string" && formData?.data?.censor_certificate_file && (
                     <a
-                      href={`${import.meta.env.VITE_API_URL}/${ formData?.data?.censor_certificate_file.trim()}`} // Adjust path based on backend storage
+                      href={`${import.meta.env.VITE_API_URL}/${formData?.data?.censor_certificate_file.trim()}`} // Adjust path based on backend storage
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-sm btn-outline-primary mt-2"
