@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema(
     address: { type: String, required: true },
     pinCode: { type: String, required: true },
     aadharNumber: { type: String, required: true },
-    category: { type: String, required: true },
+    usertype: { type: String, required: true },
     password: { 
       type: String, 
       required: true,

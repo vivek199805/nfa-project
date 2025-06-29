@@ -1,13 +1,20 @@
 import { verifyToken } from "../utils/jwt.util.js";
+import User from "../models/mongodbModels/user.js";
 
-export function requireAuth(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ error: "Unauthorized" });
-
-  const token = authHeader.split(" ")[1];
+export async function requireAuth(req, res, next) {
   try {
-    const decoded = verifyToken(token);
-    (req).user = decoded;
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: "Unauthorized" });
+    const token = authHeader.split(" ")[1];  
+    const decoded = verifyToken(token);    
+     const user = await User.findOne({_id: decoded.userId})
+     
+    if (!user) {
+      return res.status(401).json({ error: "Unauthorized: User not found" });
+    }
+
+    req.user = user;
+    req.token = token;
     next();
   } catch (err) {
     res.status(401).json({ error: "Invalid token" });

@@ -20,6 +20,7 @@ const createFeatureSubmission = async (req, res) => {
       sound_system,
       film_synopsis,
       step,
+      client_id
     } = req.body;
 
     const filmData = new FeatureForm({
@@ -37,7 +38,8 @@ const createFeatureSubmission = async (req, res) => {
       film_synopsis,
       step,
       active_step: "1",
-      film_type: 'feature'
+      film_type: 'feature',
+      client_id
     });
     await filmData.save();
     const finalData = filmData.toObject(); // Convert Mongoose document to plain JS object

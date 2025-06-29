@@ -17,7 +17,7 @@ const registerUser = async (req, res, next) => {
       address,
       pinCode,
       aadharNumber,
-      category,
+      category:usertype,
       password,
     } = req.body;
 
@@ -40,7 +40,7 @@ const registerUser = async (req, res, next) => {
       address,
       pinCode,
       aadharNumber,
-      category,
+      usertype,
       password: hashedPassword,
     });
 
@@ -71,6 +71,9 @@ const loginUser = async (req, res) => {
       return res.status(200).json({ message: "Invalid credentials", statusCode: 203 });
     }
 
+    console.log(user);
+    
+
     //compare password
     const isMatch = await comparePasswords(password, user.password);
     if (!isMatch) {
@@ -88,7 +91,7 @@ const loginUser = async (req, res) => {
       name: `${user.firstName} ${user.lastName}`,
       aadharNumber: user.aadharNumber,
       address: user.address,
-      category: user.category,
+      usertype: user.usertype,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
