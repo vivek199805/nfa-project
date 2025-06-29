@@ -14,7 +14,7 @@ const slides = [
 ];
 
 const getUserForms = async () => {
-  const res = await getRequest("/film/entry-list",); // Update this endpoint based on your backend
+  const res = await getRequest("/entry-list"); // Update this endpoint based on your backend
   return res.data;
 };
 const DashboardPage = () => {
@@ -28,7 +28,7 @@ const DashboardPage = () => {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["/film/entry-list"],
+    queryKey: ["/entry-list"],
     queryFn: getUserForms,
     // enabled: true, // disables automatic query
     // initialData: staticForms, // sets mock data
@@ -39,7 +39,7 @@ const DashboardPage = () => {
     console.log("user", user);
 
     if (!isLoading && !user) {
-      navigate('/');
+      navigate("/");
     }
   }, [user, isLoading, navigate]);
 
@@ -68,7 +68,8 @@ const DashboardPage = () => {
                       <i className="bi bi-telephone"></i> {user?.phone}
                     </li>
                     <li>
-                      <i className="bi bi-envelope"></i>{user?.email}
+                      <i className="bi bi-envelope"></i>
+                      {user?.email}
                     </li>
                   </ul>
                   <div className="d-flex justify-content-end">
@@ -84,24 +85,31 @@ const DashboardPage = () => {
 
                 {/* Show notification only if there are no forms */}
                 {(!formCards ||
-                  (!formCards.feature?.length && !formCards["non-feature"]?.length)) && (
-                    <div className="notification mt-4 col-out-div">
-                      <h3>You have not created any form yet.</h3>
-                      <p>Click Here to Create</p>
-                      <p className="text-left">
-                        <a
-                          href="#"
-                          className="btn btn-common-form"
-                          onClick={() => setShowModal(true)}
-                        >
-                          CREATE YOUR FIRST PROJECT
-                        </a>
-                      </p>
-                    </div>
-                  )}
+                  // (!formCards.feature?.length && !formCards["non-feature"]?.length)
+                  Object.keys(formCards).every(
+                    (key) => !formCards[key] || formCards[key].length === 0
+                  )) && (
+                  <div className="notification mt-4 col-out-div">
+                    <h3>You have not created any form yet.</h3>
+                    <p>Click Here to Create</p>
+                    <p className="text-left">
+                      <a
+                        href="#"
+                        className="btn btn-common-form"
+                        onClick={() => setShowModal(true)}
+                      >
+                        CREATE YOUR FIRST PROJECT
+                      </a>
+                    </p>
+                  </div>
+                )}
                 {/* Add button to create new project if forms exist */}
-                {(formCards?.feature?.length > 0 ||
-                  formCards?.["non-feature"]?.length > 0) && (
+                {formCards &&
+                  // formCards?.feature?.length > 0 || formCards?.["non-feature"]?.length > 0
+                  Object.keys(formCards).some(
+                    (key) =>
+                      Array.isArray(formCards[key]) && formCards[key].length > 0
+                  ) && (
                     <div className="mt-3">
                       <button
                         className="btn btn-common-form"
@@ -117,59 +125,81 @@ const DashboardPage = () => {
               {isError && <p>Failed to load forms.</p>}
 
               <div className="row mt-4">
-                {["feature", "non-feature"].map((type) =>
-                  formCards?.[type]?.map((card, index) => (
-                    <div
-                      className="col-md-6 col-lg-12"
-                      key={`${type}-${index}`}
-                    >
-                      <div className="card mb-3">
-                        <div className="card-header">
-                          <h5 className="card-title mb-0">
-                            {card.film_title_english}
-                          </h5>
-                        </div>
-                        <div className="card-body">
-                          <div className="d-flex">
-                            <div>
-                              <p className="card-text mb-0">
-                                <b>Type of form:</b>{" "}
-                                {type === "feature" ? "Feature" : "Non-Feature"}
-                              </p>
-                              <p className="card-text mb-2">
-                                <b>Your Step:</b> {card.active_step} step
-                              </p>
+                {["feature", "non-feature", "bestBooks", "bestFilmCritic"].map(
+                  (type) =>
+                    formCards?.[type]?.map((card, index) => (
+                      <div
+                        className="col-md-6 col-lg-12"
+                        key={`${type}-${index}`}
+                      >
+                        <div className="card mb-3">
+                          <div className="card-header">
+                            <h5 className="card-title mb-0">
+                              {card.film_title_english || card.author_name}
+                            </h5>
+                          </div>
+                          <div className="card-body">
+                            <div className="d-flex">
                               <div>
-                                <NavLink
-                                  to={
-                                    card.payment_status != 2
-                                      ? `/${type}/${card.id}`
-                                      : `/${type}/view/${card.id}`
-                                  }
-                                  className="text-decoration-none"
-                                >
-                                  <i
-                                    className={`bi bi-${card.payment_status != 2 ? "pencil" : "eye"
+                                <p className="card-text mb-0">
+                                  <b>Type of form:</b>{" "}
+                                  {{
+                                    feature: "Feature",
+                                    "non-feature": "Non-Feature",
+                                    bestBooks: "Best Book on Cinema",
+                                    bestFilmCritic: "Best Critic on Cinema",
+                                  }[type] || type}
+                                </p>
+                                <p className="card-text mb-2">
+                                  <b>Your Step:</b> {card.active_step} step
+                                </p>
+                                <div>
+                                  <NavLink
+                                    to={
+                                      card.payment_status != 2
+                                        ? `/${
+                                            {
+                                              feature: "feature",
+                                              "non-feature": "non-feature",
+                                              bestBooks: "best-book",
+                                              bestFilmCritic: "film-critic",
+                                            }[type]
+                                          }/${card.id}`
+                                        : `/${
+                                            {
+                                              feature: "feature",
+                                              "non-feature": "non-feature",
+                                              bestBooks: "best-book",
+                                              bestFilmCritic: "film-critic",
+                                            }[type]
+                                          }/view/${card.id}`
+                                    }
+                                    className="text-decoration-none"
+                                  >
+                                    <i
+                                      className={`bi bi-${
+                                        card.payment_status != 2
+                                          ? "pencil"
+                                          : "eye"
                                       }`}
-                                  ></i>{" "}
-                                  {card.payment_status != 2 ? "Edit" : "View"}
-                                </NavLink>
+                                    ></i>{" "}
+                                    {card.payment_status != 2 ? "Edit" : "View"}
+                                  </NavLink>
+                                </div>
                               </div>
-                            </div>
-                            <div className="m-auto">
-                              <p className="card-text mb-2">
-                                <b>Payment:</b>{" "}
-                                {card.payment_status != 2 ? "Unpaid" : "Paid"}
-                              </p>
+                              <div className="m-auto">
+                                <p className="card-text mb-2">
+                                  <b>Payment:</b>{" "}
+                                  {card.payment_status != 2 ? "Unpaid" : "Paid"}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    ))
                 )}
               </div>
-
             </div>
           </div>
         </div>
@@ -195,10 +225,26 @@ const DashboardPage = () => {
         </div>
       </div>
 
-      <FeatureModalComponent
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-      />
+      {user?.usertype == 1 ? (
+        <FeatureModalComponent
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+        />
+      ) : (
+        <FeatureModalComponent
+          title="Publisher"
+          buttonLabel={{
+            label1: "Best Book on Cinema Entry Form",
+            label2: "Best Critic on Cinema Entry Form",
+          }}
+          buttonValue={{
+            value1: "best-book",
+            value2: "film-critic",
+          }}
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+        />
+      )}
     </div>
   );
 };

@@ -1,12 +1,20 @@
 // ModalComponent.jsx
 
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/use-auth";
 
-const FeatureModalComponent = ({ isOpen, onClose }) => {
-      const navigate = useNavigate();
+const FeatureModalComponent = ({
+  title = "Producer / Production Company",
+  buttonLabel = { label1: "feature", label2: "non-feature" },
+  buttonValue = { value1: "feature", value2: "non-feature" },
+  isOpen,
+  onClose,
+}) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   if (!isOpen) return null;
 
-    const handleOverlayClick = () => {
+  const handleOverlayClick = () => {
     onClose(); // Close the modal
   };
 
@@ -14,30 +22,34 @@ const FeatureModalComponent = ({ isOpen, onClose }) => {
     e.stopPropagation(); // Prevent closing when clicking inside modal
   };
 
-    const handleSelect = (type) => {
+  const handleSelect = (type) => {
     onClose(); // Optional: close modal
-    if (type === "feature") navigate("/feature");
-    else navigate("/non-feature");
+    if (user?.usertype == 1) {
+      if (type === "feature") navigate("/feature");
+      else navigate("/non-feature");
+    } else {
+      if (type === "best-book") navigate("/best-book");
+      else navigate("/film-critic");
+    }
   };
 
-   return (
+  return (
     <div className="modal-overlay" onClick={handleOverlayClick}>
       <div className="modal-card" onClick={handleModalClick}>
-        <h2 className="modal-title">Producer / Production Company</h2>
+        <h2 className="modal-title">{title}</h2>
         <div className="modal-options">
-          <label onClick={() => handleSelect("feature")}>
+          <label onClick={() => handleSelect(buttonValue?.value1)}>
             <input type="radio" name="type" />
-            <span>Feature</span>
+            <span>{buttonLabel?.label1}</span>
           </label>
-          <label onClick={() => handleSelect("non-feature")}>
+          <label onClick={() => handleSelect(buttonValue?.value2)}>
             <input type="radio" name="type" />
-            <span>Non-Feature</span>
+            <span>{buttonLabel?.label2}</span>
           </label>
         </div>
       </div>
     </div>
   );
-
 };
 
 export default FeatureModalComponent;

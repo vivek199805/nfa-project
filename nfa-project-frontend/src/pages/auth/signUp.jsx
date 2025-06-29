@@ -140,8 +140,8 @@ const SignupPage = () => {
               {...register("category")}
             >
               <option value="">Select Category</option>
-              <option value="producer">Producer/Production Company</option>
-              <option value="publisher">Publisher</option>
+              <option value="1">Producer/Production Company</option>
+              <option value="2">Publisher</option>
             </select>
             {errors.category && (
               <div className="invalid-feedback">{errors.category.message}</div>

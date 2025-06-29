@@ -18,13 +18,15 @@ import NotFoundPage from "./pages/not-found-page";
 import ErrorPage from "./pages/error-page";
 import Loader from "./component/loader-component";
 import FilmSubmissionView from "./component/feature-component/FilmSubmissionView";
+import BestBookPage from "./pages/best-book";
+import BestFilmCriticPage from "./pages/best-filmCritic";
 
 function App() {
   const router = createBrowserRouter([
     {
       path: "/",
       element: <AppLayout />,
-       errorElement: <ErrorPage />,
+      errorElement: <ErrorPage />,
       children: [
         {
           path: "/",
@@ -73,39 +75,56 @@ function App() {
           element: <NonFeatureFilmPage />,
         },
 
-      {
-        path: "feature",
-        children: [
-          { path: "", element: <FeatureFilmPage /> }, // /feature
-          { path: ":id", element: <FeatureFilmPage /> }, // /feature/9
-          { path: "view/:id", element: <FilmSubmissionView /> }, // /feature/view/9
-        ],
-      },
+        {
+          path: "feature",
+          children: [
+            { path: "", element: <FeatureFilmPage /> }, // /feature
+            { path: ":id", element: <FeatureFilmPage /> }, // /feature/9
+            { path: "view/:id", element: <FilmSubmissionView /> }, // /feature/view/9
+          ],
+        },
 
-      {
-        path: "non-feature",
-        children: [
-          { path: "", element: <NonFeatureFilmPage /> },
-          { path: ":id", element: <NonFeatureFilmPage /> },
-        ],
-      },
+        {
+          path: "non-feature",
+          children: [
+            { path: "", element: <NonFeatureFilmPage /> },
+            { path: ":id", element: <NonFeatureFilmPage /> },
+          ],
+        },
+
+        {
+          path: "best-book",
+          children: [
+            { path: "", element: <BestBookPage /> }, // /feature
+            { path: ":id", element: <BestBookPage /> }, // /feature/9
+            { path: "view/:id", element: <FilmSubmissionView /> }, // /feature/view/9
+          ],
+        },
+        {
+          path: "film-critic",
+          children: [
+            { path: "", element: <BestFilmCriticPage /> }, // /feature
+            { path: ":id", element: <BestFilmCriticPage /> }, // /feature/9
+            { path: "view/:id", element: <FilmSubmissionView /> }, // /feature/view/9
+          ],
+        },
       ],
     },
-      { path: "*", element: <NotFoundPage /> },
+    { path: "*", element: <NotFoundPage /> },
   ]);
 
   return (
     <QueryClientProvider client={queryClient}>
-       <Provider store={store}>
-      <Toaster
-        position="top-right"
-        richColors
-        closeButton
-        duration={3000}
-        expand={true}
-      />
-      <Loader />
-      <RouterProvider router={router} />
+      <Provider store={store}>
+        <Toaster
+          position="top-right"
+          richColors
+          closeButton
+          duration={3000}
+          expand={true}
+        />
+        <Loader />
+        <RouterProvider router={router} />
       </Provider>
     </QueryClientProvider>
   );

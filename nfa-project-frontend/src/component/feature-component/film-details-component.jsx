@@ -10,6 +10,7 @@ import {
 } from "../../common/services/requestService";
 import { useNavigate, useParams } from "react-router-dom";
 import { useFetchById } from "../../hooks/useFetchById";
+import { useAuth } from "../../hooks/use-auth";
 
 const filmSchema = z.object({
   titleRoman: z.string().min(1, "This field is required"),
@@ -143,16 +144,19 @@ const filmSchema = z.object({
 
 const FilmDetailsSection = ({ setActiveSection, filmType }) => {
   const [synopsisWordCount, setSynopsisWordCount] = useState(0);
+    const { user } = useAuth();
+  
   const [languageOptions, setLanguageOptions] = useState([]);
   const { id } = useParams();
   const navigate = useNavigate()
     const { data:formData } = useFetchById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id);
+    
 
   const {
     register,
     handleSubmit,
     control,
-    formState: { errors },
+    formState: { errors },    
     reset,
   } = useForm({
     resolver: zodResolver(filmSchema),
@@ -267,6 +271,7 @@ const FilmDetailsSection = ({ setActiveSection, filmType }) => {
     formData.append("film_synopsis", data.synopsis);
     formData.append("step", "1");
     formData.append("film_type", filmType);
+    formData.append("client_id", user?.id);
     if (id) {
       formData.append("id", id);
       filmType == 'feature' ? url = "film/feature-update" : url = "film/non-feature-update";

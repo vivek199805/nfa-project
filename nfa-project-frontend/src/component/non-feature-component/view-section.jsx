@@ -4,7 +4,7 @@ import { ChevronDown, Pencil } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useFetchById } from "../../hooks/useFetchById";
 
-const ViewSection = ({ setActiveSection, filmType }) => {
+const ViewSection = ({ setActiveSection }) => {
   const [activeIndex, setActiveIndex] = useState(null);
   const { id } = useParams();
 
