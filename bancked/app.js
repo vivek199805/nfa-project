@@ -14,6 +14,7 @@ import authRoutes from './routes/mongoDBRoutes/auth.js';
 import langRoutes from './routes/mongoDBRoutes/languages.js';
 import filmSubmissionRoutes from './routes/mongoDBRoutes/filmSubmission.js';
 import entryListRoutes from './routes/mongoDBRoutes/entryList.js';
+import ApiRoutes from './routes/mongoDBRoutes/apiRoutes.js';
 dotenv.config();
 const app = express();
 
@@ -48,7 +49,7 @@ app.use("/api/user", authRoutes);
 app.use("/api", langRoutes);
 app.use("/api", entryListRoutes);
 app.use("/api/film", filmSubmissionRoutes);
-// app.use("/api/addresses", addressRoutes);
+app.use("/api", ApiRoutes);
 // app.use("/api/payment", paymentRoutes);
 // app.use("/api/cart", cartRoutes);
 // app.use("/api/orders", ordersRoutes);

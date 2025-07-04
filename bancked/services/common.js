@@ -33,6 +33,22 @@ export const stepsNonFeature = () => ({
   FINAL_SUBMIT: 10,
 });
 
+export const stepsBestBook = () => ({
+  BEST_BOOK_ON_CINEMA: 1,
+  AUTHOR: 2,
+  PUBLISHER_EDITOR: 3,
+  DECLARATION: 4,
+  FINAL_SUBMIT: 5,
+});
+
+
+export const stepsBestFilmCritic = () => ({
+  CRITIC_DETAILS: 1,
+  ARTICLE: 2,
+  DECLARATION: 3,
+  FINAL_SUBMIT: 4,
+});
+
 // Document type mapping
 export const documentTypeMap = {
   CENSOR_CERTIFICATE_FILE: 1,
@@ -127,4 +143,6 @@ export default {
   stepsFeature,
   stepsNonFeature,
   imageUpload,
+  stepsBestFilmCritic,
+  stepsBestBook
 };

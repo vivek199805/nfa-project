@@ -13,9 +13,7 @@ const formatItems = (items) =>
 const entryList = async (req, res, next) => {
   try {
     
-    const user = req.user.toObject();
-    console.log("oooooooooooooooo",user);
-    
+    const user = req.user.toObject();    
     const userId = user._id;
     const userType = user.usertype;
 
@@ -23,10 +21,7 @@ const entryList = async (req, res, next) => {
       // Type 1 = Film Entries (Feature/Non-Feature)
       const filmEntryData = await FeatureForm.find({ client_id: userId }).populate(
         "producers directors songs actors audiographer documents"
-      );
-
-      console.log("jjjjjjjjjjjjjjjjjjjjjj", filmEntryData);
-      
+      );      
 
       const formattedData = formatItems(filmEntryData);
 

@@ -19,7 +19,23 @@ const bestFilmCriticSchema = new mongoose.Schema({
 
   writer_name: String,
   article_title: String,
-  article_language_id: [String],
+  article_language_id: {
+    type: [String],
+    default: [],
+    set: (val) => {
+      if (typeof val === 'string') {
+        return val.split(',').map((item) => item.trim());
+      }
+      if (Array.isArray(val)) {
+        return val.flatMap((v) =>
+          typeof v === 'string' && v.includes(',')
+            ? v.split(',').map((i) => i.trim())
+            : [v]
+        );
+      }
+      return [];
+    },
+  },
   publication_date: Date,
   publication_name: String,
   rni: Number,

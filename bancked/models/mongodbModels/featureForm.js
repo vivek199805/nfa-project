@@ -19,23 +19,23 @@ const featureFormSchema = new mongoose.Schema(
     film_title_roman: { type: String, default: '' },
     film_title_devnagri: { type: String, default: '' },
     film_title_english: { type: String, default: '' },
-     language_id: {
-    type: [String],
-    default: [],
-    set: (val) => {
-      if (typeof val === 'string') {
-        return val.split(',').map((item) => item.trim());
-      }
-      if (Array.isArray(val)) {
-        return val.flatMap((v) =>
-          typeof v === 'string' && v.includes(',')
-            ? v.split(',').map((i) => i.trim())
-            : [v]
-        );
-      }
-      return [];
+    language_id: {
+      type: [String],
+      default: [],
+      set: (val) => {
+        if (typeof val === 'string') {
+          return val.split(',').map((item) => item.trim());
+        }
+        if (Array.isArray(val)) {
+          return val.flatMap((v) =>
+            typeof v === 'string' && v.includes(',')
+              ? v.split(',').map((i) => i.trim())
+              : [v]
+          );
+        }
+        return [];
+      },
     },
-  },
     english_subtitle: { type: String, default: '0' },
     director_debut: { type: String, default: '0' },
     nom_reels_tapes: { type: String, default: '' },
@@ -105,7 +105,7 @@ const featureFormSchema = new mongoose.Schema(
     actors: { type: [actorSchema], default: [] },
     audiographer: { type: [audiographerSchema], default: [] },
     documents: { type: [documentSchema], default: [] },
-     non_audiographer: { type: String, default: '' },
+    non_audiographer: { type: String, default: '' },
 
     payment_response: { type: mongoose.Schema.Types.Mixed, default: null },
   },
