@@ -93,17 +93,12 @@ const BestFilmSection = ({ setActiveSection, filmType }) => {
     formData.append("publication_date", data.publication_date);
     formData.append("publication_name", data.publication_name);
     formData.append("rni", data.rni == "Yes" ? 1 : 0);
-    formData.append("step", "1");
-    formData.append("film_type", filmType);
+    formData.append("step", 1);
     if (id) {
       formData.append("id", id);
-      filmType == "feature"
-        ? (url = "film/feature-update")
-        : (url = "film/non-feature-update");
+      url = "update-entry"
     } else {
-      filmType == "feature"
-        ? (url = "film/feature-create")
-        : (url = "film/non-feature-create");
+      url = "create-entry"
     }
 
     const response = await postRequest(url, formData);
@@ -126,9 +121,8 @@ const BestFilmSection = ({ setActiveSection, filmType }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${
-                errors.writer_name ? "is-invalid" : ""
-              }`}
+              className={`form-control ${errors.writer_name ? "is-invalid" : ""
+                }`}
               placeholder=""
               {...register("writer_name")}
             />
@@ -145,9 +139,8 @@ const BestFilmSection = ({ setActiveSection, filmType }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${
-                errors.article_title ? "is-invalid" : ""
-              }`}
+              className={`form-control ${errors.article_title ? "is-invalid" : ""
+                }`}
               placeholder=""
               {...register("article_title")}
             />
@@ -236,9 +229,8 @@ const BestFilmSection = ({ setActiveSection, filmType }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${
-                errors.publication_name ? "is-invalid" : ""
-              }`}
+              className={`form-control ${errors.publication_name ? "is-invalid" : ""
+                }`}
               placeholder="Film Title (Roman Script)"
               {...register("publication_name")}
             />
