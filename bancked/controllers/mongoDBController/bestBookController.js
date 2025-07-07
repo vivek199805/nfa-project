@@ -1,45 +1,54 @@
-import BestFilmCritic from "../../models/mongodbModels/BestFilmCritic.js";
+import BestBookCinema from "../../models/mongodbModels/BestBookCinema.js";
 import { Document } from "../../models/mongodbModels/document.js";
 import Editor from "../../models/mongodbModels/editor.js";
-import common from "../../services/common.js";
+import Book from "../../models/mongodbModels/book.js";
 import Common from "../../services/common.js";
+import BestBookCinemaHelper from "../../helpers/BestBookCinemaHelper.js";
 
 // Create Feature Submission
-const createFilmCritic = async (req, res) => {
+const createBook = async (req, res) => {
+  //  const { isValid, errors } = BestBookCinemaHelper.validateStepInput(req.body, req.files);
+  // if (!isValid) {
+  //   return res.status(200).json({
+  //     message: "Validation failed",
+  //     errors,
+  //     statusCode: 203,
+  //   });
+  // }
   try {
     const user = req.user.toObject();
     const client_id = user._id || user.id;
     const {
-      writer_name,
-      article_title,
-      article_language_id,
-      publication_date,
-      publication_name,
-      rni,
+      author_name,
+      author_contact,
+      author_nationality_indian,
+      author_address,
+      author_profile,
       step,
     } = req.body;
 
-    const filmData = new BestFilmCritic({
-      writer_name,
-      article_title,
-      article_language_id,
-      publication_date,
-      publication_name,
-      rni,
+    const bestBookData = new BestBookCinema({
+      author_name,
+      author_contact,
+      author_nationality_indian,
+      author_address,
+      author_profile,
       step,
       active_step: 1,
       client_id,
     });
-    await filmData.save();
-    const finalData = filmData.toObject(); // Convert Mongoose document to plain JS object
+    await bestBookData.save();
+    const finalData = bestBookData.toObject(); // Convert Mongoose document to plain JS object
     finalData.id = finalData._id;
     delete finalData._id;
 
-    res
-      .status(200)
-      .json({ message: "Submit successful", statusCode: 200, data: finalData });
+    res.status(200).json({
+      message: "Submit successful",
+      statusCode: 200,
+      data: finalData,
+    });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -63,7 +72,7 @@ const updateEntryById = async (req, res) => {
 
     const { id: _id } = req.body;
     // Find the document by ID
-    const existingEntry = await BestFilmCritic.findById(_id);
+    const existingEntry = await BestBookCinema.findById(_id);
     if (!existingEntry) {
       return res.status(200).json({
         statusCode: 203,
@@ -73,17 +82,17 @@ const updateEntryById = async (req, res) => {
     console.log("hello", existingEntry);
 
     let stepHandler = {
-      [Common.stepsBestFilmCritic().CRITIC_DETAILS]: async (
+      [Common.stepsBestBook().AUTHOR]: async (existingEntry, payload) =>
+        await handleAuthorStep(existingEntry, payload),
+      [Common.stepsBestBook().BEST_BOOK_ON_CINEMA]: async (
         existingEntry,
         payload
-      ) => await handleBestFilmCriticStep(existingEntry, payload),
-      [Common.stepsBestFilmCritic().CRITIC]: async (existingEntry, payload) =>
-        await handleCriticStep(existingEntry, payload),
-      [Common.stepsBestFilmCritic().PUBLISHER]: async (
+      ) => await handleBookStep(existingEntry, payload),
+      [Common.stepsBestBook().PUBLISHER_EDITOR]: async (
         existingEntry,
         payload
       ) => await handlePublisherStep(existingEntry, payload),
-      [Common.stepsBestFilmCritic().DECLARATION]: async (data, payload) =>
+      [Common.stepsBestBook().DECLARATION]: async (data, payload) =>
         await handleDeclarationStep(data, payload),
     };
 
@@ -111,9 +120,12 @@ const updateEntryById = async (req, res) => {
 };
 
 const finalSubmit = async (req, res) => {
-  // const { isValid, errors } = BestFilmCriticHelper.finalSubmitStep(req.body);
+  // const { isValid, errors } = BestBookCinemaHelper.finalSubmitStep(req.body);
   // if (!isValid) {
-  //   return responseHelper(res, "validatorerrors", { errors });
+  //   return res.status(400).json({
+  //     message: "Validation failed",
+  //     errors,
+  //   });
   // }
 
   try {
@@ -122,26 +134,24 @@ const finalSubmit = async (req, res) => {
       user: req.user,
     };
 
-    const bestFilmCritic = await BestFilmCritic.findOne({
+    const bestBook = await BestBookCinema.findOne({
       _id: payload.id,
       client_id: payload.user.id || payload.user._id,
     });
 
-    if (!bestFilmCritic) {
+    if (!bestBook) {
       res.status(200).json({
         message: "You do not have any entries.!!",
         statusCode: 203,
       });
     }
 
-    if (bestFilmCritic.payment_status != 2) {
+    if (bestBook.payment_status != 2) {
       res.status(200).json({
         message: "Your payment is not completed.!!",
         statusCode: 203,
       });
     }
-
-    
 
     // const mailContent = {
     //   To: payload.user.email,
@@ -152,7 +162,7 @@ const finalSubmit = async (req, res) => {
     // };
     // await Mail.sendOtp(mailContent);
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "You have successfully submitted your form.!!",
       statusCode: 200,
     });
@@ -160,81 +170,34 @@ const finalSubmit = async (req, res) => {
     return res.status(500).json({
       status: "exception",
       message: error.message || "Internal Server Error",
-    });  }
+    });
+  }
 };
 
-const handleBestFilmCriticStep = async (data, payload) => {
+const handleAuthorStep = async (data, payload) => {
   const lastId = payload.id || null;
 
   if (lastId) {
     if (
       !data.active_step ||
-      data.active_step < Common.stepsBestFilmCritic().CRITIC_DETAILS
+      data.active_step < Common.stepsBestBook().CRITIC_DETAILS
     ) {
-      data.active_step = Common.stepsBestFilmCritic().CRITIC_DETAILS;
-    }
-
-    if (payload.files && Array.isArray(payload.files)) {
-      const criticAadhaar = payload.files.find(
-        (file) => file.fieldname === "critic_aadhaar_card"
-      );
-      if (criticAadhaar) {
-        const fileUpload = await common.imageUpload({
-          id: lastId,
-          image_key: "critic_aadhaar_card",
-          websiteType: "NFA",
-          formType: "BEST_FILM_CRITIC",
-          image: criticAadhaar,
-        });
-
-        if (!fileUpload.status) {
-          return response("exception", { message: "Image not uploaded.!!" });
-        }
-        data.critic_aadhaar_card = fileUpload?.data?.file ?? null;
-      } else {
-        data.critic_aadhaar_card = null;
-      }
-    } else {
-      data.critic_aadhaar_card = null;
+      data.active_step = Common.stepsBestBook().CRITIC_DETAILS;
     }
   }
 
   return data;
 };
 
-const handleCriticStep = async (data, payload) => {
+const handleBookStep = async (data, payload) => {
   const lastId = payload.id || null;
 
   if (lastId) {
     if (
       !data.active_step ||
-      data.active_step < Common.stepsBestFilmCritic().CRITIC
+      data.active_step < Common.stepsBestBook().BEST_BOOK_ON_CINEMA
     ) {
-      data.active_step = Common.stepsBestFilmCritic().CRITIC;
-    }
-
-    if (payload.files && Array.isArray(payload.files)) {
-      const criticAadhaar = payload.files.find(
-        (file) => file.fieldname === "critic_aadhaar_card"
-      );
-      if (criticAadhaar) {
-        const fileUpload = await common.imageUpload({
-          id: lastId,
-          image_key: "critic_aadhaar_card",
-          websiteType: "NFA",
-          formType: "BEST_FILM_CRITIC",
-          image: criticAadhaar,
-        });
-
-        if (!fileUpload.status) {
-          return response("exception", { message: "Image not uploaded.!!" });
-        }
-        data.critic_aadhaar_card = fileUpload?.data?.file ?? null;
-      } else {
-        data.critic_aadhaar_card = null;
-      }
-    } else {
-      data.critic_aadhaar_card = null;
+      data.active_step = Common.stepsBestBook().BEST_BOOK_ON_CINEMA;
     }
   }
 
@@ -246,9 +209,9 @@ const handlePublisherStep = async (data, payload) => {
   if (lastId) {
     if (
       !data.active_step ||
-      data.active_step < Common.stepsBestFilmCritic().PUBLISHER
+      data.active_step < Common.stepsBestBook().PUBLISHER_EDITOR
     ) {
-      data.active_step = Common.stepsBestFilmCritic().PUBLISHER;
+      data.active_step = Common.stepsBestBook().PUBLISHER_EDITOR;
     }
   }
 
@@ -260,45 +223,51 @@ const handleDeclarationStep = async (data, payload) => {
 
   if (
     !data.active_step ||
-    data.active_step < Common.stepsBestFilmCritic().DECLARATION
+    data.active_step < Common.stepsBestBook().DECLARATION
   ) {
-    data.active_step = Common.stepsBestFilmCritic().DECLARATION;
+    data.active_step = Common.stepsBestBook().DECLARATION;
   }
 
   return data;
 };
 
-export const bestFilmCriticById = async (req, res) => {
+export const bestBookCinemaById = async (req, res) => {
   const { id } = req.params;
   const userId = req.user?._id || req.user?.id;
   try {
-    const bestFilmCritic = await BestFilmCritic.findOne({
+    const bestBookCinema = await BestBookCinema.findOne({
       _id: id,
       client_id: userId,
     }).populate({
       path: "documents",
       match: {
-        form_type: 4,
+        form_type: 3,
         website_type: 5,
-        document_type: 6,
+        document_type: 7,
       },
       model: Document,
     });
 
-    if (!bestFilmCritic) {
-      return res.status(404).json({
+    if (!bestBookCinema) {
+      return res.status(200).json({
         status: "exception",
         message: "Something went wrong!!",
+        statusCode: 203,
       });
     }
 
     const editors = await Editor.find({
-      best_film_critic_id: bestFilmCritic._id,
+      best_book_cinemas_id: bestBookCinema._id,
+    });
+
+    const book = await Book.find({
+      best_book_cinema_id: bestBookCinema._id,
     });
 
     const data = {
-      ...bestFilmCritic.toObject(),
+      ...bestBookCinema.toObject(),
       editors,
+      book,
     };
 
     return res.status(200).json({
@@ -315,8 +284,8 @@ export const bestFilmCriticById = async (req, res) => {
 };
 
 export default {
-  createFilmCritic,
+  createBook,
   updateEntryById,
-  bestFilmCriticById,
-  finalSubmit
+  bestBookCinemaById,
+  finalSubmit,
 };

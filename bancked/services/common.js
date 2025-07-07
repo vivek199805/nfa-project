@@ -34,8 +34,8 @@ export const stepsNonFeature = () => ({
 });
 
 export const stepsBestBook = () => ({
-  BEST_BOOK_ON_CINEMA: 1,
-  AUTHOR: 2,
+  AUTHOR: 1,
+  BEST_BOOK_ON_CINEMA: 2,
   PUBLISHER_EDITOR: 3,
   DECLARATION: 4,
   FINAL_SUBMIT: 5,
@@ -44,9 +44,10 @@ export const stepsBestBook = () => ({
 
 export const stepsBestFilmCritic = () => ({
   CRITIC_DETAILS: 1,
-  ARTICLE: 2,
-  DECLARATION: 3,
-  FINAL_SUBMIT: 4,
+  CRITIC: 2,
+  PUBLISHER: 3,
+  DECLARATION: 4,
+  FINAL_SUBMIT: 5,
 });
 
 // Document type mapping
@@ -144,5 +145,5 @@ export default {
   stepsNonFeature,
   imageUpload,
   stepsBestFilmCritic,
-  stepsBestBook
+  stepsBestBook,
 };

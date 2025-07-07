@@ -43,10 +43,12 @@ const entryList = async (req, res, next) => {
 
     } else if (userType == 2) {
       // Type 2 = Best Book & Film Critic Entries
-      const bestBooks = await BestBookCinema.find({ client_id: userId }).populate(
-        "books", "editors"
-      );
-      const bestFilmCritic = await BestFilmCritic.find({ client_id: userId }).populate("editors");
+      const bestBooks = await BestBookCinema.find({ client_id: userId })
+      // .populate(
+      //   "books", "editors"
+      // );
+      const bestFilmCritic = await BestFilmCritic.find({ client_id: userId })
+      // .populate("editors");
 
       return res.status(200).json({
         message: "Fetched successfully",
