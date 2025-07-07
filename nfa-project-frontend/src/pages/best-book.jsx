@@ -1,26 +1,13 @@
 import { useParams } from "react-router-dom";
-import ActorSection from "../component/feature-component/actor-component";
-import AudiographerSection from "../component/feature-component/audiographer";
-import CensorSection from "../component/feature-component/censor-component";
-import CompanyRegistrationSection from "../component/feature-component/company-component";
-import DeclarationSection from "../component/feature-component/Declaration-component";
-import DirectorDetailsSection from "../component/feature-component/director-component";
-import FilmDetailsSection from "../component/feature-component/film-details-component";
-import PaymentSection from "../component/feature-component/PaymentSection-component";
-import ProducerDetailsSection from "../component/feature-component/producer-component";
-import ReturnSection from "../component/feature-component/return-component";
-import ScreenPlaySection from "../component/feature-component/screenplay-component";
-import SongsFormSection from "../component/feature-component/songs-component";
 import StepIndicator from "../component/StepIndicator";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getRequestById } from "../common/services/requestService";
 import Navbar from "../component/layouts/navbar";
 import AuthorSection from "../component/best-book-component/author-component";
 import BestBookCinemaSection from "../component/best-book-component/book-cinema-component";
 import PublisherBookSection from "../component/best-book-component/punlisher-book-component";
 import BookDeclarationSection from "../component/best-book-component/declaration-component";
 import PreviewPaymentSection from "../component/best-book-component/preview-payment";
+import { useFetchById } from "../hooks/useFetchById";
 
 const steps = [
   "Author",
@@ -32,14 +19,7 @@ const steps = [
 const BestBookPage = () => {
   const [activeSection, setActiveSection] = useState(1);
   const { id } = useParams();
-  const { data: formData } = useQuery({
-    queryKey: ["film/feature-entry-by", id],
-    queryFn: () => getRequestById("film/feature-entry-by", id),
-    enabled: !!id,
-    // initialData: staticForms, // sets mock data
-    refetchOnMount: true,
-    staleTime: 0,
-  });
+  const { data: formData } = useFetchById("best-book-cinema-entry-by", id);
 
   useEffect(() => {
     console.log("Form cards data:", formData);
@@ -68,29 +48,19 @@ const BestBookPage = () => {
               </h3>
 
               {activeSection == 1 && (
-                <AuthorSection
-                  setActiveSection={setActiveSection}
-                />
+                <AuthorSection setActiveSection={setActiveSection} />
               )}
               {activeSection == 2 && (
-                <BestBookCinemaSection
-                  setActiveSection={setActiveSection}
-                />
+                <BestBookCinemaSection setActiveSection={setActiveSection} />
               )}
               {activeSection == 3 && (
-                <PublisherBookSection
-                  setActiveSection={setActiveSection}
-                />
+                <PublisherBookSection setActiveSection={setActiveSection} />
               )}
               {activeSection == 4 && (
-                <BookDeclarationSection
-                  setActiveSection={setActiveSection}
-                />
+                <BookDeclarationSection setActiveSection={setActiveSection} />
               )}
               {activeSection == 5 && (
-                <PreviewPaymentSection
-                  setActiveSection={setActiveSection}
-                />
+                <PreviewPaymentSection setActiveSection={setActiveSection} />
               )}
             </div>
           </div>

@@ -28,9 +28,9 @@ const defaultValues = {
   declarations: Array(declarationTexts.length).fill(false),
 };
 
-const BookDeclarationSection = ({ setActiveSection, filmType }) => {
+const BookDeclarationSection = ({ setActiveSection }) => {
   const { id } = useParams();
-    const { data: formData } = useFetchById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id);
+  const { data: formData } = useFetchById("best-book-cinema-entry-by", id);
   
   const {
     control,
@@ -57,7 +57,6 @@ const BookDeclarationSection = ({ setActiveSection, filmType }) => {
   }, [formData, reset]);
 
   const onSubmit = async (data) => {
-    let url = filmType == 'feature' ? "film/feature-update" : "film/non-feature-update";
     const declarationKeysInOrder = [
       "declaration_one",
       "declaration_two",
@@ -68,14 +67,11 @@ const BookDeclarationSection = ({ setActiveSection, filmType }) => {
     declarationKeysInOrder.forEach((item, index) => {
     formData.append(item, data.declarations[index] ? "true" : "false");
     });
-    formData.append("step", filmType == 'feature' ? '11': '9');
+    formData.append("step", 4);
     formData.append("id", id);
-    formData.append("film_type", filmType);
-
-    const response = await postRequest(url, formData);
+      const response = await postRequest("best-book-cinema-update", formData);
     if (response.statusCode == 200) {
-      setActiveSection(12);
-      filmType == 'feature' ? setActiveSection(12) : setActiveSection(10);
+      setActiveSection(5);
     }
   };
 
@@ -116,7 +112,7 @@ const BookDeclarationSection = ({ setActiveSection, filmType }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => filmType == 'feature' ? setActiveSection(10) : setActiveSection(8)}
+          onClick={() => setActiveSection(3)}
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev

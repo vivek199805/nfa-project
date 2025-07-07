@@ -2,9 +2,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useFetchById } from "../../hooks/useFetchById";
 import { postRequest } from "../../common/services/requestService";
+import { useInputRestriction } from "../../hooks/useInputRestriction";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
@@ -39,15 +40,10 @@ const filmSchema = z.object({
   ]),
 });
 
-const CriticSection = ({ setActiveSection, filmType }) => {
+const CriticSection = ({ setActiveSection }) => {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const { data: formData } = useFetchById(
-    filmType === "feature"
-      ? "film/feature-entry-by"
-      : "film/non-feature-entry-by",
-    id
-  );
+  const numberRestriction = useInputRestriction("number");
+  const { data: formData } = useFetchById("best-film-critic-entry-by", id);
 
   const {
     register,
@@ -81,7 +77,6 @@ const CriticSection = ({ setActiveSection, filmType }) => {
   const onSubmit = async (data) => {
     // Call API to submit form data
     console.log("Form submitted:", data);
-    let url = "";
     const formData = new FormData();
     formData.append("critic_name", data.critic_name);
     formData.append("critic_address", data.critic_address);
@@ -94,28 +89,14 @@ const CriticSection = ({ setActiveSection, filmType }) => {
     if (data.critic_aadhaar_card instanceof File) {
       formData.append("critic_aadhaar_card", data.critic_aadhaar_card);
     } else {
-      formData.append(
-        "critic_aadhaar_card",
-        data.critic_aadhaar_card.split("/").pop()
-      ); // Extract filename if it's a string
+      formData.append("critic_aadhaar_card",data.critic_aadhaar_card.split("/").pop()); // Extract filename if it's a string
     }
-    formData.append("step", "1");
-    formData.append("film_type", filmType);
-    if (id) {
-      formData.append("id", id);
-      filmType == "feature"
-        ? (url = "film/feature-update")
-        : (url = "film/non-feature-update");
-    } else {
-      filmType == "feature"
-        ? (url = "film/feature-create")
-        : (url = "film/non-feature-create");
-    }
+    formData.append("step", 2);
+    formData.append("id", id);
 
-    const response = await postRequest(url, formData);
+    const response = await postRequest('update-entry', formData);
     if (response.statusCode == 200) {
-      if (!id) navigate(`/${filmType}/${response.data.id}`);
-      setActiveSection(2);
+      setActiveSection(3);
     }
   };
 
@@ -170,11 +151,13 @@ const CriticSection = ({ setActiveSection, filmType }) => {
             </label>
             <input
               type="text"
+              {...numberRestriction}
               className={`form-control ${
                 errors.critic_contact ? "is-invalid" : ""
               }`}
               placeholder="Film Title (Roman Script)"
               {...register("critic_contact")}
+              maxLength={10}
             />
             {errors.critic_contact && (
               <div className="invalid-feedback">
@@ -208,7 +191,9 @@ const CriticSection = ({ setActiveSection, filmType }) => {
               </div>
             </div>
             {errors.critic_indian_nationality && (
-              <div className="text-danger">{errors.critic_indian_nationality.message}</div>
+              <div className="text-danger">
+                {errors.critic_indian_nationality.message}
+              </div>
             )}
           </div>
 
@@ -274,7 +259,15 @@ const CriticSection = ({ setActiveSection, filmType }) => {
             )}
           </div>
 
-          <div className="col-12 text-end mt-3">
+          <div className="d-flex justify-content-between">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setActiveSection(1)}
+            >
+              <i className="bi bi-arrow-left me-2"></i>
+              Back to Prev
+            </button>
             <button type="submit" className="btn btn-primary">
               Next <i className="bi bi-arrow-right ms-2"></i>
             </button>

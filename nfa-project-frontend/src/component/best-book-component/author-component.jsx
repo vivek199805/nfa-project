@@ -35,17 +35,12 @@ const filmSchema = z.object({
     ),
 });
 
-const AuthorSection = ({ setActiveSection, filmType }) => {
+const AuthorSection = ({ setActiveSection }) => {
   const [synopsisWordCount, setSynopsisWordCount] = useState(0);
-   const numberRestriction = useInputRestriction("number");
+  const numberRestriction = useInputRestriction("number");
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: formData } = useFetchById(
-    filmType === "feature"
-      ? "film/feature-entry-by"
-      : "film/non-feature-entry-by",
-    id
-  );
+  const { data: formData } = useFetchById("best-book-cinema-entry-by", id);
 
   const {
     register,
@@ -88,22 +83,17 @@ const AuthorSection = ({ setActiveSection, filmType }) => {
     );
     formData.append("author_address", data.author_address);
     formData.append("author_profile", data.author_profile);
-    formData.append("step", "1");
-    formData.append("film_type", filmType);
-    if (id) {
+    formData.append("step", 1);
+     if (id) {
       formData.append("id", id);
-      filmType == "feature"
-        ? (url = "film/feature-update")
-        : (url = "film/non-feature-update");
+      url = "best-book-cinema-update"
     } else {
-      filmType == "feature"
-        ? (url = "film/feature-create")
-        : (url = "film/non-feature-create");
+      url = "best-book-cinema-entry"
     }
 
     const response = await postRequest(url, formData);
     if (response.statusCode == 200) {
-      if (!id) navigate(`/${filmType}/${response.data.id}`);
+      if (!id) navigate(`/best-book/${response.data.id}`);
       setActiveSection(2);
     }
   };
@@ -179,7 +169,9 @@ const AuthorSection = ({ setActiveSection, filmType }) => {
               </div>
             </div>
             {errors.author_nationality_indian && (
-              <div className="text-danger">{errors.author_nationality_indian.message}</div>
+              <div className="text-danger">
+                {errors.author_nationality_indian.message}
+              </div>
             )}
           </div>
 
@@ -208,7 +200,9 @@ const AuthorSection = ({ setActiveSection, filmType }) => {
               <span className="text-danger">*</span>
             </label>
             <textarea
-              className={`form-control ${errors.author_profile ? "is-invalid" : ""}`}
+              className={`form-control ${
+                errors.author_profile ? "is-invalid" : ""
+              }`}
               rows={4}
               placeholder=""
               {...register("author_profile", {
@@ -219,7 +213,9 @@ const AuthorSection = ({ setActiveSection, filmType }) => {
             />
             <p className="text-muted mt-1">{synopsisWordCount} word(s)</p>
             {errors.author_profile && (
-              <div className="invalid-feedback">{errors.author_profile.message}</div>
+              <div className="invalid-feedback">
+                {errors.author_profile.message}
+              </div>
             )}
           </div>
 

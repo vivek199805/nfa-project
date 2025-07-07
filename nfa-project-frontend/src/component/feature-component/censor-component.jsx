@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { z } from "zod";
 import { postRequest } from "../../common/services/requestService";
 import { useParams } from "react-router-dom";
@@ -47,7 +47,7 @@ const censorSchema = z.object({
 });
 
 const CensorSection = ({ setActiveSection, filmType }) => {
-  const dispatch = useDispatch();
+  // const dispatch = useDispatch();
   const storedFilmData = useSelector((state) => state.featureFilm.data);
   const { id } = useParams();
   const { data: formData } = useFetchById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id);

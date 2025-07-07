@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import "../../styles/accordion.css";
 import { ChevronDown, Pencil } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useFetchById } from "../../hooks/useFetchById";
+import { postRequest } from "../../common/services/requestService";
+import { showSuccessToast } from "../../common/services/toastService";
 
 const ViewSection = ({ setActiveSection }) => {
   const [activeIndex, setActiveIndex] = useState(null);
   const { id } = useParams();
+  const  navigate = useNavigate();
 
   const steps = [
     "Best Film Critic",
@@ -14,7 +17,7 @@ const ViewSection = ({ setActiveSection }) => {
     "Publisher of the Newspaper Journel",
   ];
 
-  const { data: formData } = useFetchById("film/non-feature-entry-by", id);
+  const { data: formData } = useFetchById("best-film-critic-entry-by", id);
 
   const toggle = (index) => {
     setActiveIndex(activeIndex === index ? null : index);
@@ -23,6 +26,27 @@ const ViewSection = ({ setActiveSection }) => {
   useEffect(() => {
     // Optional data initialization if needed
   }, [formData]);
+
+  const onPayment = async () => {
+    // payment logic here
+    const formData = new FormData();
+    formData.append("form_type", "BEST_FILM_CRITIC");
+    formData.append("id", id);
+    const response = await postRequest("generate-hash", formData);
+    if (response.statusCode == 200) {
+      showSuccessToast(response.message);
+    }
+  };
+  const onFinish = async () => {
+    // payment logic here
+    const formData = new FormData();
+    formData.append("id", id);
+    const response = await postRequest("best-film-critic-final-submit", formData);
+    if (response.statusCode == 200) {
+      showSuccessToast(response.message);
+      navigate("/dashboard");
+    }
+  };
 
   return (
     <>
@@ -50,11 +74,21 @@ const ViewSection = ({ setActiveSection }) => {
         ))}
       </div>
 
+      <div className="col-12 text-center mt-3">
+        <button
+          type="button"
+          className="btn btn-danger"
+          onClick={() => onPayment()}
+        >
+          Pay with Build Desk
+        </button>
+      </div>
+
       <div className="d-flex justify-content-between mt-4">
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => setActiveSection(7)}
+          onClick={() => setActiveSection(4)}
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev
@@ -63,7 +97,7 @@ const ViewSection = ({ setActiveSection }) => {
         <button
           type="submit"
           className="btn btn-primary"
-        //   onClick={}
+          onClick={() => onFinish()}
         >
           FINISH <i className="bi bi-arrow-right ms-2"></i>
         </button>
@@ -175,38 +209,33 @@ const CriticView = ({ data }) => {
   );
 };
 
-
 const PublisherView = ({ data }) => {
   return (
     <div className="producer-view">
-      {data?.producers.map((producer, index) => (
+      {data?.editors.map((producer, index) => (
         <div className="card p-3 mb-3" key={index}>
-          <div className="fw-semibold mb-2">({index + 1}) Publisher Details</div>
+          <div className="fw-semibold mb-2">
+            ({index + 1}) Publisher Details
+          </div>
           <div className="row">
             <div className="col-md-4 col-sm-6 mb-2">
-              <strong>Nationality:</strong>{" "}
-              {producer?.nationality == 1 ? "Yes" : "No"}
+              <strong>Citizenship :</strong> {producer?.editor_citizenship}
             </div>
             <div className="col-md-4 col-sm-6 mb-2">
-              <strong>Name:</strong> {producer.name}
+              <strong> Editor Name:</strong> {producer?.editor_name}
             </div>
             <div className="col-md-4 col-sm-6 mb-2">
-              <strong>Mobile:</strong> {producer.contact_nom}
+              <strong>Mobile:</strong> {producer?.editor_mobile}
             </div>
             <div className="col-md-4 col-sm-6 mb-2">
-              <strong>Email:</strong> {producer.email}
+              <strong>Email:</strong> {producer?.editor_email}
             </div>
             <div className="col-md-4 col-sm-6 mb-2">
-              <strong>Id Proof:</strong>{" "}
-              {producer.idProof ? producer.idProof : "Not Provided"}
+              <strong>Address :</strong> {producer?.editor_address}
             </div>
             <div className="col-md-4 col-sm-6 mb-2 d-flex align-items-center">
-              <strong className="me-2">Producer - Award Recipient:</strong>
-              <input
-                type="checkbox"
-                checked={producer.receive_producer_award}
-                readOnly
-              />
+              <strong className="me-2">Landline No:</strong>
+              {producer?.editor_landline}
             </div>
           </div>
         </div>
@@ -214,7 +243,6 @@ const PublisherView = ({ data }) => {
     </div>
   );
 };
-
 
 const BestFilmView = ({ data }) => {
   return (

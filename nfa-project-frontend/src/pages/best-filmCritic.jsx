@@ -1,14 +1,13 @@
 import { useParams } from "react-router-dom";
 import StepIndicator from "../component/StepIndicator";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getRequestById } from "../common/services/requestService";
 import Navbar from "../component/layouts/navbar";
 import BestFilmSection from "../component/best-filmCritic-component/best-film-critic-component";
 import CriticSection from "../component/best-filmCritic-component/critic-component";
 import PublisherNewspaperSection from "../component/best-filmCritic-component/publisher-component";
 import ViewSection from "../component/best-filmCritic-component/view-component";
 import DeclarationSection from "../component/best-filmCritic-component/declaration-component";
+import { useFetchById } from "../hooks/useFetchById";
 
 const steps = [
   "Best Flim Critic",
@@ -20,14 +19,7 @@ const steps = [
 const BestFilmCriticPage = () => {
   const [activeSection, setActiveSection] = useState(1);
   const { id } = useParams();
-  const { data: formData } = useQuery({
-    queryKey: ["film/feature-entry-by", id],
-    queryFn: () => getRequestById("film/feature-entry-by", id),
-    enabled: !!id,
-    // initialData: staticForms, // sets mock data
-    refetchOnMount: true,
-    staleTime: 0,
-  });
+  const { data: formData } = useFetchById("best-film-critic-entry-by", id);
 
   useEffect(() => {
     console.log("Form cards data:", formData);
@@ -52,7 +44,7 @@ const BestFilmCriticPage = () => {
             <div className="form-box">
               <h2 className="form-title">{steps[activeSection - 1]}</h2>
               <h3 className="form-subtitle">
-               Best Film Critic Registration  | Step {activeSection}
+                Best Film Critic Registration | Step {activeSection}
               </h3>
 
               {activeSection == 1 && (

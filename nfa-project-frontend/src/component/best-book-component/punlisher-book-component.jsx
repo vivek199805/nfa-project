@@ -5,7 +5,10 @@ import { useInputRestriction } from "../../hooks/useInputRestriction";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { postRequest } from "../../common/services/requestService";
+import {
+  getRequestById,
+  postRequest,
+} from "../../common/services/requestService";
 import {
   showErrorToast,
   showSuccessToast,
@@ -34,7 +37,7 @@ const filmSchema = z.object({
   editor_citizenship: z.string().trim().min(1, "This field is required"),
 });
 
-const PublisherBookSection = ({ setActiveSection, filmType }) => {
+const PublisherBookSection = ({ setActiveSection }) => {
   const [publishers, setPublishers] = useState([]);
   const [showForm, setShowForm] = useState(publishers.length === 0);
   const numberRestriction = useInputRestriction("number");
@@ -49,7 +52,14 @@ const PublisherBookSection = ({ setActiveSection, filmType }) => {
     trigger,
   } = useForm({
     resolver: zodResolver(filmSchema),
-    defaultValues: {},
+    defaultValues: {
+      editor_name: "",
+      editor_email: "",
+      editor_landline: "",
+      editor_mobile: "",
+      editor_address: "",
+      editor_citizenship: "",
+    },
     mode: "onTouched",
   });
 
@@ -59,9 +69,8 @@ const PublisherBookSection = ({ setActiveSection, filmType }) => {
 
   const getPublisher = async () => {
     try {
-      const response = await postRequest("film/editor-list", {
-        id,
-        film_type: filmType,
+      const response = await postRequest("list-editor", {
+        best_book_cinema_id: id,
       });
       if (response.statusCode === 200) {
         setPublishers(response.data);
@@ -78,29 +87,28 @@ const PublisherBookSection = ({ setActiveSection, filmType }) => {
   }, [publishers.length]);
 
   const onSubmit = async (data) => {
+    let url;
     const formData = new FormData();
-    formData.append(
-      "indian_national",
-      data.indianNationality === "Yes" ? 1 : 0
-    );
     formData.append("editor_name", data.editor_name);
     formData.append("editor_email", data.editor_email);
     formData.append("editor_landline", data.editor_landline);
     formData.append("editor_mobile", data.editor_mobile);
     formData.append("editor_address", data.editor_address);
     formData.append("editor_citizenship", data.editor_citizenship);
-    formData.append("nfa_feature_id", id);
-    formData.append("film_type", filmType);
+    formData.append("best_book_cinema_id", id);
 
     if (editingIndex !== null) {
       // const updated = [...producers];
       // updated[editingIndex] = data;
       // setProducers(updated);
       formData.append("id", editingIndex);
+      url = "update-editor";
+    } else {
+      url = "store-editor";
     }
 
     try {
-      const response = await postRequest("film/store-editor", formData);
+      const response = await postRequest(url, formData);
       if (response.statusCode === 200) {
         showSuccessToast(response.message);
         await getPublisher();
@@ -134,7 +142,7 @@ const PublisherBookSection = ({ setActiveSection, filmType }) => {
   const handleDelete = (index) => {
     Swal.fire({
       title: "Confirm Deletion",
-      text: "Are you sure you want to delete this director?",
+      text: "Are you sure you want to delete this Editor?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
@@ -142,20 +150,13 @@ const PublisherBookSection = ({ setActiveSection, filmType }) => {
       confirmButtonText: "Yes, delete it!",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        // const updated = [...publishers];
-        // updated.splice(index, 1);
-        // setPublishers(updated);
-        // if (publishers.length === 1) setShowForm(true);
-        const formData = new FormData();
-        formData.append("producerId", index);
-        formData.append("nfa_feature_id", id);
         try {
-          const response = await postRequest("film/delete-director", formData);
+          const response = await getRequestById("delete-editor", index);
           if (response.statusCode === 200) {
             showSuccessToast(response.message);
             await getPublisher();
             setEditingIndex(null);
-            Swal.fire("Deleted!", "director has been deleted.", "success");
+            Swal.fire("Deleted!", "Editor has been deleted.", "success");
           } else {
             showErrorToast(response.message);
           }
@@ -168,21 +169,18 @@ const PublisherBookSection = ({ setActiveSection, filmType }) => {
 
   const onNext = async () => {
     const isValid = await trigger(); // validate the form
-    let url =
-      filmType == "feature" ? "film/feature-update" : "film/non-feature-update";
     if ((isValid || !showForm) && publishers.length > 0) {
       const formData = new FormData();
-      formData.append("step", "5");
+      formData.append("step", "3");
       formData.append("id", id);
-      formData.append("film_type", filmType);
-      const response = await postRequest(url, formData);
+      const response = await postRequest("best-book-cinema-update", formData);
       if (response.statusCode == 200) {
-        setActiveSection(6);
+        setActiveSection(4);
       }
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
       publishers.length === 0
-        ? showErrorToast("Atleast one director is required")
+        ? showErrorToast("Atleast one Editor is required")
         : showErrorToast("Please fill all required fields");
     }
   };
@@ -197,7 +195,14 @@ const PublisherBookSection = ({ setActiveSection, filmType }) => {
           <button
             className="add-producer-btn"
             onClick={() => {
-              reset();
+              reset({
+                editor_name: "",
+                editor_email: "",
+                editor_landline: "",
+                editor_mobile: "",
+                editor_address: "",
+                editor_citizenship: "",
+              });
               setEditingIndex(null);
               setShowForm((prev) => !prev);
             }}
@@ -345,12 +350,16 @@ const PublisherBookSection = ({ setActiveSection, filmType }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${errors.editor_address ? "is-invalid" : ""}`}
+                className={`form-control ${
+                  errors.editor_address ? "is-invalid" : ""
+                }`}
                 placeholder=""
                 {...register("editor_address")}
               />
               {errors.editor_address && (
-                <div className="invalid-feedback">{errors.editor_address.message}</div>
+                <div className="invalid-feedback">
+                  {errors.editor_address.message}
+                </div>
               )}
             </div>
 
@@ -360,12 +369,16 @@ const PublisherBookSection = ({ setActiveSection, filmType }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${errors.editor_citizenship ? "is-invalid" : ""}`}
-                placeholder="Pin Code"
+                className={`form-control ${
+                  errors.editor_citizenship ? "is-invalid" : ""
+                }`}
+                placeholder=" "
                 {...register("editor_citizenship")}
               />
               {errors.editor_citizenship && (
-                <div className="invalid-feedback">{errors.editor_citizenship.message}</div>
+                <div className="invalid-feedback">
+                  {errors.editor_citizenship.message}
+                </div>
               )}
             </div>
 
@@ -381,7 +394,7 @@ const PublisherBookSection = ({ setActiveSection, filmType }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => setActiveSection(4)}
+          onClick={() => setActiveSection(2)}
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev

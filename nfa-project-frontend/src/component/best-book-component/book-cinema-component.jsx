@@ -5,7 +5,11 @@ import { useInputRestriction } from "../../hooks/useInputRestriction";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getRequest, postRequest } from "../../common/services/requestService";
+import {
+  getRequest,
+  getRequestById,
+  postRequest,
+} from "../../common/services/requestService";
 import {
   showErrorToast,
   showSuccessToast,
@@ -13,6 +17,8 @@ import {
 import { useParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import dayjs from "dayjs";
+import Select from "react-dropdown-select";
+import CustomDatePicker from "../../common/CustomDatePicker";
 
 const filmSchema = z.object({
   book_title_original: z.string().trim().min(1, "This field is required"),
@@ -34,7 +40,7 @@ const filmSchema = z.object({
   book_price: z.string().trim().min(1, "This field is required"),
 });
 
-const BestBookCinemaSection = ({ setActiveSection, filmType }) => {
+const BestBookCinemaSection = ({ setActiveSection }) => {
   const [languageOptions, setLanguageOptions] = useState([]);
   const [bookList, setBookList] = useState([]);
   const [showForm, setShowForm] = useState(bookList.length === 0);
@@ -73,14 +79,13 @@ const BestBookCinemaSection = ({ setActiveSection, filmType }) => {
   }, []);
 
   useEffect(() => {
-    getPublisher();
+    getBookList();
   }, [id]);
 
-  const getPublisher = async () => {
+  const getBookList = async () => {
     try {
-      const response = await postRequest("film/publisher-list", {
-        id,
-        film_type: filmType,
+      const response = await postRequest("list-book", {
+        best_book_cinema_id: id,
       });
       if (response.statusCode === 200) {
         setBookList(response.data);
@@ -97,6 +102,7 @@ const BestBookCinemaSection = ({ setActiveSection, filmType }) => {
   }, [bookList.length]);
 
   const onSubmit = async (data) => {
+    let url;
     const formData = new FormData();
     formData.append(
       "indian_national",
@@ -110,21 +116,20 @@ const BestBookCinemaSection = ({ setActiveSection, filmType }) => {
     formData.append("page_count", data.page_count);
     formData.append("date_of_publication", data.date_of_publication);
     formData.append("book_price", data.book_price);
-    formData.append("nfa_feature_id", id);
-    formData.append("film_type", filmType);
+    formData.append("best_book_cinema_id", id);
 
     if (editingIndex !== null) {
-      // const updated = [...producers];
-      // updated[editingIndex] = data;
-      // setProducers(updated);
       formData.append("id", editingIndex);
+      url = "update-book";
+    } else {
+      url = "store-book";
     }
 
     try {
-      const response = await postRequest("film/store-publisher", formData);
+      const response = await postRequest(url, formData);
       if (response.statusCode === 200) {
         showSuccessToast(response.message);
-        await getPublisher();
+        await getBookList();
         setEditingIndex(null);
       } else {
         showErrorToast(response.message);
@@ -159,7 +164,7 @@ const BestBookCinemaSection = ({ setActiveSection, filmType }) => {
   const handleDelete = (index) => {
     Swal.fire({
       title: "Confirm Deletion",
-      text: "Are you sure you want to delete this director?",
+      text: "Are you sure you want to delete this Book?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
@@ -175,12 +180,12 @@ const BestBookCinemaSection = ({ setActiveSection, filmType }) => {
         formData.append("producerId", index);
         formData.append("nfa_feature_id", id);
         try {
-          const response = await postRequest("film/delete-director", formData);
+          const response = await getRequestById("delete-book", index);
           if (response.statusCode === 200) {
             showSuccessToast(response.message);
-            await getPublisher();
+            await getBookList();
             setEditingIndex(null);
-            Swal.fire("Deleted!", "director has been deleted.", "success");
+            Swal.fire("Deleted!", "Book has been deleted.", "success");
           } else {
             showErrorToast(response.message);
           }
@@ -193,21 +198,18 @@ const BestBookCinemaSection = ({ setActiveSection, filmType }) => {
 
   const onNext = async () => {
     const isValid = await trigger(); // validate the form
-    let url =
-      filmType == "feature" ? "film/feature-update" : "film/non-feature-update";
     if ((isValid || !showForm) && bookList.length > 0) {
       const formData = new FormData();
-      formData.append("step", "5");
+      formData.append("step", 2);
       formData.append("id", id);
-      formData.append("film_type", filmType);
-      const response = await postRequest(url, formData);
+      const response = await postRequest("best-book-cinema-update", formData);
       if (response.statusCode == 200) {
-        setActiveSection(6);
+        setActiveSection(3);
       }
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
       bookList.length === 0
-        ? showErrorToast("Atleast one director is required")
+        ? showErrorToast("Atleast one book is required")
         : showErrorToast("Please fill all required fields");
     }
   };
@@ -222,7 +224,16 @@ const BestBookCinemaSection = ({ setActiveSection, filmType }) => {
           <button
             className="add-producer-btn"
             onClick={() => {
-              reset();
+              reset({
+                book_title_original: "",
+                book_title_english: "",
+                english_translation_book: "",
+                language_id: [],
+                author_name: "",
+                page_count: "",
+                date_of_publication: "",
+                book_price: "",
+              });
               setEditingIndex(null);
               setShowForm((prev) => !prev);
             }}
@@ -480,7 +491,7 @@ const BestBookCinemaSection = ({ setActiveSection, filmType }) => {
 
             <div className="col-12 text-center mt-3">
               <button type="submit" className="btn btn-primary">
-                {editingIndex ? "Update Publisher" : "Create Publisher"}
+                {editingIndex ? "Update Book" : "Create Book"}
               </button>
             </div>
           </div>
@@ -490,7 +501,7 @@ const BestBookCinemaSection = ({ setActiveSection, filmType }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => setActiveSection(4)}
+          onClick={() => setActiveSection(1)}
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev

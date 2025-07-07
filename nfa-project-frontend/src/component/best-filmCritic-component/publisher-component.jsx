@@ -5,7 +5,7 @@ import { useInputRestriction } from "../../hooks/useInputRestriction";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { postRequest } from "../../common/services/requestService";
+import { getRequestById, postRequest } from "../../common/services/requestService";
 import {
   showErrorToast,
   showSuccessToast,
@@ -34,7 +34,7 @@ const filmSchema = z.object({
   editor_citizenship: z.string().trim().min(1, "This field is required"),
 });
 
-const PublisherNewspaperSection = ({ setActiveSection, filmType }) => {
+const PublisherNewspaperSection = ({ setActiveSection }) => {
   const [publishers, setPublishers] = useState([]);
   const [showForm, setShowForm] = useState(publishers.length === 0);
   const numberRestriction = useInputRestriction("number");
@@ -59,9 +59,8 @@ const PublisherNewspaperSection = ({ setActiveSection, filmType }) => {
 
   const getPublisher = async () => {
     try {
-      const response = await postRequest("film/publisher-list", {
-        id,
-        film_type: filmType,
+      const response = await postRequest("list-editor", {
+        best_film_critic_id: id,
       });
       if (response.statusCode === 200) {
         setPublishers(response.data);
@@ -78,6 +77,7 @@ const PublisherNewspaperSection = ({ setActiveSection, filmType }) => {
   }, [publishers.length]);
 
   const onSubmit = async (data) => {
+    let url
     const formData = new FormData();
     formData.append(
       "indian_national",
@@ -89,18 +89,20 @@ const PublisherNewspaperSection = ({ setActiveSection, filmType }) => {
     formData.append("editor_mobile", data.editor_mobile);
     formData.append("editor_address", data.editor_address);
     formData.append("editor_citizenship", data.editor_citizenship);
-    formData.append("nfa_feature_id", id);
-    formData.append("film_type", filmType);
+    formData.append("best_film_critic_id", id);
 
     if (editingIndex !== null) {
       // const updated = [...producers];
       // updated[editingIndex] = data;
       // setProducers(updated);
       formData.append("id", editingIndex);
+      url = "update-editor"
+    }else{
+      url = "store-editor"
     }
 
     try {
-      const response = await postRequest("film/store-publisher", formData);
+      const response = await postRequest(url, formData);
       if (response.statusCode === 200) {
         showSuccessToast(response.message);
         await getPublisher();
@@ -134,7 +136,7 @@ const PublisherNewspaperSection = ({ setActiveSection, filmType }) => {
   const handleDelete = (index) => {
     Swal.fire({
       title: "Confirm Deletion",
-      text: "Are you sure you want to delete this director?",
+      text: "Are you sure you want to delete this publisher?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
@@ -142,20 +144,15 @@ const PublisherNewspaperSection = ({ setActiveSection, filmType }) => {
       confirmButtonText: "Yes, delete it!",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        // const updated = [...publishers];
-        // updated.splice(index, 1);
-        // setPublishers(updated);
-        // if (publishers.length === 1) setShowForm(true);
         const formData = new FormData();
-        formData.append("producerId", index);
-        formData.append("nfa_feature_id", id);
+        formData.append("id", index);
         try {
-          const response = await postRequest("film/delete-director", formData);
+          const response = await getRequestById("delete-editor",index );
           if (response.statusCode === 200) {
             showSuccessToast(response.message);
             await getPublisher();
             setEditingIndex(null);
-            Swal.fire("Deleted!", "director has been deleted.", "success");
+            // Swal.fire("Deleted!", "director has been deleted.", "success");
           } else {
             showErrorToast(response.message);
           }
@@ -168,21 +165,19 @@ const PublisherNewspaperSection = ({ setActiveSection, filmType }) => {
 
   const onNext = async () => {
     const isValid = await trigger(); // validate the form
-    let url =
-      filmType == "feature" ? "film/feature-update" : "film/non-feature-update";
+
     if ((isValid || !showForm) && publishers.length > 0) {
       const formData = new FormData();
-      formData.append("step", "5");
+      formData.append("step", "3");
       formData.append("id", id);
-      formData.append("film_type", filmType);
-      const response = await postRequest(url, formData);
+      const response = await postRequest('update-entry', formData);
       if (response.statusCode == 200) {
-        setActiveSection(6);
+        setActiveSection(4);
       }
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
       publishers.length === 0
-        ? showErrorToast("Atleast one director is required")
+        ? showErrorToast("Atleast one publisher is required")
         : showErrorToast("Please fill all required fields");
     }
   };
@@ -361,7 +356,7 @@ const PublisherNewspaperSection = ({ setActiveSection, filmType }) => {
               <input
                 type="text"
                 className={`form-control ${errors.editor_citizenship ? "is-invalid" : ""}`}
-                placeholder="Pin Code"
+                placeholder=""
                 {...register("editor_citizenship")}
               />
               {errors.editor_citizenship && (

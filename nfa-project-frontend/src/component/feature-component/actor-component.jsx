@@ -1,19 +1,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+import {useForm } from "react-hook-form";
 import { z } from "zod";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
-  getRequestById,
   postRequest,
 } from "../../common/services/requestService";
 import {
   showErrorToast,
   showSuccessToast,
 } from "../../common/services/toastService";
-import { useQuery } from "@tanstack/react-query";
+// import { useQuery } from "@tanstack/react-query";
 import Swal from "sweetalert2";
 
 const filmSchema = z.object({

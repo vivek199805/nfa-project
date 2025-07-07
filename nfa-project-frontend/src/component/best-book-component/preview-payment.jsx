@@ -1,20 +1,22 @@
 import { useEffect, useState } from "react";
 import "../../styles/accordion.css";
 import { ChevronDown, Pencil } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useFetchById } from "../../hooks/useFetchById";
+import { postRequest } from "../../common/services/requestService";
+import { showSuccessToast } from "../../common/services/toastService";
 
 const PreviewPaymentSection = ({ setActiveSection }) => {
   const [activeIndex, setActiveIndex] = useState(null);
   const { id } = useParams();
+  const { data: formData } = useFetchById("best-book-cinema-entry-by", id);
+  const navigate = useNavigate();
 
   const steps = [
     "Author",
     "Best Book on Cinema",
     "Publisher of the Book/Editor(S) of the  Newspaper",
   ];
-
-  const { data: formData } = useFetchById("film/non-feature-entry-by", id);
 
   const toggle = (index) => {
     setActiveIndex(activeIndex === index ? null : index);
@@ -23,6 +25,30 @@ const PreviewPaymentSection = ({ setActiveSection }) => {
   useEffect(() => {
     // Optional data initialization if needed
   }, [formData]);
+
+  const onPayment = async () => {
+    // payment logic here
+    const formData = new FormData();
+    formData.append("form_type", "BEST_BOOK");
+    formData.append("id", id);
+    const response = await postRequest("generate-hash", formData);
+    if (response.statusCode == 200) {
+      showSuccessToast(response.message);
+    }
+  };
+  const onFinish = async () => {
+    // payment logic here
+    const formData = new FormData();
+    formData.append("id", id);
+    const response = await postRequest(
+      "best-book-cinema-final-submit",
+      formData
+    );
+    if (response.statusCode == 200) {
+      showSuccessToast(response.message);
+      navigate("/dashboard");
+    }
+  };
 
   return (
     <>
@@ -50,11 +76,21 @@ const PreviewPaymentSection = ({ setActiveSection }) => {
         ))}
       </div>
 
+      <div className="col-12 text-center mt-3">
+        <button
+          type="button"
+          className="btn btn-danger"
+          onClick={() => onPayment()}
+        >
+          Pay with Build Desk
+        </button>
+      </div>
+
       <div className="d-flex justify-content-between mt-4">
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => setActiveSection(7)}
+          onClick={() => setActiveSection(4)}
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev
@@ -63,7 +99,7 @@ const PreviewPaymentSection = ({ setActiveSection }) => {
         <button
           type="submit"
           className="btn btn-primary"
-          //   onClick={}
+          onClick={() => onFinish()}
         >
           FINISH <i className="bi bi-arrow-right ms-2"></i>
         </button>
@@ -111,7 +147,7 @@ const AccordionItem = ({
 const BestBookView = ({ data }) => {
   return (
     <div className="producer-view">
-      {data?.books.map((book, index) => (
+      {data?.book.map((book, index) => (
         <div className="card p-3 mb-3" key={index}>
           <div className="fw-semibold mb-2">({index + 1}) Books Details</div>
           <div className="row">

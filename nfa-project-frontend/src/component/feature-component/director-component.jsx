@@ -5,10 +5,10 @@ import { useInputRestriction } from "../../hooks/useInputRestriction";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getRequestById, postRequest } from "../../common/services/requestService";
+import { postRequest } from "../../common/services/requestService";
 import { showErrorToast, showSuccessToast } from "../../common/services/toastService";
 import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+// import { useQuery } from "@tanstack/react-query";
 import Swal from "sweetalert2";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
@@ -81,7 +81,6 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
     register,
     handleSubmit,
     control,
-    setValue,
     formState: { errors },
     reset,
     trigger,

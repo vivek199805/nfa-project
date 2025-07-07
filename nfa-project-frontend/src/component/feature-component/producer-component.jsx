@@ -6,7 +6,6 @@ import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
-  getRequestById,
   postRequest,
 } from "../../common/services/requestService";
 import { useParams } from "react-router-dom";
@@ -15,7 +14,7 @@ import {
   showSuccessToast,
 } from "../../common/services/toastService";
 import Swal from "sweetalert2";
-import { useQuery } from "@tanstack/react-query";
+// import { useQuery } from "@tanstack/react-query";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
@@ -77,7 +76,6 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
     register,
     handleSubmit,
     control,
-    setValue,
     formState: { errors },
     reset,
     trigger,

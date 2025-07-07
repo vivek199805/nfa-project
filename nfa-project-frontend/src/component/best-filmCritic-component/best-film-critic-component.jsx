@@ -26,16 +26,11 @@ const filmSchema = z.object({
   }),
 });
 
-const BestFilmSection = ({ setActiveSection, filmType }) => {
+const BestFilmSection = ({ setActiveSection }) => {
   const [languageOptions, setLanguageOptions] = useState([]);
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: formData } = useFetchById(
-    filmType === "feature"
-      ? "film/feature-entry-by"
-      : "film/non-feature-entry-by",
-    id
-  );
+  const { data: formData } = useFetchById('best-film-critic-entry-by',id);
 
   const {
     register,
@@ -103,7 +98,7 @@ const BestFilmSection = ({ setActiveSection, filmType }) => {
 
     const response = await postRequest(url, formData);
     if (response.statusCode == 200) {
-      if (!id) navigate(`/${filmType}/${response.data.id}`);
+      if (!id) navigate(`/film-critic/${response.data.id}`);
       setActiveSection(2);
     }
   };
