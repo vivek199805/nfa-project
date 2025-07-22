@@ -9,11 +9,12 @@ import ProducerDetailsSection from "../component/feature-component/producer-comp
 import ReturnSection from "../component/feature-component/return-component";
 import StepIndicator from "../component/StepIndicator";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getRequestById } from "../common/services/requestService";
+// import { useQuery } from "@tanstack/react-query";
+// import { getRequestById } from "../common/services/requestService";
 import OtherSection from "../component/non-feature-component/other-component";
 import ViewSection from "../component/non-feature-component/view-section";
 import Navbar from "../component/layouts/navbar";
+import { useFetchById } from "../hooks/useFetchById";
 
 const steps = [
   "General",
@@ -31,15 +32,14 @@ const steps = [
 const NonFeatureFilmPage = () => {
   const [activeSection, setActiveSection] = useState(1);
   const { id } = useParams();
+  const { data: formData, } = useFetchById("film/non-feature-entry-by", id);
 
-  const { data: formData } = useQuery({
-    queryKey: ["film/feature-entry-by", id],
-    queryFn: () => getRequestById("film/non-feature-entry-by", id),
-    // enabled: !!id,
-    // initialData: staticForms, // sets mock data
-    refetchOnMount: true,
-    staleTime: 0,
-  });
+  // const { data: formData } = useQuery({
+  //   queryKey: ["film/feature-entry-by", id],
+  //   queryFn: () => getRequestById("film/non-feature-entry-by", id),
+  //   refetchOnMount: true,
+  //   staleTime: 0,
+  // });
 
   useEffect(() => {
     if (id && formData?.data?.active_step != null) {
@@ -68,61 +68,61 @@ const NonFeatureFilmPage = () => {
 
               {activeSection == 1 && (
                 <FilmDetailsSection
-                  filmType={'non-feature'}
+                  filmType={"non-feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 2 && (
                 <CensorSection
-                  filmType={'non-feature'}
+                  filmType={"non-feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 3 && (
                 <CompanyRegistrationSection
-                  filmType={'non-feature'}
+                  filmType={"non-feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 4 && (
                 <ProducerDetailsSection
-                  filmType={'non-feature'}
+                  filmType={"non-feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 5 && (
                 <DirectorDetailsSection
-                  filmType={'non-feature'}
+                  filmType={"non-feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 6 && (
                 <OtherSection
-                  filmType={'non-feature'}
+                  filmType={"non-feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 7 && (
                 <ReturnSection
-                  filmType={'non-feature'}
+                  filmType={"non-feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 8 && (
                 <ViewSection
-                  filmType={'non-feature'}
+                  filmType={"non-feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 9 && (
                 <DeclarationSection
-                  filmType={'non-feature'}
+                  filmType={"non-feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 10 && (
                 <PaymentSection
-                  filmType={'non-feature'}
+                  filmType={"non-feature"}
                   setActiveSection={setActiveSection}
                 />
               )}

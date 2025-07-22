@@ -43,7 +43,11 @@ const LoginPage = () => {
 
   const onSubmit = (data) => {
     console.log("Login data", data);
-    loginMutation.mutate(data);
+    let payload = {
+      email: data.username,
+      password: data.password,
+    }
+    loginMutation.mutate(payload);
   };
 
   const handleVerifyEmail = async () => {
@@ -98,13 +102,15 @@ const LoginPage = () => {
               type="text"
               className={`form-control ${errors.username ? "is-invalid" : ""}`}
               placeholder="Username"
-              {...register("username")}
+              {...register("username", {
+                  onBlur: (e) => handleVerifyEmail(e.target.value),
+              })}
             />
             {errors.username && (
               <div className="invalid-feedback">{errors.username.message}</div>
             )}
           </div>
-          {!isVerify && (
+          {/* {!isVerify && (
             <div className="d-flex align-item-center justify-content-end">
               <button type="button" className="btn btn-primary w-10 mb-2"
                 onClick={handleVerifyEmail}
@@ -112,7 +118,7 @@ const LoginPage = () => {
                 Verify Email
               </button>
             </div>
-          )}
+          )} */}
 
 
           {/* Password Field */}

@@ -1,4 +1,3 @@
-
 import api from "./axiosService";
 
 export const getRequest = async (url, config = {}) => {
@@ -19,11 +18,10 @@ export const getRequestById = async (url, id, config = {}) => {
   }
 };
 
-
 export const postRequest = async (url, data = {}, config = {}) => {
   try {
     const response = await api.post(url, data, config);
-      console.log("POST Request URL:", response);
+    console.log("POST Request URL:", response);
     return response.data;
   } catch (error) {
     handleError(error);
@@ -36,17 +34,16 @@ export const updateFormById = async (url, id, payload, config = {}) => {
 };
 
 const handleError = (error) => {
-    let message = "Something went wrong!";
+  let message = "Something went wrong!";
   if (error.response) {
     // Server responded with a status
-     message = error.response.data.message || error.response.statusText;
+    message = error.response.data.message || error.response.statusText;
   } else if (error.request) {
     // No response received
     message = "No response from API";
   } else {
     // Other errors
     message = error.message;
-    }
+  }
   return { error: true, message };
-
 };

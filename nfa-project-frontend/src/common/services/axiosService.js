@@ -1,4 +1,3 @@
-
 import axios from "axios";
 import { showErrorToast } from "./toastService";
 import { navigateTo } from "../navigate";
@@ -12,7 +11,13 @@ const api = axios.create({
 });
 
 // List of routes that do not require token
-const excludedRoutes = ["login", "/register", 'forgot-password', '/reset-password', 'verify-email'];
+const excludedRoutes = [
+  "login",
+  "/register",
+  "forgot-password",
+  "/reset-password",
+  "verify-email",
+];
 
 // Request interceptor for token
 api.interceptors.request.use(
@@ -23,8 +28,8 @@ api.interceptors.request.use(
     );
 
     if (!isExcluded) {
-          store.dispatch(showLoader());
-      const tokenData = JSON.parse(localStorage.getItem("userData"));      
+      store.dispatch(showLoader());
+      const tokenData = JSON.parse(localStorage.getItem("userData"));
       if (tokenData) {
         config.headers.Authorization = `Bearer ${tokenData?.token}`;
       }
@@ -32,7 +37,7 @@ api.interceptors.request.use(
 
     return config;
   },
-    (error) => {
+  (error) => {
     store.dispatch(hideLoader());
     return Promise.reject(error);
   }
@@ -40,12 +45,12 @@ api.interceptors.request.use(
 
 // ❗️Response interceptor to handle 401
 api.interceptors.response.use(
-   (response) => {
+  (response) => {
     store.dispatch(hideLoader());
     return response;
   },
   (error) => {
-       store.dispatch(hideLoader());
+    store.dispatch(hideLoader());
     if (error.response?.status === 401) {
       // Clear user data
       localStorage.removeItem("userData");
@@ -53,9 +58,13 @@ api.interceptors.response.use(
       navigateTo("/");
       showErrorToast("Session expired. Please login again.");
       // window.location.href = "/";
+    } else if (error.response?.status == 422) {
+      const errors = error.response?.data.errors;
+      for (const key in errors) {
+        showErrorToast(errors[key]);
+      }
+      return Promise.reject(error);
     }
-
-    return Promise.reject(error);
   }
 );
 
