@@ -10,7 +10,7 @@ export async function requireAuth(req, res, next) {
      const user = await User.findOne({_id: decoded.userId})
      
     if (!user) {
-      return res.status(401).json({ error: "Unauthorized: User not found" });
+      return res.status(401).json({ error: "Unauthorized: User not found", statusCode:401 });
     }
 
     req.user = user;

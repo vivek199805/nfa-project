@@ -3,15 +3,17 @@ import BestFilmCritic from "../../models/mongodbModels/BestFilmCritic.js";
 import Payment from "../../models/mongodbModels/Payment.js";
 import { formType } from "../../services/common.js";
 import BestBookCinema from "../../models/mongodbModels/BestBookCinema.js";
+import { validatePaymentData } from "../../helpers/paymentSchemaHelper.js";
 
 const generateHash = async (req, res) => {
-  // const { isValid, errors } = PaymentSchema.validateData(req.body);
-
-  // if (!isValid) {
-  //   return responseHelper(res, "validatorerrors", { errors });
-  // }
-  console.log("vvvvvvvvvvvvvvvvvvvvvvvvv", req.user);
-
+  const { isValid, errors } = validatePaymentData(req.body);
+  if (!isValid) {
+    return res.status(422).json({
+      message: "Validation failed",
+      errors,
+      statusCode: 422
+    });
+  }
   try {
     const payload = {
       ...req.body,
@@ -30,7 +32,7 @@ const generateHash = async (req, res) => {
           message:
             "You are not an authorized user to payment. Please contact our support.!!",
           status: false,
-          statusCode: 201,
+          statusCode: 203,
         });
       }
     } else if (form_Type === 2) {
@@ -54,7 +56,8 @@ const generateHash = async (req, res) => {
       if (!applicationData) {
         res.status(200).json({
           message:
-            "You are not an authorized user to payment. Please contact our support.!!",          status: false,
+            "You are not an authorized user to payment. Please contact our support.!!",
+          status: false,
           statusCode: 203,
         });
       }
