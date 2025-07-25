@@ -1,5 +1,7 @@
 import BestBookCinema from "../../models/mongodbModels/BestBookCinema.js";
 import Book from "../../models/mongodbModels/book.js";
+import BookSchemaHelper from "../../helpers/bookSchemaHelper.js";
+
 
 const storeBook = async (req, res) => {
   try {
@@ -26,7 +28,7 @@ const storeBook = async (req, res) => {
 
     let arrayToInsert = {
       client_id: payload.user.id || payload.user._id,
-      best_book_cinemas_id: payload.best_book_cinemas_id ?? null,
+      best_book_cinemas_id: payload.best_book_cinema_id ?? null,
       book_title_original: payload.book_title_original ?? null,
       book_title_english: payload.book_title_english,
       english_translation_book: payload.english_translation_book ?? null,
@@ -62,11 +64,14 @@ const storeBook = async (req, res) => {
 };
 
 const updateBook = async (req, res) => {
-  //   const { isValid, errors } = EditorSchema.validateUpdate(req.body);
-
-  //   if (!isValid) {
-  //     return responseHelper(res, "validatorerrors", { errors });
-  //   }
+  const { isValid, errors } = BookSchemaHelper.validateUpdate(req.body);
+  if (!isValid) {
+    return res.status(422).json({
+      message: "Validation failed",
+      errors,
+      statusCode: 422,
+    });
+  }
 
   try {
     const payload = {
@@ -88,7 +93,7 @@ const updateBook = async (req, res) => {
 
     const bestBookCinema = await BestBookCinema.findOne({
       _id: payload.best_book_cinema_id,
-      client_id: payload.user.id,
+      client_id: payload.user.id || payload.user._id,
     });
 
     if (!bestBookCinema) {
@@ -96,7 +101,7 @@ const updateBook = async (req, res) => {
         message: "Related BestBookCinema not found!",
         statusCode: 203,
       });
-    }
+    }    
 
     const updatedData = {
       book_title_original:
@@ -115,7 +120,7 @@ const updateBook = async (req, res) => {
       updatedData.language_id = JSON.stringify(payload.language_id);
     }
 
-     await Book.findByIdAndUpdate(book._id, updatedData, { new: true });
+    await Book.findByIdAndUpdate(book._id, updatedData, { new: true });
 
     return res.status(200).json({
       message: "Book updated successfully!",
@@ -139,16 +144,20 @@ const updateBook = async (req, res) => {
 };
 
 const listBook = async (req, res) => {
-  //   const { isValid, errors } = EditorSchema.validateList(req.body);
-  //   if (!isValid) {
-  //     return responseHelper(res, "validatorerrors", { errors });
-  //   }
+  const { isValid, errors } = BookSchemaHelper.validateList(req.body);
+  if (!isValid) {
+    return res.status(422).json({
+      message: "Validation failed",
+      errors,
+      statusCode: 422,
+    });
+  }
 
   try {
     const payload = {
       ...req.body,
       user: req.user,
-    };    
+    };
 
     let allBook;
     let whereTo = {};
@@ -167,7 +176,7 @@ const listBook = async (req, res) => {
       }
 
       whereTo = {
-        best_book_cinema_id: payload.best_book_cinema_id,
+        best_book_cinemas_id: payload.best_book_cinema_id,
         client_id: payload.user.id || payload.user._id,
       };
     }

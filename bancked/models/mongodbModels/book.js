@@ -25,7 +25,7 @@ const bookSchema = new mongoose.Schema(
       },
     },
     author_name: { type: String, default: null },
-    page_count: { type: Number, default: null },
+    page_count: { type: String, default: null },
     date_of_publication: { type: Date, default: null },
     book_price: { type: String, default: null },
   },

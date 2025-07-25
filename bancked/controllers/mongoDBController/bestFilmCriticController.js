@@ -70,21 +70,12 @@ const updateEntryById = async (req, res) => {
         message: "Please provide valid details to update.!!",
       });
     }
-    console.log("hello", existingEntry);
-
+    // Check if the user is authorized to update this entry
     let stepHandler = {
-      [Common.stepsBestFilmCritic().CRITIC_DETAILS]: async (
-        existingEntry,
-        payload
-      ) => await handleBestFilmCriticStep(existingEntry, payload),
-      [Common.stepsBestFilmCritic().CRITIC]: async (existingEntry, payload) =>
-        await handleCriticStep(existingEntry, payload),
-      [Common.stepsBestFilmCritic().PUBLISHER]: async (
-        existingEntry,
-        payload
-      ) => await handlePublisherStep(existingEntry, payload),
-      [Common.stepsBestFilmCritic().DECLARATION]: async (data, payload) =>
-        await handleDeclarationStep(data, payload),
+      [Common.stepsBestFilmCritic().CRITIC_DETAILS]: async ( existingEntry, payload) => await handleBestFilmCriticStep(existingEntry, payload),
+      [Common.stepsBestFilmCritic().CRITIC]: async (existingEntry, payload) => await handleCriticStep(existingEntry, payload),
+      [Common.stepsBestFilmCritic().PUBLISHER]: async (existingEntry, payload) => await handlePublisherStep(existingEntry, payload),
+      [Common.stepsBestFilmCritic().DECLARATION]: async (data, payload) => await handleDeclarationStep(data, payload),
     };
 
     if (stepHandler[+req.body.step]) {
@@ -174,7 +165,7 @@ const handleBestFilmCriticStep = async (data, payload) => {
       data.active_step = Common.stepsBestFilmCritic().CRITIC_DETAILS;
     }
 
-    if (payload.files && Array.isArray(payload.files)) {
+    if (payload?.files && Array.isArray(payload?.files)) {
       const criticAadhaar = payload.files.find(
         (file) => file.fieldname === "critic_aadhaar_card"
       );
@@ -213,7 +204,7 @@ const handleCriticStep = async (data, payload) => {
       data.active_step = Common.stepsBestFilmCritic().CRITIC;
     }
 
-    if (payload.files && Array.isArray(payload.files)) {
+    if (payload?.files && Array.isArray(payload?.files)) {
       const criticAadhaar = payload.files.find(
         (file) => file.fieldname === "critic_aadhaar_card"
       );

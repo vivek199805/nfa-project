@@ -119,60 +119,6 @@ const updateEntryById = async (req, res) => {
   }
 };
 
-const finalSubmit = async (req, res) => {
-  // const { isValid, errors } = BestBookCinemaHelper.finalSubmitStep(req.body);
-  // if (!isValid) {
-  //   return res.status(400).json({
-  //     message: "Validation failed",
-  //     errors,
-  //   });
-  // }
-
-  try {
-    const payload = {
-      ...req.body,
-      user: req.user,
-    };
-
-    const bestBook = await BestBookCinema.findOne({
-      _id: payload.id,
-      client_id: payload.user.id || payload.user._id,
-    });
-
-    if (!bestBook) {
-      res.status(200).json({
-        message: "You do not have any entries.!!",
-        statusCode: 203,
-      });
-    }
-
-    if (bestBook.payment_status != 2) {
-      res.status(200).json({
-        message: "Your payment is not completed.!!",
-        statusCode: 203,
-      });
-    }
-
-    // const mailContent = {
-    //   To: payload.user.email,
-    //   Subject: "Payment successfully accepted | Indian Panorama | 55th IFFI",
-    //   Data: {
-    //     clientName: payload.user.first_name + " " + payload.user.last_name,
-    //   },
-    // };
-    // await Mail.sendOtp(mailContent);
-
-    return res.status(200).json({
-      message: "You have successfully submitted your form.!!",
-      statusCode: 200,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      status: "exception",
-      message: error.message || "Internal Server Error",
-    });
-  }
-};
 
 const handleAuthorStep = async (data, payload) => {
   const lastId = payload.id || null;
@@ -274,6 +220,62 @@ export const bestBookCinemaById = async (req, res) => {
       status: "success",
       message: "Success.!!",
       data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "exception",
+      message: error.message || "Internal Server Error",
+    });
+  }
+};
+
+const finalSubmit = async (req, res) => {
+  const { isValid, errors } = BestBookCinemaHelper.finalSubmitStep(req.body);
+  if (!isValid) {
+    return res.status(422).json({
+      message: "Validation failed",
+      errors,
+      statusCode: 422,
+    });
+  }
+
+  try {
+    const payload = {
+      ...req.body,
+      user: req.user,
+    };
+
+    const bestBook = await BestBookCinema.findOne({
+      _id: payload.id,
+      client_id: payload.user.id || payload.user._id,
+    });
+
+    if (!bestBook) {
+      res.status(200).json({
+        message: "You do not have any entries.!!",
+        statusCode: 203,
+      });
+    }
+
+    if (bestBook.payment_status != 2) {
+      res.status(200).json({
+        message: "Your payment is not completed.!!",
+        statusCode: 203,
+      });
+    }
+
+    // const mailContent = {
+    //   To: payload.user.email,
+    //   Subject: "Payment successfully accepted | Indian Panorama | 55th IFFI",
+    //   Data: {
+    //     clientName: payload.user.first_name + " " + payload.user.last_name,
+    //   },
+    // };
+    // await Mail.sendOtp(mailContent);
+
+    return res.status(200).json({
+      message: "You have successfully submitted your form.!!",
+      statusCode: 200,
     });
   } catch (error) {
     return res.status(500).json({
