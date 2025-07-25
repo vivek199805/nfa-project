@@ -62,7 +62,7 @@ const CriticSection = ({ setActiveSection }) => {
     if (!id || !formData?.data) return;
 
     reset({
-      critic_name: formData?.data.writer_name,
+      critic_name: formData?.data.critic_name,
       critic_address: formData?.data.critic_address,
       critic_contact: formData?.data.critic_contact,
       critic_indian_nationality:

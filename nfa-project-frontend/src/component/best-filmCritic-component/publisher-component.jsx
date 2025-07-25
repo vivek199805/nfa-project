@@ -376,7 +376,7 @@ const PublisherNewspaperSection = ({ setActiveSection }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => setActiveSection(4)}
+          onClick={() => setActiveSection(2)}
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev

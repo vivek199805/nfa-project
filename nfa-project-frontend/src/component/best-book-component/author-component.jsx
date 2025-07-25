@@ -84,7 +84,7 @@ const AuthorSection = ({ setActiveSection }) => {
     formData.append("author_address", data.author_address);
     formData.append("author_profile", data.author_profile);
     formData.append("step", 1);
-     if (id) {
+    if (id) {
       formData.append("id", id);
       url = "best-book-cinema-update"
     } else {
@@ -111,9 +111,8 @@ const AuthorSection = ({ setActiveSection }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${
-                errors.author_name ? "is-invalid" : ""
-              }`}
+              className={`form-control ${errors.author_name ? "is-invalid" : ""
+                }`}
               placeholder=""
               {...register("author_name")}
             />
@@ -131,9 +130,8 @@ const AuthorSection = ({ setActiveSection }) => {
             <input
               type="text"
               {...numberRestriction}
-              className={`form-control ${
-                errors.author_contact ? "is-invalid" : ""
-              }`}
+              className={`form-control ${errors.author_contact ? "is-invalid" : ""
+                }`}
               placeholder=""
               {...register("author_contact")}
             />
@@ -181,9 +179,8 @@ const AuthorSection = ({ setActiveSection }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${
-                errors.author_address ? "is-invalid" : ""
-              }`}
+              className={`form-control ${errors.author_address ? "is-invalid" : ""
+                }`}
               placeholder=""
               {...register("author_address")}
             />
@@ -200,9 +197,8 @@ const AuthorSection = ({ setActiveSection }) => {
               <span className="text-danger">*</span>
             </label>
             <textarea
-              className={`form-control ${
-                errors.author_profile ? "is-invalid" : ""
-              }`}
+              className={`form-control ${errors.author_profile ? "is-invalid" : ""
+                }`}
               rows={4}
               placeholder=""
               {...register("author_profile", {

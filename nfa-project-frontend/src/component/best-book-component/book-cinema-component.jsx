@@ -29,7 +29,6 @@ const filmSchema = z.object({
     .array(z.object({ label: z.string(), value: z.string() }))
     .min(1, "Please select at least one language")
     .transform((val) => val.map((item) => item.value)),
-
   author_name: z.string().trim().min(1, "This field is required"),
   page_count: z.string().trim().min(1, "This field is required"),
 
@@ -103,11 +102,10 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
 
   const onSubmit = async (data) => {
     let url;
+    console.log("Form submitted:", data);
+    
     const formData = new FormData();
-    formData.append(
-      "indian_national",
-      data.indianNationality === "Yes" ? 1 : 0
-    );
+    formData.append("indian_national",data.indianNationality === "Yes" ? 1 : 0);
     formData.append("book_title_original", data.book_title_original);
     formData.append("book_title_english", data.book_title_english);
     formData.append("english_translation_book", data.english_translation_book);
@@ -145,6 +143,7 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
   const handleEdit = (index) => {
     console.log("hhfhh", index);
     const data = bookList.find((item) => item._id === index);
+      
     reset({
       book_title_original: data.book_title_original,
       book_title_english: data.book_title_english,
@@ -479,7 +478,7 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
                 className={`form-control ${
                   errors.book_price ? "is-invalid" : ""
                 }`}
-                placeholder="Pin Code"
+                placeholder=" "
                 {...register("book_price")}
               />
               {errors.book_price && (

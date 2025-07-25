@@ -652,3 +652,8 @@ h6 {
     display: none !important;
   }
 }
+
+.swiper {
+  width: 100%;
+  height: 100%;
+}
