@@ -4,12 +4,7 @@ import express from 'express';
 import dotenv from "dotenv";
 import mongoose from 'mongoose';
 import cors from 'cors';
-// import authRoutes from './routes/auth.js';
-// import addressRoutes from "./routes/addresses.js";
-// import paymentRoutes from "./routes/payment.js";
-// import cartRoutes from "./routes/cart.js";
-// import ordersRoutes from "./routes/order.js";
-// import productRoutes from "./routes/product.js";
+import cookieParser from 'cookie-parser';
 import authRoutes from './routes/mongoDBRoutes/auth.js';
 import langRoutes from './routes/mongoDBRoutes/languages.js';
 import filmSubmissionRoutes from './routes/mongoDBRoutes/filmSubmission.js';
@@ -18,9 +13,12 @@ import ApiRoutes from './routes/mongoDBRoutes/apiRoutes.js';
 dotenv.config();
 const app = express();
 
+
+
 app.use(express.json());
 app.use(express.static("public")); // Serve static files from the "public" directory
 app.use(express.urlencoded({ extended: true }));
+
 
 mongoose.set('strictQuery', true);
 // Uncomment and update this with valid credentials if needed
@@ -30,7 +28,11 @@ mongoose.connect(process.env.DB_URL, {
 .then(() => console.log("Connection Successful..."))
 .catch((err) => console.log(err));
 
-app.use(cors()); // CORS middleware
+// app.use(cors()); // CORS middleware
+app.use(cors({
+  origin: 'http://localhost:5173', // frontend URL
+  credentials: true
+}));
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -45,14 +47,12 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(cookieParser());
+
 app.use("/api/user", authRoutes);
 app.use("/api", langRoutes);
 app.use("/api", entryListRoutes);
 app.use("/api/film", filmSubmissionRoutes);
 app.use("/api", ApiRoutes);
-// app.use("/api/payment", paymentRoutes);
-// app.use("/api/cart", cartRoutes);
-// app.use("/api/orders", ordersRoutes);
-// app.use("/api/products", productRoutes);
 
 export default app;

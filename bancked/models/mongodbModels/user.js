@@ -12,11 +12,13 @@ const userSchema = new mongoose.Schema(
     pinCode: { type: String, required: true },
     aadharNumber: { type: String, required: true },
     usertype: { type: String, required: true },
-    password: { 
-      type: String, 
+    password: {
+      type: String,
       required: true,
-      //  select: false 
-      },
+      //  select: false
+    },
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
     //  tokens:[{
     //   token:{
     //     type:String,

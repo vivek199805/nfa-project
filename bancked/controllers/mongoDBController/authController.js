@@ -6,6 +6,7 @@ import User from "../../models/mongodbModels/user.js";
 import generateOtp from "../../utils/generate-otp.js";
 import Twoauth from "../../models/mongodbModels/twoAuth.js";
 import ClientSchemaHelper from "../../helpers/clientSchemaHelper.js";
+import { Mail } from "../../mailer/mail.js";
 dotenv.config();
 
 const registerUser = async (req, res, next) => {
@@ -200,12 +201,10 @@ const forgotPassword = async (req, res) => {
     if (!user)
       return res.status(200).json({
         message: "The provided information is not Valid!",
-        statusCode: 200,
+        statusCode: 203,
       });
     // Generate a new password and update the user's password
     const twoAuth = await Twoauth.findOne({ email: user.email });
-    console.log(twoAuth);
-
     if (!twoAuth) {
       const data = new Twoauth({
         userId: user._id,
@@ -222,10 +221,30 @@ const forgotPassword = async (req, res) => {
       twoAuth.isVerified = "0";
       twoAuth.otpExpiry = Date.now() + 300000;
       await twoAuth.save();
-    }
+    } 
+    // Cookie options
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // true only in production (requires HTTPS)
+      sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax",
+      maxAge: 5 * 60 * 1000, // 5 minutes
+    };
+
+    // Set email cookie (can be used for verification step)
+    res.cookie("resetEmail", email, cookieOptions);
+
+    // const mailContent = {
+    //   To: req.body.email,
+    //   Subject: "National Film Awards (NFA) Password Reset - One Time Code",
+    //   Data: {
+    //     clientName: user.firstName + " " + user.lastName,
+    //     otp: otp,
+    //   },
+    // };
+    // await Mail.sendOtp(mailContent);
 
     res.status(200).json({
-      message: "Otp Send successfully",
+      message: "An OTP has been sent to your registered email address.!!",
       data: { otp },
       statusCode: 200,
     });
@@ -366,12 +385,12 @@ const deleteUser = async (req, res) => {
 // }
 
 const changePassword = async (req, res, next) => {
-  const { currentPassword, newPassword } = req.body;
+  const { currentPassword, password } = req.body;
   console.log(req.user);
 
   const userId = req.user.userId; // Assuming you're setting this from middleware
 
-  if (!currentPassword || !newPassword) {
+  if (!currentPassword || !password) {
     return res.status(200).json({
       msg: "Both current and new passwords are required",
       status: false,
@@ -397,7 +416,7 @@ const changePassword = async (req, res, next) => {
     }
 
     // Step 3: Hash new password
-    const hashed = await hashPassword(newPassword);
+    const hashed = await hashPassword(password);
 
     // Step 4: Update password in database
     user.password = hashed;
@@ -414,12 +433,17 @@ const changePassword = async (req, res, next) => {
 };
 
 const resetPassword = async (req, res) => {
-  const { email, newPassword } = req.body;
+  const { password } = req.body;
+  const email = req.cookies.resetEmail;
 
-  if (!email || !newPassword) {
-    return res
-      .status(400)
-      .json({ message: "Email and new password are required." });
+  console.log("kkkkkkkkkkkkkkk", req.cookies);
+
+  if (!password) {
+    return res.status(400).json({
+      message: "Email and new password are required.",
+      status: false,
+      statusCode: 203,
+    });
   }
 
   try {
@@ -433,7 +457,7 @@ const resetPassword = async (req, res) => {
     }
 
     // Step 2: Update user's password
-    const hashed = await hashPassword(newPassword);
+    const hashed = await hashPassword(password);
     const user = await User.findOneAndUpdate(
       { _id: authData.userId },
       { password: hashed },
@@ -443,7 +467,77 @@ const resetPassword = async (req, res) => {
     // Step 3: Optionally delete the OTP record
     await Twoauth.deleteOne({ _id: authData._id });
 
+    // Optional: clear the cookie after use
+    res.clearCookie("resetEmail");
+
     res.status(200).json({ message: "Password reset successfully." });
+  } catch (error) {
+    res.status(500).json({ message: "Server error while resetting password." });
+  }
+};
+
+const forgotPasswordWithToken = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const token = generateToken({ userId: user._id, email: user.email });
+
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    await user.save();
+
+    const resetLink = `${process.env.FRONTEND_BASE_URL}/reset-password?token=${token}`;
+
+    // Send email
+    const mailContent = {
+      To: req.body.email,
+      Subject: "National Film Awards (NFA) Password Reset - One Time Token",
+      Data: {
+        clientName: user.firstName + " " + user.lastName,
+        resetLink,
+      },
+    };
+    await Mail.resetPasswordMail(mailContent);
+    res.status(200).json({
+      message:
+        "A reset email has been sent to your registered email address.!!",
+      resetLink,
+      statusCode: 200,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+const resetPasswordWithToken = async (req, res) => {
+  try {
+    const { password, token } = req.body;
+
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }, // not expired
+    });
+
+    if (!user)
+      return res.status(200).json({
+        message: "Invalid or expired token",
+        statusCode: 203,
+      });
+
+    const hashed = await hashPassword(password);
+
+    user.password = hashed; // hash it if needed
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    return res.status(200).json({
+      message: "Password updated successfully",
+      statusCode: 203,
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error while resetting password." });
   }
@@ -455,11 +549,13 @@ export default {
   verifyEmail,
   logoutUser,
   logoutAllUser,
-  resetPassword,
   verifyOtp,
   changePassword,
   forgotPassword,
+  resetPassword,
   deleteUser,
   getUserDetails,
+  forgotPasswordWithToken,
+  resetPasswordWithToken,
   // updateProfile,
 };

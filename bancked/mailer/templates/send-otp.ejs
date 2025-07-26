@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Forgot Password OTP Email</title>
+    <link rel="stylesheet" href="./send-otp.css" />
+  </head>
+
+  <body style="background: #000000">
+    <!-- Email Wrapper -->
+    <table
+      class="email-container"
+      role="presentation"
+      cellspacing="0"
+      cellpadding="0"
+    >
+      <!-- Header -->
+      <tr>
+        <td height="10"></td>
+      </tr>
+      <tr>
+        <td class="logo">
+          <table width="100%" cellspacing="0" cellpadding="0">
+            <tr>
+              <td align="left" style="width: 33%">
+                <a href="/" target="_blank">
+                  <img
+                    src="http://119.82.68.149/nfa-website/assets/nfa-logo-CXmBz3-p.png"
+                    alt="Logo"
+                    style="height: 60px"
+                /></a>
+              </td>
+              <td align="center" style="width: 33%">
+                <a href="https://www.mib.gov.in/" target="_blank">
+                  <img
+                    src="http://119.82.68.149/nfa-website/assets/mib-BAoDjR30.png"
+                    alt="Logo"
+                    style="height: 60px"
+                /></a>
+              </td>
+              <td align="right" style="width: 33%">
+                <a href="https://www.nfdcindia.com/" target="_blank"
+                  ><img
+                    src="http://119.82.68.149/nfa-website/assets/nfdc-logo-BgS9KrrW.png"
+                    alt="nfdc-logo"
+                    style="height: 60px"
+                /></a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td height="10"></td>
+      </tr>
+      <tr>
+        <td class="email-header">
+          <h1>Reset Your Password - NFA</h1>
+        </td>
+      </tr>
+      <!-- Body -->
+      <tr>
+        <td class="email-body">
+          <div
+            style="
+              font-family: Arial, sans-serif;
+              line-height: 1.6;
+              color: #333;
+            "
+          >
+            <p>Dear <%= clientName %>,</p>
+            <p>We received a request to reset your NFA account password.</p>
+            <p style="text-align: left; padding-top: 15px; padding-bottom: 0px">
+              <b>Use the One-Time Password (OTP) below to proceed: </b><br />
+              **OTP: [<%= otp %>]**
+            </p>
+            <p>This OTP is valid for the next 10 minutes.</p>
+            <p>
+              If you didn't request a password reset, please ignore this
+              message.
+            </p>
+
+            <div>Warm Regards,</div>
+            <div><strong>Team NFA </strong></div>
+          </div>
+        </td>
+      </tr>
+      <!-- Footer -->
+      <tr>
+        <td class="email-footer">
+          <p>&copy; 2025 NFA All Rights Reserved</p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
