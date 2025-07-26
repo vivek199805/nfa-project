@@ -28,11 +28,11 @@ mongoose.connect(process.env.DB_URL, {
 .then(() => console.log("Connection Successful..."))
 .catch((err) => console.log(err));
 
-// app.use(cors()); // CORS middleware
-app.use(cors({
-  origin: 'http://localhost:5173', // frontend URL
-  credentials: true
-}));
+app.use(cors()); // CORS middleware
+// app.use(cors({
+//   origin: 'http://localhost:5173', // frontend URL
+//   credentials: true
+// }));
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
