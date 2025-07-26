@@ -6,7 +6,8 @@ import { hideLoader, showLoader } from "../../store/loaderSlice";
 
 // Create the Axios instance
 const api = axios.create({
-  baseURL: "http://localhost:5000/api/", // API base URL
+  // baseURL: "http://localhost:5000/api/", // API base URL
+    baseURL: "https://nfa-backend.onrender.com/api/", // API base URL
   // withCredentials: true, // If need to send cookies
 });
 

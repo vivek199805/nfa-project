@@ -33,7 +33,7 @@ const ForgotPasswordPage = () => {
   const onSubmit = (data) => {
     startTransition(async () => {
       // Simulate an async API call (use your actual API here)
-      const res = await postRequest("user/reset-password", data);
+      const res = await postRequest("user/forgot-password", data);
       if (res.statusCode == 200) {
         setShowOtp(true);
         showSuccessToast(res.message);

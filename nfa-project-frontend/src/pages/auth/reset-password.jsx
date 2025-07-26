@@ -2,7 +2,7 @@
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { postRequest } from "../../common/services/requestService";
 import {
   showErrorToast,
@@ -23,8 +23,10 @@ const passwordSchema = z
 
 const ResetPasswordPage = () => {
   const [isPending, startTransition] = useTransition();
-  const { token } = useParams();
+  // const { token } = useParams();
   const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+  const token = searchParams.get("token"); // ✅ Get ?token=XYZ
 
   const {
     handleSubmit,
@@ -36,6 +38,9 @@ const ResetPasswordPage = () => {
     resolver: zodResolver(passwordSchema),
   });
 
+  console.log("token", token);
+  
+
   const username = "vivek"; // You can replace this with user info if available
   //   const newPassword = watch("newPassword");
 
@@ -43,8 +48,8 @@ const ResetPasswordPage = () => {
     startTransition(async () => {
       try {
         const payload = {
-          token,
-          newPassword: formData.newPassword,
+          // token,
+          password: formData.newPassword,
         };
 
         const res = await postRequest("user/reset-password", payload);
