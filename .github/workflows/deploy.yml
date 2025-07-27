@@ -24,11 +24,11 @@ jobs:
 
       - name: 📦 Install frontend dependencies
         run: npm install
-        working-directory: ./frontend
+        working-directory: ./nfa-project-frontend
 
       - name: 🛠️ Build frontend
         run: npm run build:${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
-        working-directory: ./frontend
+        working-directory: ./nfa-project-frontend
 
       - name: 📦 Deploy frontend to Render
         run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}
