@@ -76,8 +76,7 @@ export const verifyOtpSchema = z.object({
 });
 
 // Change Password Schema
-export const changePasswordSchema = z
-  .object({
+export const changePasswordSchema = z.object({
     email: z
       .string({ required_error: "Email is required." })
       .email("Enter a valid email address."),
@@ -92,6 +91,15 @@ export const changePasswordSchema = z
     path: ["password_confirmation"],
     message: "Passwords do not match.",
   });
+
+  export const resetPasswordSchema = z.object({
+    email: z
+      .string({ required_error: "Email is required." })
+      .email("Enter a valid email address."),
+    password: z
+      .string({ required_error: "Password is required." })
+      .min(6, "Password must be at least 6 characters long."),
+  })
 
 // Login Schema
 export const loginSchema = z.object({
@@ -162,6 +170,20 @@ const ValidateChangePasswordSchemaData = (payload) => {
   };
 };
 
+const ValidateResetPassword = (payload) => {
+  const result = resetPasswordSchema.safeParse(payload);
+
+  return {
+    isValid: result.success,
+    errors: result.success
+      ? {}
+      : result.error.issues.reduce(
+          (acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }),
+          {}
+        ),
+  };
+};
+
 const ValidateLoginSchemaData = (payload) => {    
   const result = loginSchema.safeParse(payload);
 
@@ -176,10 +198,12 @@ const ValidateLoginSchemaData = (payload) => {
   };
 };
 
+
 export default {
   validateRegisterData,
   validateEmailSchemaData,
   ValidateChangePasswordSchemaData,
   validateOtpSchemaData,
   ValidateLoginSchemaData,
+  ValidateResetPassword
 };

@@ -17,8 +17,14 @@ const userSchema = new mongoose.Schema(
       required: true,
       //  select: false
     },
-    resetPasswordToken: String,
-    resetPasswordExpires: Date,
+    resetPasswordToken: {
+      type: String,
+       select: false
+    },
+    resetPasswordExpires:{
+      type: Date,
+      select: false
+    },
     //  tokens:[{
     //   token:{
     //     type:String,
