@@ -60,14 +60,14 @@ export default function ChangePasswordPage() {
         try {
           const res = await postRequest("user/change-password", payload);
 
-          if (res?.statusCode === 200) {
-            showSuccessToast(res.message || "Password updated successfully");
+          if (res?.statusCode == 200) {
+            showSuccessToast(res?.message || "Password updated successfully");
             reset();
           } else {
             showErrorToast(res?.message || "Something went wrong");
           }
         } catch (error) {
-          showErrorToast(error.message || "Failed to update password");
+          // showErrorToast(error.message || "Failed to update password");
         }
       })();
     });

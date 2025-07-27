@@ -5,7 +5,7 @@ export const getRequest = async (url, config = {}) => {
     const response = await api.get(url, config);
     return response.data;
   } catch (error) {
-    handleError(error);
+   throw handleError(error);
   }
 };
 
@@ -14,7 +14,7 @@ export const getRequestById = async (url, id, config = {}) => {
     const response = await api.get(`${url}/${id}`, config);
     return response.data;
   } catch (error) {
-    handleError(error);
+   throw handleError(error);
   }
 };
 
@@ -24,7 +24,7 @@ export const postRequest = async (url, data = {}, config = {}) => {
     console.log("POST Request URL:", response);
     return response.data;
   } catch (error) {
-    handleError(error);
+   throw  handleError(error);
   }
 };
 

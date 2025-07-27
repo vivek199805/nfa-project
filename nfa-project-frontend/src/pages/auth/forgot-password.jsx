@@ -24,7 +24,7 @@ const ForgotPasswordPage = () => {
     handleSubmit,
     formState: { errors },
     getValues,
-    reset,
+    // reset,
   } = useForm({
     resolver: zodResolver(forgotSchema),
     mode: "onTouched",
@@ -51,15 +51,14 @@ const ForgotPasswordPage = () => {
 
     const res = await postRequest("user/verify-otp", credentials);
     if (res?.statusCode == 200) {
-      showSuccessToast(res.message);
-      reset({
-        email: "",
-      });
+      showSuccessToast(res?.message);
+      // reset({
+      //   email: "",
+      // });
       setShowOtp(false);
-      // Redirect to the next step (e.g., password reset)
-      navigate("/reset-password");
+      navigate("/reset-password", { state: { email: getValues().email } });
     } else {
-      showErrorToast(res.message);
+      showErrorToast(res?.message);
     }
   };
 

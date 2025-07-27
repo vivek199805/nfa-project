@@ -52,15 +52,12 @@ const LoginPage = () => {
 
   const handleVerifyEmail = async () => {
       const currentValues = getValues();
-    console.log("Verify email", currentValues);
     const credentials = {
       email: currentValues?.username,
       password: ''
     }
     const res = await postRequest("user/verify-email", credentials);
-    if (res?.statusCode == 200) {
-      console.log("Email verification successful", res);
-      
+    if (res?.statusCode == 200) {      
       setIsVerify(true);
       showSuccessToast(res?.message);
     } else {
