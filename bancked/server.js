@@ -5,10 +5,12 @@ dotenv.config();
 import http from 'http';
 import app from './app.js'; // Use .js extension for ES Modules
 
+const PORT = process.env.PORT || 3000;
+
 const server = http.createServer(app);
 
-server.listen(process.env.PORT, () => {
-  console.log(`Server running on port ${process.env.PORT || 3000}`);
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
 
