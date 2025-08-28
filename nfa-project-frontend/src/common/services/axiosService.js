@@ -60,8 +60,12 @@ api.interceptors.response.use(
       // window.location.href = "/";
     } else if (error.response?.status == 422) {
       const errors = error.response?.data.errors;
-      for (const key in errors) {
-        showErrorToast(errors[key]);
+      if (errors && Object.keys(errors).length > 0){
+        for (const key in errors) {
+          showErrorToast(errors[key]);
+        }
+      }else{    
+        showErrorToast(error.response?.data?.message || "Something went wrong. Please try again later.");
       }
       return Promise.reject(error);
     }
