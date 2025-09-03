@@ -13,42 +13,48 @@ import ApiRoutes from './routes/mongoDBRoutes/apiRoutes.js';
 dotenv.config();
 const app = express();
 
-
-
+// --- Middleware ---
 app.use(express.json());
-app.use(express.static("public")); // Serve static files from the "public" directory
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static("public")); // Serve static files from the "public" directory
+app.use(cookieParser());
 
-
+// --- MongoDB Connection ---
 mongoose.set('strictQuery', true);
 // Uncomment and update this with valid credentials if needed
 mongoose.connect(process.env.DB_URL, {
   useNewUrlParser: true,
 })
-.then(() => console.log("Connection Successful..."))
-.catch((err) => console.log(err));
+  .then(() => console.log("Connection Successful..."))
+  .catch((err) => console.log(err));
 
-app.use(cors()); // CORS middleware
+app.use(cors());
+// CORS middleware
 // app.use(cors({
 //   origin: 'http://localhost:5173', // frontend URL
 //   credentials: true
 // }));
 
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-  );
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PATCH, PUT, DELETE, OPTIONS"
-  );
-  next();
-});
+// app.use((req, res, next) => {
+//   res.setHeader("Access-Control-Allow-Origin", "*");
+//   res.setHeader(
+//     "Access-Control-Allow-Headers",
+//     "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+//   );
+//   res.setHeader(
+//     "Access-Control-Allow-Methods",
+//     "GET, POST, PATCH, PUT, DELETE, OPTIONS"
+//   );
+//   next();
+// });
 
-app.use(cookieParser());
+// HTTP request logger (only in dev mode)
+// if (process.env.NODE_ENV === "development") {
+//   app.use(morgan("dev"));
+// }
 
+
+// --- Routes ---
 app.use("/api/user", authRoutes);
 app.use("/api", langRoutes);
 app.use("/api", entryListRoutes);
