@@ -125,7 +125,7 @@ const CustomOtp = ({
               type="text"
               maxLength="1"
               className="digit mx-2 text-center"
-              style={{ backgroundColor: "white" }}
+              style={{ backgroundColor: "white", color: "black" }}
               value={digit}
               onChange={(e) => handleOtpChange(e.target.value, idx)}
             />

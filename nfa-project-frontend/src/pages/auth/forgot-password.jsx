@@ -65,7 +65,7 @@ const ForgotPasswordPage = () => {
   const handleResend = () => {
     startTransition(async () => {
       // Simulate an async API call (use your actual API here)
-      const res = await postRequest("user/reset-password", getValues());
+      const res = await postRequest("user/resend-otp", getValues());
       if (res.statusCode == 200) {
         showSuccessToast(res.message);
       } else {
