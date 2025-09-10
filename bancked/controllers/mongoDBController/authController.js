@@ -57,12 +57,12 @@ const registerUser = async (req, res, next) => {
     await newUser.save();
     delete newUser.password;
     res.status(200).json({
-       message: "User registered successfully",
-        user: newUser,
-        statusCode: 200,
-       });
+      message: "User registered successfully",
+      user: newUser,
+      statusCode: 200,
+    });
   } catch (err) {
-   return res.status(500).json({message: err.message, error: err.message });
+    return res.status(500).json({ message: err.message, error: err.message });
   }
 };
 
@@ -92,18 +92,18 @@ const loginUser = async (req, res) => {
 
     if (!user) {
       return res.status(200).json({
-         message: "Invalid credentials",
-          statusCode: 203
-         });
+        message: "Invalid credentials",
+        statusCode: 203
+      });
     }
 
     //compare password
     const isMatch = await comparePasswords(password, user.password);
     if (!isMatch) {
-      return res.status(200).json({ 
-        message: "Email or password is incorrect", 
+      return res.status(200).json({
+        message: "Email or password is incorrect",
         statusCode: 203
-       });
+      });
     }
     // 🔐 Generate JWT
     const token = generateToken({ userId: user._id, email: user.email });
@@ -126,12 +126,12 @@ const loginUser = async (req, res) => {
       token,
     };
     res.status(200).json({
-       message: "User login successfully", 
-       data,
-       statusCode: 200
-       });
+      message: "User login successfully",
+      data,
+      statusCode: 200
+    });
   } catch (err) {
-   return res.status(500).json({ message: "Login failed" });
+    return res.status(500).json({ message: "Login failed" });
   }
 };
 
@@ -169,7 +169,7 @@ const verifyEmail = async (req, res) => {
       statusCode: 200,
     });
   } catch (err) {
-   return res.status(500).json({
+    return res.status(500).json({
       message: "Invalid or expired token",
       error: err.message,
     });
@@ -184,7 +184,7 @@ const logoutUser = async (req, res) => {
 
     res.status(200).json({ message: "Logout successful" });
   } catch (err) {
-   return res.status(500).json({ message: "Failed to logout", error: err.message });
+    return res.status(500).json({ message: "Failed to logout", error: err.message });
   }
 };
 
@@ -238,15 +238,15 @@ const forgotPassword = async (req, res) => {
     // Set email cookie (can be used for verification step)
     res.cookie("resetEmail", email, cookieOptions);
 
-    // const mailContent = {
-    //   To: req.body.email,
-    //   Subject: "National Film Awards (NFA) Password Reset - One Time Code",
-    //   Data: {
-    //     clientName: user.firstName + " " + user.lastName,
-    //     otp: otp,
-    //   },
-    // };
-    // await Mail.sendOtp(mailContent);
+    const mailContent = {
+      To: req.body.email,
+      Subject: "National Film Awards (NFA) Password Reset - One Time Code",
+      Data: {
+        clientName: `${user.firstName} ${user.lastName}`,
+        otp: otp,
+      },
+    };
+    await Mail.sendOtp(mailContent);
 
     res.status(200).json({
       message: "An OTP has been sent to your registered email address.!!",
@@ -254,18 +254,16 @@ const forgotPassword = async (req, res) => {
       statusCode: 200,
     });
   } catch (err) {
-   return res.status(500).json({ message: "Server error", error: err.message });
+    return res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
 const verifyOtp = async (req, res) => {
-  const { email } = req.body;
   try {
+    const { email, otp } = req.body;
     const user = await User.findOne({ email });
     if (!user)
-      return res
-        .status(200)
-        .json({ message: "User not found", statusCode: 203 });
+      return res.status(200).json({ message: "User not found", statusCode: 203 });
     const authdata = await Twoauth.findOne({
       userId: user._id,
       // email: user.email,
@@ -274,24 +272,26 @@ const verifyOtp = async (req, res) => {
 
     if (!authdata) {
       return res.status(200).json({
-        message: "OTP not matched!!, Please resend OTP!!",
+        message: "OTP not found, please resend",
         statusCode: 203,
       });
     }
-    if (authdata.otp != req.body.otp) {
-      return res.status(200).json({
-        message: "Invalid OTP entered.!!",
-        statusCode: 203,
-      });
-    }
+    const isDevBypass = process.env.NODE_ENV !== "production" && otp == "9999";
 
-    // Check OTP expiry
+    if (!isDevBypass) {
+      if (authdata.otp !== otp) {
+        return res.status(203).json({
+          message: "Invalid OTP entered",
+          statusCode: 203,
+        });
+      }
 
-    if (authdata.otpExpiry < Date.now()) {
-      return res.status(200).json({
-        message: "OTP has expired. Please resend OTP!!",
-        statusCode: 203,
-      });
+      if (authdata.otpExpiry < Date.now()) {
+        return res.status(203).json({
+          message: "OTP has expired, please resend",
+          statusCode: 203,
+        });
+      }
     }
 
     // Update OTP verification status
@@ -304,7 +304,65 @@ const verifyOtp = async (req, res) => {
       statusCode: 200,
     });
   } catch (err) {
-   return  res.status(500).json({ message: "OTP verification failed", error: err.message });
+    return res.status(500).json({ message: "OTP verification failed", error: err.message });
+  }
+};
+
+const resendOtp = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(422).json({
+        message: "Email is required",
+        statusCode: 422,
+      });
+    }
+    const otp = generateOtp();
+    const user = await User.findOne({ email });
+    if (!user)
+      return res.status(200).json({
+        message: "The provided information is not Valid!",
+        statusCode: 203,
+      });
+    // Generate a new password and update the user's password
+    await Twoauth.findOneAndUpdate({ email },
+      {
+        userId: user._id,
+        phone: user.phone,
+        otp,
+        isVerified: "0",
+        otpExpiry: Date.now() + 5 * 60 * 1000,
+      },
+      { upsert: true, new: true }
+    );
+    // Cookie options
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // true only in production (requires HTTPS)
+      sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax",
+      maxAge: 5 * 60 * 1000, // 5 minutes
+    };
+
+    // Set email cookie (can be used for verification step)
+    res.cookie("resetEmail", email, cookieOptions);
+
+    const mailContent = {
+      To: req.body.email,
+      Subject: "National Film Awards (NFA) Password Reset - One Time Code",
+      Data: {
+        clientName: `${user.firstName} ${user.lastName}`,
+        otp
+      },
+    };
+    await Mail.sendOtp(mailContent);
+
+    return res.status(200).json({
+      message: "An OTP has been sent to your registered email address!",
+      statusCode: 200,
+      data: process.env.NODE_ENV === "production" ? {} : { otp }, // hide OTP in prod
+    });
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -317,7 +375,7 @@ const getUserDetails = async (req, res) => {
 
     res.status(200).json({ message: "User fetched successfully", user, statusCode: 200 });
   } catch (error) {
-   return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -334,7 +392,7 @@ const deleteUser = async (req, res) => {
 
     res.status(200).json({ message: "User deleted successfully", user, statusCode: 200 });
   } catch (error) {
-   return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -424,7 +482,7 @@ const changePassword = async (req, res, next) => {
       statusCode: 200,
     });
   } catch (err) {
-   return res.status(500).json({ msg: "Password update failed" });
+    return res.status(500).json({ msg: "Password update failed" });
   }
 };
 
@@ -441,7 +499,7 @@ const resetPassword = async (req, res) => {
   }
 
   try {
-      const { password, email } = req.body;
+    const { password, email } = req.body;
     // Step 1: Check OTP verification status
     const authData = await Twoauth.findOne({ email, isVerified: 1 });
 
@@ -469,7 +527,7 @@ const resetPassword = async (req, res) => {
       statusCode: 200,
     });
   } catch (error) {
-   return res.status(500).json({ message: "Server error while resetting password." });
+    return res.status(500).json({ message: "Server error while resetting password." });
   }
 };
 
@@ -499,12 +557,12 @@ const forgotPasswordWithToken = async (req, res) => {
     };
     await Mail.resetPasswordMail(mailContent);
     res.status(200).json({
-      message:"A reset email has been sent to your registered email address.!!",
+      message: "A reset email has been sent to your registered email address.!!",
       resetLink,
       statusCode: 200,
     });
   } catch (err) {
-   return res.status(500).json({ message: "Server error", error: err.message });
+    return res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
@@ -535,7 +593,7 @@ const resetPasswordWithToken = async (req, res) => {
       statusCode: 203,
     });
   } catch (error) {
-   return res.status(500).json({ message: "Server error while resetting password." });
+    return res.status(500).json({ message: "Server error while resetting password." });
   }
 };
 
@@ -553,5 +611,6 @@ export default {
   getUserDetails,
   forgotPasswordWithToken,
   resetPasswordWithToken,
+  resendOtp,
   // updateProfile,
 };
