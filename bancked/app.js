@@ -22,11 +22,18 @@ app.use(cookieParser());
 // --- MongoDB Connection ---
 mongoose.set('strictQuery', true);
 // Uncomment and update this with valid credentials if needed
-mongoose.connect(process.env.DB_URL, {
-  useNewUrlParser: true,
-})
-  .then(() => console.log("Connection Successful..."))
-  .catch((err) => console.log(err));
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.DB_URL, {
+      useNewUrlParser: true,
+    });
+    console.log('Connection Successful...');
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+connectDB();
 
 app.use(cors());
 // CORS middleware
