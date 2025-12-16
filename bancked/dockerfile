@@ -1,7 +1,22 @@
-FROM node:20
-RUN npm install -g nodemon
+# Use Node LTS
+FROM node:20-alpine
+
+# Set working directory inside container
 WORKDIR /app
+
+# Copy only package files first (better caching)
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install --production
+
+# Copy application source code
 COPY . .
-RUN npm install
-EXPOSE 8080
-CMD [ "npm", "run","start"]
+
+# Expose backend port
+EXPOSE 5000
+
+# Start server
+CMD ["node", "server.js"]
+
+# CMD [ "npm", "run","start"]
