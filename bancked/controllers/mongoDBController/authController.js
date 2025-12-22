@@ -9,6 +9,8 @@ import ClientSchemaHelper from "../../helpers/clientSchemaHelper.js";
 import { Mail } from "../../mailer/mail.js";
 dotenv.config();
 
+// import { redis } from "../../utils/redis.js";
+
 const registerUser = async (req, res, next) => {
   const { isValid, errors } = ClientSchemaHelper.validateRegisterData(req.body);
   if (!isValid) {
@@ -91,9 +93,9 @@ const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(200).json({
-        message: "Invalid credentials",
-        statusCode: 203
+      return res.status(401).json({
+        message: "Invalid email or password",
+        statusCode: 401,
       });
     }
 
@@ -110,19 +112,20 @@ const loginUser = async (req, res) => {
     // // Optional: Add token to user's token list
     // user.tokens = user.tokens.concat({ token });
     // await user.save();
-    delete user.password;
+    const userObj = user.toObject();
+    delete userObj.password;
     // Prepare user data to send in response
     const data = {
-      id: user._id,
-      name: `${user.firstName} ${user.lastName}`,
-      aadharNumber: user.aadharNumber,
-      address: user.address,
-      usertype: user.usertype,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      phone: user.phone,
-      pinCode: user.pinCode,
+      id: userObj._id,
+      name: `${userObj.firstName} ${userObj.lastName}`,
+      aadharNumber: userObj.aadharNumber,
+      address: userObj.address,
+      usertype: userObj.usertype,
+      email: userObj.email,
+      firstName: userObj.firstName,
+      lastName: userObj.lastName,
+      phone: userObj.phone,
+      pinCode: userObj.pinCode,
       token,
     };
     res.status(200).json({
@@ -201,13 +204,20 @@ const logoutAllUser = async (req, res, next) => {
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    const otp = generateOtp();
+
     const user = await User.findOne({ email });
     if (!user)
       return res.status(200).json({
         message: "The provided information is not Valid!",
         statusCode: 203,
       });
+    const otp = generateOtp();
+
+    // await redis.set(
+    //   `otp:forgot:${email}`,
+    //   JSON.stringify({ otp, userId: user._id }),
+    //   { EX: 300 }
+    // );
     // Generate a new password and update the user's password
     const twoAuth = await Twoauth.findOne({ email: user.email });
     if (!twoAuth) {
@@ -261,9 +271,17 @@ const forgotPassword = async (req, res) => {
 const verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
+
+    // const data = await redis.get(`otp:forgot:${email}`);
+    // if (!data)
+    //   return res.status(400).json({
+    //     message: "OTP expired or not found",
+    //     statusCode: 400,
+    //   });
+
+    const { otp: savedOtp, userId } = JSON.parse(data);
     const user = await User.findOne({ email });
-    if (!user)
-      return res.status(200).json({ message: "User not found", statusCode: 203 });
+    if (!user) return res.status(200).json({ message: "User not found", statusCode: 203 });
     const authdata = await Twoauth.findOne({
       userId: user._id,
       // email: user.email,
@@ -277,6 +295,13 @@ const verifyOtp = async (req, res) => {
       });
     }
     const isDevBypass = process.env.NODE_ENV !== "production" && otp == "9999";
+
+    // if (!isDevBypass && otp !== savedOtp)
+    //   return res.status(401).json({
+    //     message: "Invalid OTP",
+    //     statusCode: 401,
+    //   });
+    // await redis.del(`otp:forgot:${email}`);
 
     if (!isDevBypass) {
       if (authdata.otp !== otp) {
