@@ -40,7 +40,11 @@ export function AuthProvider({ children }) {
       return res;
     },
     onSuccess: (res) => {
-      const userData = res.data;
+      if (res?.statusCode !== 200) {
+        showErrorToast(res?.message || "Login failed");
+        return;
+      }
+      const userData = res.data;      
       localStorage.setItem("userData", JSON.stringify(userData));
       // queryClient.setQueryData(["user/currentUser"], res);
       setUser(res)
