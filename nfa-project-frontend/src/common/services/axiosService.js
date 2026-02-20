@@ -58,17 +58,33 @@ api.interceptors.response.use(
       navigateTo("/");
       showErrorToast("Session expired. Please login again.");
       // window.location.href = "/";
-    } else if (error.response?.status == 422) {
+      return Promise.reject(error); // new added to ensure the error is propagated
+    }
+
+    if (error.response?.status == 422) {
       const errors = error.response?.data.errors;
-      if (errors && Object.keys(errors).length > 0){
+      if (errors && typeof errors === "object" && Object.keys(errors).length > 0) {
         for (const key in errors) {
-          showErrorToast(errors[key]);
+          const val = errors[key];
+          // val can be array or string depending on backend
+          if (Array.isArray(val)) val.forEach((m) => showErrorToast(m));
+          else showErrorToast(val);
         }
-      }else{    
+      } else {
         showErrorToast(error.response?.data?.message || "Something went wrong. Please try again later.");
       }
       return Promise.reject(error);
     }
+
+    // ✅ Handle other errors (optional toast)
+    if (!error?.response) {
+      showErrorToast("No response from API");
+    } else {
+      showErrorToast(error.response?.data?.message || error.response?.statusText || "Something went wrong.");
+    }
+
+    // ✅ ALWAYS reject
+    return Promise.reject(error);
   }
 );
 
