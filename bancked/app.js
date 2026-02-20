@@ -32,6 +32,17 @@ app.use(cookieParser());
 
 app.use(cors());
 
+// const corsOrigin = process.env.CORS_ORIGIN
+//   ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
+//   : true;
+
+// app.use(
+//   cors({
+//     origin: corsOrigin,
+//     credentials: true,
+//   })
+// );
+
 // CORS middleware
 // app.use(cors({
 //   origin: 'http://localhost:5173', // frontend URL
@@ -58,6 +69,7 @@ if (process.env.NODE_ENV === "development") {
 
 // use ratelimit middleware
 if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
   app.use(limiter); // apply rate limiting in production
 }
 
@@ -82,10 +94,17 @@ app.use("/api", entryListRoutes);
 app.use("/api/film", filmSubmissionRoutes);
 app.use("/api", ApiRoutes);
 
+// Not found handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
+    path: req.originalUrl,
+  });
+});
+
 //  Global Error Handler
 app.use((err, req, res, next) => {
-  console.log(err);
-
   res.status(err.status || 500).json({
     success: false,
     message: err.message || "Internal Server Error",
