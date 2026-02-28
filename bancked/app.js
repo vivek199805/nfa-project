@@ -14,6 +14,7 @@ import { rateLimit } from "express-rate-limit";
 import morgan from "morgan";
 dotenv.config();
 const app = express();
+app.disable("x-powered-by");
 
 // Allow max 100 requests per 15 minutes per IP
 const limiter = rateLimit({
@@ -30,7 +31,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public")); // Serve static files from the "public" directory
 app.use(cookieParser());
 
-app.use(cors());
+const corsOrigin = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
+  : true;
+
+app.use(
+  cors({
+    origin: corsOrigin,
+    credentials: true,
+  })
+);
 
 // const corsOrigin = process.env.CORS_ORIGIN
 //   ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
