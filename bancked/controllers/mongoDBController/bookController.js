@@ -190,7 +190,7 @@ const listBook = async (req, res) => {
 
     allBook = await Book.find(whereTo);
 
-    if (!allBook) {
+    if (!allBook || allBook.length === 0) {
       return res.status(200).json({
         message: "No result found.!!",
         statusCode: 203,
@@ -249,7 +249,7 @@ const deleteBook = async (req, res) => {
     });
 
     if (!book) {
-      res.status(200).json({
+      return res.status(200).json({
         message: "book not found",
         statusCode: 203,
       });
