@@ -28,7 +28,7 @@ const generateHash = async (req, res) => {
         client_id: payload.user.id || payload.user._id,
       });
       if (!applicationData) {
-        res.status(200).json({
+        return res.status(200).json({
           message:
             "You are not an authorized user to payment. Please contact our support.!!",
           status: false,
@@ -41,7 +41,7 @@ const generateHash = async (req, res) => {
         client_id: payload.user.id || payload.user._id,
       });
       if (!applicationData) {
-        res.status(200).json({
+        return res.status(200).json({
           message:
             "You are not an authorized user to payment. Please contact our support.!!",
           status: false,
@@ -54,7 +54,7 @@ const generateHash = async (req, res) => {
         client_id: payload.user.id || payload.user._id,
       });
       if (!applicationData) {
-        res.status(200).json({
+        return res.status(200).json({
           message:
             "You are not an authorized user to payment. Please contact our support.!!",
           status: false,
@@ -67,13 +67,19 @@ const generateHash = async (req, res) => {
         client_id: payload.user.id || payload.user._id,
       });
       if (!applicationData) {
-        res.status(200).json({
+        return res.status(200).json({
           message:
             "You are not an authorized user to payment. Please contact our support.!!",
           status: false,
           statusCode: 201,
         });
       }
+    } else {
+      return res.status(422).json({
+        message: "Validation failed",
+        errors: { form_type: "Invalid form type" },
+        statusCode: 422,
+      });
     }
 
     const arrayToInsert = {
@@ -85,7 +91,7 @@ const generateHash = async (req, res) => {
 
     const insertPayment = new Payment(arrayToInsert);
     if (!insertPayment) {
-      res.status(200).json({
+      return res.status(200).json({
         message: "Payment data not inserted",
         status: false,
         statusCode: 201,

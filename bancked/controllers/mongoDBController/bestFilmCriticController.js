@@ -79,7 +79,7 @@ const updateEntryById = async (req, res) => {
 
     if (stepHandler[+req.body.step]) {
       const result = await stepHandler[+req.body.step](existingEntry, payload);
-      if (!result?.status) {
+      if (result?.status === false) {
         return res.status(422).json({
           statusCode: 422,        
           message: result.message || "Step processing failed",
@@ -97,7 +97,12 @@ const updateEntryById = async (req, res) => {
         message: "Feature submission updated successfully",
         data: updated,
       });
+      return;
     }
+    return res.status(200).json({
+      statusCode: 203,
+      message: "Invalid step provided",
+    });
   } catch (error) {
     res.status(500).json({
       statusCode: 500,
@@ -125,14 +130,14 @@ const finalSubmit = async (req, res) => {
     });
 
     if (!bestFilmCritic) {
-      res.status(200).json({
+      return res.status(200).json({
         message: "You do not have any entries.!!",
         statusCode: 203,
       });
     }
 
     if (bestFilmCritic.payment_status != 2) {
-      res.status(200).json({
+      return res.status(200).json({
         message: "Your payment is not completed.!!",
         statusCode: 203,
       });
@@ -186,7 +191,7 @@ const handleBestFilmCriticStep = async (data, payload) => {
         });
 
         if (!fileUpload.status) {
-          return response("exception", { message: "Image not uploaded.!!" });
+          return { status: false, message: "Image not uploaded.!!" };
         }
         data.critic_aadhaar_card = fileUpload?.data?.file ?? null;
       } else {
