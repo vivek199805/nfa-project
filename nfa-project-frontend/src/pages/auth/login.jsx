@@ -5,10 +5,12 @@ import { useAuth } from "../../hooks/use-auth";
 import PasswordInput from "../../component/passwordInput";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { showErrorToast, showSuccessToast } from "../../common/services/toastService";
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../common/services/toastService";
 import { postRequest } from "../../common/services/requestService";
 
-// Schema with clear required field messages
 const loginSchema = z.object({
   username: z
     .string({ required_error: "Username is required" })
@@ -38,7 +40,7 @@ const LoginPage = () => {
     register,
     handleSubmit,
     formState: { errors },
-    getValues 
+    getValues,
   } = loginForm;
 
   const onSubmit = (data) => {
@@ -46,30 +48,29 @@ const LoginPage = () => {
     let payload = {
       email: data.username,
       password: data.password,
-    }
+    };
     loginMutation.mutate(payload);
   };
 
   const handleVerifyEmail = async () => {
-      const currentValues = getValues();
+    const currentValues = getValues();
     const credentials = {
       email: currentValues?.username,
-      password: ''
-    }
+      password: "",
+    };
     const res = await postRequest("user/verify-email", credentials);
-    if (res?.statusCode == 200) {      
+    if (res?.statusCode == 200) {
       setIsVerify(true);
       showSuccessToast(res?.message);
     } else {
-      showErrorToast(res?.message)
+      showErrorToast(res?.message);
     }
-
-  }
+  };
 
   return (
-    <div className="form-container p-5">
-      <div className="col-md-10 mx-auto">
-        <div className="top-logo d-flex justify-content-between mb-3">
+    <div className="form-container auth-form-container auth-pane-left p-4 p-md-5">
+      <div className="auth-form-inner mx-auto">
+        <div className="top-logo top-logo-auth d-flex align-items-center gap-3 mb-4">
           <a href="#">
             <img src="/images/nfa-logo.png" alt="NFA" />
           </a>
@@ -87,24 +88,32 @@ const LoginPage = () => {
           ></i>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="w-100 mt-5">
-          <h2 className="mb-4">Sign in</h2>
+        <form onSubmit={handleSubmit(onSubmit)} className="w-100 auth-form">
+          <div className="auth-heading mb-4">
+            <h2 className="mb-1">Welcome Back</h2>
+            <p className="mb-0">Sign in to continue.</p>
+          </div>
 
           {/* Username Field */}
-          <div className="input-group mb-3">
-            <span className="input-group-text">
-              <i className="bi bi-person"></i>
-            </span>
+          <div className="mb-3">
+            <label className="form-label auth-label" htmlFor="username">
+              Email / Username
+            </label>
             <input
+              id="username"
               type="text"
-              className={`form-control ${errors.username ? "is-invalid" : ""}`}
+              className={`form-control auth-input ${
+                errors.username ? "is-invalid" : ""
+              }`}
               placeholder="Username"
               {...register("username", {
-                  onBlur: (e) => handleVerifyEmail(e.target.value),
+                onBlur: (e) => handleVerifyEmail(e.target.value),
               })}
             />
             {errors.username && (
-              <div className="invalid-feedback">{errors.username.message}</div>
+              <div className="invalid-feedback auth-error">
+                {errors.username.message}
+              </div>
             )}
           </div>
           {/* {!isVerify && (
@@ -116,7 +125,6 @@ const LoginPage = () => {
               </button>
             </div>
           )} */}
-
 
           {/* Password Field */}
           {/* <div className="input-group mb-3">
@@ -134,26 +142,36 @@ const LoginPage = () => {
             )}
           </div> */}
 
-          <PasswordInput
-            name="password"
-            register={register}
-            error={errors.password}
-            placeholder="*******"
-          />
+          <div className="mb-2">
+            <label className="form-label auth-label" htmlFor="password">
+              Password
+            </label>
+            <PasswordInput
+              name="password"
+              register={register}
+              error={errors.password}
+              placeholder="*******"
+            />
+          </div>
 
           <div className="form-group text-end mb-3">
             <Link to="/forgot-password">Forgot Password?</Link>
-
           </div>
 
-          <button type="submit" className="btn btn-common-form w-100" disabled={!isVerify}>
+          <button
+            type="submit"
+            className="btn btn-common-form auth-submit-btn w-100"
+            disabled={!isVerify}
+          >
             Login
           </button>
 
           <div className="link text-center mt-2">
             <p>
               Don't have an account?{" "}
-              <Link to="/signup" className="signup-link">Sign up</Link>
+              <Link to="/signup" className="signup-link">
+                Sign up
+              </Link>
             </p>
           </div>
         </form>

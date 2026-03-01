@@ -75,9 +75,9 @@ const ForgotPasswordPage = () => {
   };
 
   return (
-    <div className="form-container p-5">
-      <div className="col-md-8 mx-auto">
-        <div className="top-logo d-flex justify-content-between mb-3">
+    <div className="form-container auth-form-container auth-pane-left p-4 p-md-5">
+      <div className="auth-form-inner mx-auto">
+        <div className="top-logo top-logo-auth d-flex align-items-center gap-3 mb-4">
           <a href="#">
             <img src="/images/nfa-logo.png" alt="NFA" />
           </a>
@@ -87,40 +87,63 @@ const ForgotPasswordPage = () => {
         </div>
 
         {!showOtp && (
-          <form onSubmit={handleSubmit(onSubmit)} className="w-100 mt-5">
-            <h2 className="mb-4">Forgot Password</h2>
+          <form onSubmit={handleSubmit(onSubmit)} className="w-100 auth-form">
+            <div className="auth-heading mb-4">
+              <h2 className="mb-1">Forgot Password</h2>
+              <p className="mb-0">Enter your registered email to receive OTP.</p>
+            </div>
 
-            <div className="input-group mb-3">
-              <span className="input-group-text">
-                <i className="bi bi-envelope"></i>
-              </span>
-              <input
-                type="email"
-                className={`form-control ${errors.email ? "is-invalid" : ""}`}
-                placeholder="Enter your email"
-                {...register("email")}
-              />
+            <div className="mb-3">
+              <label className="form-label auth-label" htmlFor="email">
+                Email
+              </label>
+              <div className="input-group">
+                <span className="input-group-text">
+                  <i className="bi bi-envelope"></i>
+                </span>
+                <input
+                  id="email"
+                  type="email"
+                  className={`form-control auth-input ${
+                    errors.email ? "is-invalid" : ""
+                  }`}
+                  placeholder="Enter your email"
+                  {...register("email")}
+                />
+              </div>
               {errors.email && (
-                <div className="invalid-feedback">{errors.email.message}</div>
+                <div className="invalid-feedback auth-error">
+                  {errors.email.message}
+                </div>
               )}
             </div>
-            <button type="submit" className="btn btn-common-form w-100">
+            <button
+              type="submit"
+              className="btn btn-common-form auth-submit-btn w-100"
+            >
               Send OTP
             </button>
           </form>
         )}
 
         {showOtp && (
-          <CustomOtp
-            otpBoxNormal={false}
-            otpLength={4}
-            title="Enter Verification Code"
-            submitBtnName="Verify OTP"
-            submitBtnClass="btn btn-common-form w-100"
-            message="Please enter the OTP sent to your register Email address."
-            onSubmit={handleOtpSubmit}
-            onResend={handleResend}
-          />
+          <div className="w-100 auth-form">
+            <div className="auth-heading mb-3">
+              <h2 className="mb-1">Verify OTP</h2>
+              <p className="mb-0">
+                Please enter the OTP sent to your registered email address.
+              </p>
+            </div>
+            <CustomOtp
+              otpBoxNormal={false}
+              otpLength={4}
+              showCloseIcon={false}
+              submitBtnName="Verify OTP"
+              submitBtnClass="btn btn-common-form auth-submit-btn w-100"
+              onSubmit={handleOtpSubmit}
+              onResend={handleResend}
+            />
+          </div>
         )}
 
         <div className="link text-center mt-2">

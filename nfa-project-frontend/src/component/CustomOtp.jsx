@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react"; // Add your custom styles here
+import React, { useCallback, useEffect, useRef, useState } from "react"; // Add your custom styles here
 
 const CustomOtp = ({
   otpBoxNormal = false,
@@ -23,14 +23,7 @@ const CustomOtp = ({
   const [singleOtp, setSingleOtp] = useState("");
   const [countdown, setCountdown] = useState(resendOTPCounter);
 
-  useEffect(() => {
-    if (!otpBoxNormal) {
-      inputRefs.current[0]?.focus();
-    }
-    if (isResendOTP) startTimer();
-  }, []);
-
-  const startTimer = () => {
+  const startTimer = useCallback(() => {
     setCountdown(resendOTPCounter);
     const timer = setInterval(() => {
       setCountdown((prev) => {
@@ -41,7 +34,14 @@ const CustomOtp = ({
         return prev - 1;
       });
     }, 1000);
-  };
+  }, [resendOTPCounter]);
+
+  useEffect(() => {
+    if (!otpBoxNormal) {
+      inputRefs.current[0]?.focus();
+    }
+    if (isResendOTP) startTimer();
+  }, [isResendOTP, otpBoxNormal, startTimer]);
 
   const handleOtpChange = (val, idx) => {
     if (!/^\d?$/.test(val)) return;
@@ -148,9 +148,9 @@ const CustomOtp = ({
           {countdown ? (
             <span className="expire">Resend again in {countdown} second</span>
           ) : (
-            <a href="#" className="expire" onClick={resendOtp}>
+            <button type="button" className="expire border-0 bg-transparent p-0" onClick={resendOtp}>
               Resend OTP
-            </a>
+            </button>
           )}
         </div>
       )}

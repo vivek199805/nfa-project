@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   postRequest,
 } from "../../common/services/requestService";
@@ -26,7 +26,6 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
     reset,
     trigger,
@@ -41,11 +40,7 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
     // shouldFocusError: false,
   });
 
-  useEffect(() => {
-    getAudiographerList();
-  }, [id]);
-
-  const getAudiographerList = async () => {
+  const getAudiographerList = useCallback(async () => {
     try {
       const response = await postRequest("film/audiographer-list", { id });
       if (response.statusCode === 200) {
@@ -56,7 +51,11 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
     } catch (error) {
       showErrorToast(error);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    getAudiographerList();
+  }, [getAudiographerList]);
 
   useEffect(() => {
     setShowForm(audioGrapherData.length === 0);

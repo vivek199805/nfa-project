@@ -4,7 +4,7 @@ import { z } from "zod";
 import { useInputRestriction } from "../../hooks/useInputRestriction";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getRequestById, postRequest } from "../../common/services/requestService";
 import {
   showErrorToast,
@@ -53,11 +53,7 @@ const PublisherNewspaperSection = ({ setActiveSection }) => {
     mode: "onTouched",
   });
 
-  useEffect(() => {
-    getPublisher();
-  }, [id]);
-
-  const getPublisher = async () => {
+  const getPublisher = useCallback(async () => {
     try {
       const response = await postRequest("list-editor", {
         best_film_critic_id: id,
@@ -68,9 +64,13 @@ const PublisherNewspaperSection = ({ setActiveSection }) => {
         showErrorToast(response.message);
       }
     } catch (error) {
-      console.error("Failed to fetch data:", error);
+      showErrorToast(error?.message || "Failed to fetch data");
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    getPublisher();
+  }, [getPublisher]);
 
   useEffect(() => {
     setShowForm(publishers.length === 0);
@@ -119,7 +119,6 @@ const PublisherNewspaperSection = ({ setActiveSection }) => {
   };
 
   const handleEdit = (index) => {
-    console.log("hhfhh", index);
     const data = publishers.find((item) => item._id === index);
     reset({
       editor_name: data.editor_name,
@@ -144,8 +143,6 @@ const PublisherNewspaperSection = ({ setActiveSection }) => {
       confirmButtonText: "Yes, delete it!",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        const formData = new FormData();
-        formData.append("id", index);
         try {
           const response = await getRequestById("delete-editor",index );
           if (response.statusCode === 200) {

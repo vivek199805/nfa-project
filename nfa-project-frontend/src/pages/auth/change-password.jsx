@@ -66,7 +66,7 @@ export default function ChangePasswordPage() {
           } else {
             showErrorToast(res?.message || "Something went wrong");
           }
-        } catch (error) {
+        } catch {
           // showErrorToast(error.message || "Failed to update password");
         }
       })();

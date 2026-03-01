@@ -36,8 +36,6 @@ const DashboardPage = () => {
     staleTime: 0,
   });
   useEffect(() => {
-    console.log("user", user);
-
     if (!isLoading && !user) {
       navigate("/");
     }
@@ -47,8 +45,8 @@ const DashboardPage = () => {
 
   return (
     <div className="dashboard">
-      <div className="row">
-        <div className="col-lg-6 col-md-6">
+      <div className="dashboard-layout">
+        <section className="dashboard-left">
           <div className="form-container scrolling-form p-5">
             <div className="top-logo d-flex justify-content-between">
               <a href="#">
@@ -87,7 +85,7 @@ const DashboardPage = () => {
                 {(!formCards ||
                   // (!formCards.feature?.length && !formCards["non-feature"]?.length)
                   Object.keys(formCards).every(
-                    (key) => !formCards[key] || formCards[key].length === 0
+                    (key) => !formCards[key] || formCards[key].length === 0,
                   )) && (
                   <div className="notification mt-4 col-out-div">
                     <h3>You have not created any form yet.</h3>
@@ -108,7 +106,8 @@ const DashboardPage = () => {
                   // formCards?.feature?.length > 0 || formCards?.["non-feature"]?.length > 0
                   Object.keys(formCards).some(
                     (key) =>
-                      Array.isArray(formCards[key]) && formCards[key].length > 0
+                      Array.isArray(formCards[key]) &&
+                      formCards[key].length > 0,
                   ) && (
                     <div className="mt-3">
                       <button
@@ -197,14 +196,14 @@ const DashboardPage = () => {
                           </div>
                         </div>
                       </div>
-                    ))
+                    )),
                 )}
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div className="col-lg-6 col-md-6 p-0">
+        <aside className="dashboard-right">
           <Swiper
             modules={[Autoplay, Navigation, Pagination, EffectFade]}
             autoplay={{ delay: 3000, disableOnInteraction: false }}
@@ -222,7 +221,7 @@ const DashboardPage = () => {
               </SwiperSlide>
             ))}
           </Swiper>
-        </div>
+        </aside>
       </div>
 
       {user?.usertype == 1 ? (

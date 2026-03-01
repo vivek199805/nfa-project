@@ -1,11 +1,41 @@
 .dashboard {
-  padding: 20px;
+  padding: 16px;
   overflow-x: hidden;
+  height: 100%;
+  min-height: 0;
 }
 
+.dashboard-layout {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  gap: 16px;
+}
+
+.dashboard-left {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.dashboard-right {
+  flex: 0 0 clamp(320px, 42vw, 640px);
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.dashboard-right .swiper,
+.dashboard-right .swiper-slide {
+  height: 100%;
+}
+
+.dashboard .form-container {
+  margin-top: 0;
+}
 
 .notification {
-  /* background-color: #f1f1f1; */
   padding: 15px;
   border-radius: 6px;
   text-align: center;
@@ -25,11 +55,34 @@
   text-transform: uppercase;
   font-weight: 500;
 }
-.scrolling-form{
-    overflow-y: auto;
-    height: 80vh;
-    width: 104%;
-    margin-top: 50px;
+
+.scrolling-form {
+  overflow-y: auto;
+  height: 100%;
+  width: 100%;
+  margin-top: 0;
+  min-height: 0;
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(190, 164, 96, 0.75) rgba(255, 255, 255, 0.1); /* Firefox */
+}
+
+/* Thin scrollbar for dashboard scroll area (WebKit browsers) */
+.scrolling-form::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrolling-form::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+}
+
+.scrolling-form::-webkit-scrollbar-thumb {
+  background: rgba(190, 164, 96, 0.75);
+  border-radius: 999px;
+}
+
+.scrolling-form::-webkit-scrollbar-thumb:hover {
+  background: rgba(190, 164, 96, 0.95);
 }
 
 /* Responsive behavior */
@@ -38,13 +91,20 @@
     padding: 10px;
   }
 
-  /* Hide Swiper on small screens */
-  .col-lg-6:last-child {
-    display: none !important;
+  .dashboard-layout {
+    flex-direction: column;
+    gap: 10px;
   }
 
-  .form-container {
-    padding: 20px;
+  .dashboard-left {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .dashboard-right {
+    flex: 0 0 32vh;
+    min-height: 220px;
   }
 
   .top-logo {

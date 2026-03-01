@@ -948,6 +948,15 @@ h6 {
   min-width: 150px;
 }
 
+.auth-form .otp-wrapper {
+  padding: 0.25rem 0 0;
+  color: #fff;
+}
+
+.auth-form .otp-wrapper .expire {
+  color: rgba(255, 255, 255, 0.75);
+}
+
 /* ModalComponent.css */
 .modal-overlay {
   position: fixed;
@@ -1016,6 +1025,49 @@ h6 {
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
   min-width: 300px;
   z-index: 1000;
+}
+
+.password-validation-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.password-validation-modal-card {
+  position: relative;
+  width: min(520px, 96vw);
+  max-height: 85vh;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #d8d8d8;
+  border-radius: 12px;
+  padding: 1rem 1rem 0.8rem;
+  color: #212529;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.4);
+}
+
+.password-validation-modal-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #212529;
+}
+
+.password-validation-modal-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: 0;
+  background: transparent;
+  color: #6c757d;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 @media (max-width: 768px) {

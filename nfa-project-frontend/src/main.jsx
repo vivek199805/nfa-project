@@ -8,7 +8,6 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 // Import Bootstrap Icons
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import 'swiper/css';
-import Swiper from 'swiper/bundle';
 
 // import styles bundle
 import 'swiper/css/bundle';

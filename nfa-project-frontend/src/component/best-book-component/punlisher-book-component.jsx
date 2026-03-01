@@ -4,7 +4,7 @@ import { z } from "zod";
 import { useInputRestriction } from "../../hooks/useInputRestriction";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   getRequestById,
   postRequest,
@@ -63,11 +63,7 @@ const PublisherBookSection = ({ setActiveSection }) => {
     mode: "onTouched",
   });
 
-  useEffect(() => {
-    getPublisher();
-  }, [id]);
-
-  const getPublisher = async () => {
+  const getPublisher = useCallback(async () => {
     try {
       const response = await postRequest("list-editor", {
         best_book_cinema_id: id,
@@ -78,9 +74,13 @@ const PublisherBookSection = ({ setActiveSection }) => {
         showErrorToast(response.message);
       }
     } catch (error) {
-      console.error("Failed to fetch data:", error);
+      showErrorToast(error?.message || "Failed to fetch data");
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    getPublisher();
+  }, [getPublisher]);
 
   useEffect(() => {
     setShowForm(publishers.length === 0);
@@ -125,7 +125,6 @@ const PublisherBookSection = ({ setActiveSection }) => {
   };
 
   const handleEdit = (index) => {
-    console.log("hhfhh", index);
     const data = publishers.find((item) => item._id === index);
     reset({
       editor_name: data.editor_name,

@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useAuth } from "../../hooks/use-auth";
-import PasswordInput, { PasswordField } from "../../component/passwordInput";
+import { PasswordField } from "../../component/passwordInput";
 import { Link } from "react-router-dom";
 
 // Schema with clear required field messages
@@ -16,7 +16,7 @@ const registerSchema = z
       .string()
       .regex(
         /^[6-9]\d{9}$/,
-        "Phone number must be 10 digits and start with 6, 7, 8, or 9"
+        "Phone number must be 10 digits and start with 6, 7, 8, or 9",
       ),
 
     address: z.string().min(1, "Address is required"),
@@ -25,7 +25,7 @@ const registerSchema = z
       .string()
       .regex(
         /^[1-9][0-9]{5}$/,
-        "Pincode must be a 6-digit number and not start with 0"
+        "Pincode must be a 6-digit number and not start with 0",
       ),
 
     aadharNumber: z
@@ -92,9 +92,9 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="form-container p-5">
-      <div className="col-md-10 mx-auto">
-        <div className="top-logo d-flex justify-content-between mb-3">
+    <div className="form-container auth-form-container auth-pane-left signup-form-container p-4 p-md-5">
+      <div className="auth-form-inner mx-auto">
+        <div className="top-logo top-logo-auth d-flex align-items-center gap-3 mb-4">
           <a href="#">
             <img src="/images/nfa-logo.png" alt="NFA" />
           </a>
@@ -103,8 +103,14 @@ const SignupPage = () => {
           </a>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="w-100 mt-5">
-          <h2 className="mb-4">Sign Up</h2>
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="w-100 signup-form auth-form"
+        >
+          <div className="auth-heading mb-4">
+            <h2 className="mb-1">Create Account</h2>
+            <p className="mb-0">Fill in your details to register.</p>
+          </div>
 
           {/* Form Fields */}
           {[
@@ -117,16 +123,20 @@ const SignupPage = () => {
             { label: "Aadhar Number", name: "aadharNumber" },
           ].map((field) => (
             <div className="mb-3" key={field.name}>
+              <label className="form-label auth-label" htmlFor={field.name}>
+                {field.label}
+              </label>
               <input
+                id={field.name}
                 type={field.type || "text"}
                 placeholder={field.label}
-                className={`form-control ${
+                className={`form-control auth-input ${
                   errors[field.name] ? "is-invalid" : ""
                 }`}
                 {...register(field.name)}
               />
               {errors[field.name] && (
-                <div className="invalid-feedback">
+                <div className="invalid-feedback auth-error">
                   {errors[field.name].message}
                 </div>
               )}
@@ -135,8 +145,14 @@ const SignupPage = () => {
 
           {/* Category Dropdown */}
           <div className="mb-3">
+            <label className="form-label auth-label" htmlFor="category">
+              Category
+            </label>
             <select
-              className={`form-select ${errors.category ? "is-invalid" : ""}`}
+              id="category"
+              className={`form-select auth-input ${
+                errors.category ? "is-invalid" : ""
+              }`}
               {...register("category")}
             >
               <option value="">Select Category</option>
@@ -144,7 +160,9 @@ const SignupPage = () => {
               <option value="2">Publisher</option>
             </select>
             {errors.category && (
-              <div className="invalid-feedback">{errors.category.message}</div>
+              <div className="invalid-feedback auth-error">
+                {errors.category.message}
+              </div>
             )}
           </div>
 
@@ -167,12 +185,18 @@ const SignupPage = () => {
             error={errors.password}
             placeholder="Password"
           /> */}
-          <PasswordField
-          control={registerForm.control}
-            name="password"
-            username="johndoe" // to validate against
-            showValidationBox={true}
-          />
+          <div className="mb-3">
+            <label className="form-label auth-label" htmlFor="password">
+              Password
+            </label>
+            <PasswordField
+              control={registerForm.control}
+              name="password"
+              username="johndoe" // to validate against
+              showValidationBox={true}
+              validationMode="modal"
+            />
+          </div>
 
           {/* Confirm Password */}
           {/* <PasswordInput
@@ -181,16 +205,24 @@ const SignupPage = () => {
             error={errors.confirmPassword}
             placeholder="confirm Password"
           /> */}
-          <PasswordField
-            control={registerForm.control}
-            name="confirmPassword"
-             placeholder="Enter Confirm Password"
-            username="johndoe" // to validate against
-            showValidationBox={false}
-          />
+          <div className="mb-4">
+            <label className="form-label auth-label" htmlFor="confirmPassword">
+              Confirm Password
+            </label>
+            <PasswordField
+              control={registerForm.control}
+              name="confirmPassword"
+              placeholder="Enter Confirm Password"
+              username="johndoe" // to validate against
+              showValidationBox={false}
+            />
+          </div>
 
           {/* Submit */}
-          <button type="submit" className="btn btn-common-form w-100">
+          <button
+            type="submit"
+            className="btn btn-common-form auth-submit-btn w-100"
+          >
             Register
           </button>
 

@@ -11,10 +11,10 @@ import { useFetchById } from "../hooks/useFetchById";
 
 const steps = [
   "Author",
-  "Best Book On Cinema",
-  "Publisher of the Book / Editor(S) Of The Newspaper",
+  "Best Book on Cinema",
+  "Publisher / Editor",
   "Declaration",
-  "preview & Payment",
+  "Preview & Payment",
 ];
 const BestBookPage = () => {
   const [activeSection, setActiveSection] = useState(1);
