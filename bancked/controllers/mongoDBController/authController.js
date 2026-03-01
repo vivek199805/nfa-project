@@ -41,7 +41,7 @@ const registerUser = async (req, res, next) => {
     }
 
     const hashedPassword = await hashPassword(password);
-    // Create Appwrite user profile
+
     const newUser = new User({
       firstName,
       lastName,
@@ -107,9 +107,6 @@ const loginUser = async (req, res) => {
     }
     // 🔐 Generate JWT
     const token = generateToken({ userId: user._id, email: user.email });
-    // // Optional: Add token to user's token list
-    // user.tokens = user.tokens.concat({ token });
-    // await user.save();
     const userObj = user.toObject();
     delete userObj.password;
     // Prepare user data to send in response
