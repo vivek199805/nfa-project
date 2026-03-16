@@ -1,19 +1,14 @@
-
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  useNavigate,
-  Link,
-  useLocation,
-} from "react-router-dom";
-import { postRequest } from "../../common/services/requestService";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import {
   showErrorToast,
   showSuccessToast,
 } from "../../common/services/toastService";
 import { PasswordField } from "../../component/passwordInput";
-import { useTransition } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { authService } from "../../services/authService";
 
 const passwordSchema = z
   .object({
@@ -26,7 +21,6 @@ const passwordSchema = z
   });
 
 const ResetPasswordPage = () => {
-  const [isPending, startTransition] = useTransition();
   const navigate = useNavigate();
   const location = useLocation();
   const { email } = location.state || {};
@@ -36,33 +30,30 @@ const ResetPasswordPage = () => {
     control,
     formState: { errors, isSubmitting },
     reset,
-    // watch,
   } = useForm({
     resolver: zodResolver(passwordSchema),
   });
-  const username = "vivek"; // You can replace this with user info if available
-  //   const newPassword = watch("newPassword");
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: authService.resetPassword,
+    onSuccess: (res) => {
+      if (res?.statusCode === 200) {
+        showSuccessToast(res.message || "Password reset successfully");
+        reset();
+        navigate("/");
+      } else {
+        showErrorToast(res.message || "Reset failed");
+      }
+    },
+    onError: (error) => showErrorToast(error.message || "Something went wrong"),
+  });
+
+  const username = "vivek";
 
   const onSubmit = (formData) => {
-    startTransition(async () => {
-      try {
-        const payload = {
-          email,
-          password: formData.newPassword,
-        };
-
-        const res = await postRequest("user/reset-password", payload);
-
-        if (res?.statusCode === 200) {
-          showSuccessToast(res.message || "Password reset successfully");
-          reset();
-          navigate("/");
-        } else {
-          showErrorToast(res.message || "Reset failed");
-        }
-      } catch {
-        // showErrorToast(err.message || "Something went wrong");
-      }
+    resetPasswordMutation.mutate({
+      email,
+      password: formData.newPassword,
     });
   };
 
@@ -110,9 +101,11 @@ const ResetPasswordPage = () => {
             <button
               type="submit"
               className="btn btn-primary w-100"
-              disabled={isSubmitting}
+              disabled={isSubmitting || resetPasswordMutation.isPending}
             >
-              {isSubmitting || isPending ? "Resetting..." : "Reset Password"}
+              {isSubmitting || resetPasswordMutation.isPending
+                ? "Resetting..."
+                : "Reset Password"}
             </button>
           </form>
 
@@ -131,4 +124,3 @@ const ResetPasswordPage = () => {
 };
 
 export default ResetPasswordPage;
-

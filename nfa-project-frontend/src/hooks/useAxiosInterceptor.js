@@ -1,26 +1,28 @@
+// Previous implementation retained in git history; this file now uses enterprise service/query architecture.
 // hooks/useAxiosInterceptor.js
 import { useEffect } from "react";
-import api from "../common/services/axiosService";
+import { apiClient } from "../services/apiClient";
 import { useAuth } from "./use-auth";
 
 const useAxiosInterceptor = () => {
-const { logoutMutation } = useAuth(); 
+  const { logoutMutation } = useAuth();
 
   useEffect(() => {
-    const interceptor = api.interceptors.response.use(
+    const interceptor = apiClient.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401) {      
-          logoutMutation()
+        if (error.response?.status === 401) {
+          logoutMutation.mutate();
         }
         return Promise.reject(error);
-      }
+      },
     );
 
     return () => {
-      api.interceptors.response.eject(interceptor);
+      apiClient.interceptors.response.eject(interceptor);
     };
   }, [logoutMutation]);
 };
 
 export default useAxiosInterceptor;
+

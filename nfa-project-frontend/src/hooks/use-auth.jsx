@@ -1,56 +1,47 @@
 /* eslint-disable react-refresh/only-export-components */
+// Previous implementation retained for compatibility:
+/*
 import { createContext, use, useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-// import { getQueryFn, queryClient } from "../lib/queryClient";
-import { showErrorToast, showSuccessToast } from "../common/services/toastService";
 import { postRequest } from "../common/services/requestService";
+...
+*/
+
+import { createContext, use, useEffect, useMemo } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { showErrorToast, showSuccessToast } from "../common/services/toastService";
 import { useNavigate } from "react-router-dom";
-// import { queryClient } from "../lib/queryClient";
+import { authService } from "../services/authService";
+import { useDispatch, useSelector } from "react-redux";
+import { clearCredentials, setCredentials } from "../features/auth/authSlice";
+import { authStorage } from "../features/auth/authStorage";
 
 export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const navigate = useNavigate();
-  const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem('user');
-    return stored ? JSON.parse(stored) : null;
-  });
-  // const getCurrentUser = async () => {
-  //   const response = await getRequest('user/current'); // replace with your actual API
-  //   return response.data;
-  // };
-    useEffect(() => {
-    localStorage.setItem('user', JSON.stringify(user));
-  }, [user]);
+  const dispatch = useDispatch();
+  const authState = useSelector((state) => state.auth);
 
-  // const {
-  //   data: userData,
-  //   error,
-  //   isLoading,
-  // } = useQuery({
-  //   queryKey: ["user/currentUser"],
-  //   queryFn: getCurrentUser,
-  //   enabled: !!parsedUser,  // Only run if not in localStorage
-  //   initialData: parsedUser,
-  //   staleTime: 5 * 60 * 1000,       // Optional: cache for 5 minutes
-  // });
+  useEffect(() => {
+    if (authState?.token) {
+      authStorage.set({ token: authState.token, data: authState.user, user: authState.user });
+    }
+  }, [authState]);
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials) => {
-      const res = await postRequest("user/login", credentials);
-      return res;
-    },
+    mutationFn: authService.login,
     onSuccess: (res) => {
       if (res?.statusCode !== 200) {
         showErrorToast(res?.message || "Login failed");
         return;
       }
-      const userData = res.data;      
-      localStorage.setItem("userData", JSON.stringify(userData));
-      // queryClient.setQueryData(["user/currentUser"], res);
-      setUser(res)
-      navigate('/dashboard')
+
+      const userPayload = res.data;
+      dispatch(setCredentials({ token: userPayload?.token, user: userPayload }));
+      authStorage.set(userPayload);
       showSuccessToast(`Welcome, ${res.message}!`);
+      navigate("/dashboard");
     },
     onError: (error) => {
       showErrorToast(error.message || "Login failed");
@@ -58,13 +49,10 @@ export function AuthProvider({ children }) {
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (credentials) => {
-      const res = await postRequest("user/register", credentials);
-      return res;
-    },
+    mutationFn: authService.register,
     onSuccess: (res) => {
-      showSuccessToast(`Welcome, ${res.message}!`);
-      navigate('/')
+      showSuccessToast(`Welcome, ${res?.message || "User"}!`);
+      navigate("/");
     },
     onError: (error) => {
       showErrorToast(error.message || "Registration failed");
@@ -75,10 +63,12 @@ export function AuthProvider({ children }) {
     mutationFn: async () => {
       sessionStorage.clear();
       localStorage.clear();
-      navigate('/');
+      authStorage.clear();
+      dispatch(clearCredentials());
+      navigate("/");
+      return true;
     },
     onSuccess: () => {
-      // queryClient.setQueryData(["user/currentUser"], null);
       showSuccessToast("You have been successfully logged out.");
     },
     onError: (error) => {
@@ -86,20 +76,17 @@ export function AuthProvider({ children }) {
     },
   });
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user: user?.data,
-        // isLoading,
-        // error,
-        loginMutation,
-        logoutMutation,
-        registerMutation,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      user: authState?.user,
+      loginMutation,
+      logoutMutation,
+      registerMutation,
+    }),
+    [authState?.user, loginMutation, logoutMutation, registerMutation],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

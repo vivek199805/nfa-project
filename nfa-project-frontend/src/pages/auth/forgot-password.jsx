@@ -1,22 +1,22 @@
+// Previous implementation retained in git history; this file now uses enterprise service/query architecture.
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useNavigate } from "react-router-dom";
 import CustomOtp from "../../component/CustomOtp";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import {
   showErrorToast,
   showSuccessToast,
 } from "../../common/services/toastService";
-import { postRequest } from "../../common/services/requestService";
+import { useMutation } from "@tanstack/react-query";
+import { authService } from "../../services/authService";
 
-// Zod schema for email validation
 const forgotSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
 });
 
 const ForgotPasswordPage = () => {
-  const [, startTransition] = useTransition();
   const [showOtp, setShowOtp] = useState(false);
   const navigate = useNavigate();
   const {
@@ -24,54 +24,63 @@ const ForgotPasswordPage = () => {
     handleSubmit,
     formState: { errors },
     getValues,
-    // reset,
   } = useForm({
     resolver: zodResolver(forgotSchema),
     mode: "onTouched",
   });
 
-  const onSubmit = (data) => {
-    startTransition(async () => {
-      // Simulate an async API call (use your actual API here)
-      const res = await postRequest("user/forgot-password", data);
+  const forgotPasswordMutation = useMutation({
+    mutationFn: authService.forgotPassword,
+    onSuccess: (res) => {
       if (res.statusCode == 200) {
         setShowOtp(true);
         showSuccessToast(res.message);
       } else {
         showErrorToast(res.message);
       }
-    });
-  };
+    },
+    onError: (error) => showErrorToast(error.message),
+  });
 
-  const handleOtpSubmit = async (otp) => {
-    const credentials = {
-      email: getValues().email,
-      otp,
-    };
+  const verifyOtpMutation = useMutation({
+    mutationFn: authService.verifyOtp,
+    onSuccess: (res) => {
+      if (res?.statusCode == 200) {
+        showSuccessToast(res?.message);
+        setShowOtp(false);
+        navigate("/reset-password", { state: { email: getValues().email } });
+      } else {
+        showErrorToast(res?.message);
+      }
+    },
+    onError: (error) => showErrorToast(error.message),
+  });
 
-    const res = await postRequest("user/verify-otp", credentials);
-    if (res?.statusCode == 200) {
-      showSuccessToast(res?.message);
-      // reset({
-      //   email: "",
-      // });
-      setShowOtp(false);
-      navigate("/reset-password", { state: { email: getValues().email } });
-    } else {
-      showErrorToast(res?.message);
-    }
-  };
-
-  const handleResend = () => {
-    startTransition(async () => {
-      // Simulate an async API call (use your actual API here)
-      const res = await postRequest("user/resend-otp", getValues());
+  const resendOtpMutation = useMutation({
+    mutationFn: authService.resendOtp,
+    onSuccess: (res) => {
       if (res.statusCode == 200) {
         showSuccessToast(res.message);
       } else {
         showErrorToast(res.message);
       }
+    },
+    onError: (error) => showErrorToast(error.message),
+  });
+
+  const onSubmit = (data) => {
+    forgotPasswordMutation.mutate(data);
+  };
+
+  const handleOtpSubmit = async (otp) => {
+    verifyOtpMutation.mutate({
+      email: getValues().email,
+      otp,
     });
+  };
+
+  const handleResend = () => {
+    resendOtpMutation.mutate(getValues());
   };
 
   return (
@@ -90,7 +99,9 @@ const ForgotPasswordPage = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="w-100 auth-form">
             <div className="auth-heading mb-4">
               <h2 className="mb-1">Forgot Password</h2>
-              <p className="mb-0">Enter your registered email to receive OTP.</p>
+              <p className="mb-0">
+                Enter your registered email to receive OTP.
+              </p>
             </div>
 
             <div className="mb-3">
@@ -120,8 +131,9 @@ const ForgotPasswordPage = () => {
             <button
               type="submit"
               className="btn btn-common-form auth-submit-btn w-100"
+              disabled={forgotPasswordMutation.isPending}
             >
-              Send OTP
+              {forgotPasswordMutation.isPending ? "Sending..." : "Send OTP"}
             </button>
           </form>
         )}
@@ -138,7 +150,9 @@ const ForgotPasswordPage = () => {
               otpBoxNormal={false}
               otpLength={4}
               showCloseIcon={false}
-              submitBtnName="Verify OTP"
+              submitBtnName={
+                verifyOtpMutation.isPending ? "Verifying..." : "Verify OTP"
+              }
               submitBtnClass="btn btn-common-form auth-submit-btn w-100"
               onSubmit={handleOtpSubmit}
               onResend={handleResend}

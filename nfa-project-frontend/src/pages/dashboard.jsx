@@ -1,40 +1,45 @@
+// Previous implementation retained in git history; this file now uses enterprise service/query architecture.
 import { useState } from "react";
 import { Autoplay, EffectFade, Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import FeatureModalComponent from "../common/modal/feature-modal";
-import { useQuery } from "@tanstack/react-query";
 import { NavLink, useNavigate } from "react-router-dom";
 import "../styles/dashboard.css";
 import { useAuth } from "../hooks/use-auth";
 import { useEffect } from "react";
-import { getRequest } from "../common/services/requestService";
+import { useDashboardEntriesQuery } from "../hooks/queries/useDashboardQueries";
+
 const slides = [
   { image: "/images/login-01.jpg" },
   { image: "/images/login-02.jpg" },
 ];
 
-const getUserForms = async () => {
-  const res = await getRequest("/entry-list"); // Update this endpoint based on your backend
-  return res.data;
-};
+// const getUserForms = async () => {
+//   const res = await getRequest("/entry-list"); // Update this endpoint based on your backend
+//   return res.data;
+// };
+
 const DashboardPage = () => {
   const [showModal, setShowModal] = useState(false);
   const { user, logoutMutation } = useAuth();
   const navigate = useNavigate();
 
   // Simulate skipping fetch and using static data
-  const {
-    data: formCards,
-    isLoading,
-    isError,
-  } = useQuery({
-    queryKey: ["/entry-list"],
-    queryFn: getUserForms,
-    // enabled: true, // disables automatic query
-    // initialData: staticForms, // sets mock data
-    refetchOnMount: true,
-    staleTime: 0,
-  });
+  // const {
+  //   data: formCards,
+  //   isLoading,
+  //   isError,
+  // } = useQuery({
+  //   queryKey: ["/entry-list"],
+  //   queryFn: getUserForms,
+  //   // enabled: true, // disables automatic query
+  //   // initialData: staticForms, // sets mock data
+  //   refetchOnMount: true,
+  //   staleTime: 0,
+  // });
+
+  const { data: formCards, isLoading, isError } = useDashboardEntriesQuery();
+
   useEffect(() => {
     if (!isLoading && !user) {
       navigate("/");
@@ -81,9 +86,7 @@ const DashboardPage = () => {
                   </div>
                 </div>
 
-                {/* Show notification only if there are no forms */}
                 {(!formCards ||
-                  // (!formCards.feature?.length && !formCards["non-feature"]?.length)
                   Object.keys(formCards).every(
                     (key) => !formCards[key] || formCards[key].length === 0,
                   )) && (
@@ -101,9 +104,8 @@ const DashboardPage = () => {
                     </p>
                   </div>
                 )}
-                {/* Add button to create new project if forms exist */}
+
                 {formCards &&
-                  // formCards?.feature?.length > 0 || formCards?.["non-feature"]?.length > 0
                   Object.keys(formCards).some(
                     (key) =>
                       Array.isArray(formCards[key]) &&

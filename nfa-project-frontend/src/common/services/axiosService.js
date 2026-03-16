@@ -1,91 +1,12 @@
-import axios from "axios";
-import { showErrorToast } from "./toastService";
-import { navigateTo } from "../navigate";
-import { store } from "../../store/store";
-import { hideLoader, showLoader } from "../../store/loaderSlice";
+// Previous implementation retained for compatibility:
+// import axios from "axios";
+// import { showErrorToast } from "./toastService";
+// import { navigateTo } from "../navigate";
+// import { store } from "../../store/store";
+// import { hideLoader, showLoader } from "../../store/loaderSlice";
+// const api = axios.create({ baseURL: import.meta.env.VITE_API_URL });
+// ... legacy interceptors
 
-// Create the Axios instance
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-  // withCredentials: true, // If need to send cookies
-});
+import { apiClient } from "../../services/apiClient";
 
-// List of routes that do not require token
-const excludedRoutes = [
-  "login",
-  "/register",
-  "forgot-password",
-  "/reset-password",
-  "verify-email",
-];
-
-// Request interceptor for token
-api.interceptors.request.use(
-  (config) => {
-    // Check if the request URL ends with an excluded route
-    const isExcluded = excludedRoutes.some((route) =>
-      config.url.endsWith(route)
-    );
-
-    if (!isExcluded) {
-      store.dispatch(showLoader());
-      const tokenData = JSON.parse(localStorage.getItem("userData"));
-      if (tokenData) {
-        config.headers.Authorization = `Bearer ${tokenData?.token}`;
-      }
-    }
-
-    return config;
-  },
-  (error) => {
-    store.dispatch(hideLoader());
-    return Promise.reject(error);
-  }
-);
-
-// ❗️Response interceptor to handle 401
-api.interceptors.response.use(
-  (response) => {
-    store.dispatch(hideLoader());
-    return response;
-  },
-  (error) => {
-    store.dispatch(hideLoader());
-    if (error.response?.status === 401) {
-      // Clear user data
-      localStorage.removeItem("userData");
-      localStorage.clear();
-      navigateTo("/");
-      showErrorToast("Session expired. Please login again.");
-      // window.location.href = "/";
-      return Promise.reject(error); // new added to ensure the error is propagated
-    }
-
-    if (error.response?.status == 422) {
-      const errors = error.response?.data.errors;
-      if (errors && typeof errors === "object" && Object.keys(errors).length > 0) {
-        for (const key in errors) {
-          const val = errors[key];
-          // val can be array or string depending on backend
-          if (Array.isArray(val)) val.forEach((m) => showErrorToast(m));
-          else showErrorToast(val);
-        }
-      } else {
-        showErrorToast(error.response?.data?.message || "Something went wrong. Please try again later.");
-      }
-      return Promise.reject(error);
-    }
-
-    // ✅ Handle other errors (optional toast)
-    if (!error?.response) {
-      showErrorToast("No response from API");
-    } else {
-      showErrorToast(error.response?.data?.message || error.response?.statusText || "Something went wrong.");
-    }
-
-    // ✅ ALWAYS reject
-    return Promise.reject(error);
-  }
-);
-
-export default api;
+export default apiClient;

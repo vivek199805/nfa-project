@@ -1,3 +1,4 @@
+// Previous implementation retained in git history; this file now uses enterprise service/query architecture.
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -9,7 +10,8 @@ import {
   showErrorToast,
   showSuccessToast,
 } from "../../common/services/toastService";
-import { postRequest } from "../../common/services/requestService";
+import { useMutation } from "@tanstack/react-query";
+import { authService } from "../../services/authService";
 
 const loginSchema = z.object({
   username: z
@@ -23,9 +25,21 @@ const loginSchema = z.object({
 const LoginPage = () => {
   const { loginMutation } = useAuth();
   const [isVerify, setIsVerify] = useState(false);
-  // useEffect(() =>{
-  //   localStorage.clear();
-  // }, [])
+
+  const verifyEmailMutation = useMutation({
+    mutationFn: authService.verifyEmail,
+    onSuccess: (res) => {
+      if (res?.statusCode == 200) {
+        setIsVerify(true);
+        showSuccessToast(res?.message);
+      } else {
+        showErrorToast(res?.message || "Email verification failed");
+      }
+    },
+    onError: (error) => {
+      showErrorToast(error?.message || "Email verification failed");
+    },
+  });
 
   const loginForm = useForm({
     resolver: zodResolver(loginSchema),
@@ -33,7 +47,7 @@ const LoginPage = () => {
       username: "",
       password: "",
     },
-    mode: "onTouched", // Shows error when field is touched and left empty
+    mode: "onTouched",
   });
 
   const {
@@ -44,27 +58,19 @@ const LoginPage = () => {
   } = loginForm;
 
   const onSubmit = (data) => {
-    console.log("Login data", data);
-    let payload = {
+    const payload = {
       email: data.username,
       password: data.password,
     };
     loginMutation.mutate(payload);
   };
 
-  const handleVerifyEmail = async () => {
+  const handleVerifyEmail = () => {
     const currentValues = getValues();
-    const credentials = {
+    verifyEmailMutation.mutate({
       email: currentValues?.username,
       password: "",
-    };
-    const res = await postRequest("user/verify-email", credentials);
-    if (res?.statusCode == 200) {
-      setIsVerify(true);
-      showSuccessToast(res?.message);
-    } else {
-      showErrorToast(res?.message);
-    }
+    });
   };
 
   return (
@@ -94,7 +100,6 @@ const LoginPage = () => {
             <p className="mb-0">Sign in to continue.</p>
           </div>
 
-          {/* Username Field */}
           <div className="mb-3">
             <label className="form-label auth-label" htmlFor="username">
               Email / Username
@@ -107,7 +112,7 @@ const LoginPage = () => {
               }`}
               placeholder="Username"
               {...register("username", {
-                onBlur: (e) => handleVerifyEmail(e.target.value),
+                onBlur: () => handleVerifyEmail(),
               })}
             />
             {errors.username && (
@@ -116,31 +121,6 @@ const LoginPage = () => {
               </div>
             )}
           </div>
-          {/* {!isVerify && (
-            <div className="d-flex align-item-center justify-content-end">
-              <button type="button" className="btn btn-primary w-10 mb-2"
-                onClick={handleVerifyEmail}
-              >
-                Verify Email
-              </button>
-            </div>
-          )} */}
-
-          {/* Password Field */}
-          {/* <div className="input-group mb-3">
-            <span className="input-group-text">
-              <i className="bi bi-unlock"></i>
-            </span>
-            <input
-              type="password"
-              className={`form-control ${errors.password ? "is-invalid" : ""}`}
-              placeholder="*******"
-              {...register("password")}
-            />
-            {errors.password && (
-              <div className="invalid-feedback">{errors.password.message}</div>
-            )}
-          </div> */}
 
           <div className="mb-2">
             <label className="form-label auth-label" htmlFor="password">
@@ -161,9 +141,9 @@ const LoginPage = () => {
           <button
             type="submit"
             className="btn btn-common-form auth-submit-btn w-100"
-            disabled={!isVerify}
+            disabled={!isVerify || loginMutation.isPending}
           >
-            Login
+            {loginMutation.isPending ? "Logging in..." : "Login"}
           </button>
 
           <div className="link text-center mt-2">

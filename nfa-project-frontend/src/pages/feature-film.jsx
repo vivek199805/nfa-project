@@ -1,3 +1,4 @@
+// Previous implementation retained in git history; this file now uses enterprise service/query architecture.
 import { useParams } from "react-router-dom";
 import ActorSection from "../component/feature-component/actor-component";
 import AudiographerSection from "../component/feature-component/audiographer";
@@ -13,9 +14,8 @@ import ScreenPlaySection from "../component/feature-component/screenplay-compone
 import SongsFormSection from "../component/feature-component/songs-component";
 import StepIndicator from "../component/StepIndicator";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getRequestById } from "../common/services/requestService";
 import Navbar from "../component/layouts/navbar";
+import { useFetchById } from "../hooks/useFetchById";
 
 const steps = [
   "Film Details",
@@ -31,20 +31,23 @@ const steps = [
   "Declaration",
   "Payment",
 ];
+
 const FeatureFilmPage = () => {
   const [activeSection, setActiveSection] = useState(1);
   const { id } = useParams();
-  const { data: formData } = useQuery({
-    queryKey: ["film/feature-entry-by", id],
-    queryFn: () => getRequestById("film/feature-entry-by", id),
-    enabled: !!id,
-    // initialData: staticForms, // sets mock data
-    refetchOnMount: true,
-    staleTime: 0,
-  });
+
+  // const { data: formData } = useQuery({
+  //   queryKey: ["film/feature-entry-by", id],
+  //   queryFn: () => getRequestById("film/feature-entry-by", id),
+  //   enabled: !!id,
+  //   // initialData: staticForms, // sets mock data
+  //   refetchOnMount: true,
+  //   staleTime: 0,
+  // });
+
+  const { data: formData } = useFetchById("film/feature-entry-by", id);
 
   useEffect(() => {
-    console.log("Form cards data:", formData);
     if (id && formData?.data?.active_step !== undefined) {
       const step = +formData.data.active_step;
       setActiveSection(step < steps.length ? step + 1 : steps.length);
@@ -70,73 +73,73 @@ const FeatureFilmPage = () => {
 
               {activeSection == 1 && (
                 <FilmDetailsSection
-                  filmType={'feature'}
+                  filmType={"feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 2 && (
                 <CensorSection
-                  filmType={'feature'}
+                  filmType={"feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 3 && (
                 <CompanyRegistrationSection
-                  filmType={'feature'}
+                  filmType={"feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 4 && (
                 <ProducerDetailsSection
-                  filmType={'feature'}
+                  filmType={"feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 5 && (
                 <DirectorDetailsSection
-                  filmType={'feature'}
+                  filmType={"feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 6 && (
                 <ActorSection
-                  filmType={'feature'}
+                  filmType={"feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 7 && (
                 <SongsFormSection
-                  filmType={'feature'}
+                  filmType={"feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 8 && (
                 <AudiographerSection
-                  filmType={'feature'}
+                  filmType={"feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 9 && (
                 <ScreenPlaySection
-                  filmType={'feature'}
+                  filmType={"feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 10 && (
                 <ReturnSection
-                  filmType={'feature'}
+                  filmType={"feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 11 && (
                 <DeclarationSection
-                  filmType={'feature'}
+                  filmType={"feature"}
                   setActiveSection={setActiveSection}
                 />
               )}
               {activeSection == 12 && (
                 <PaymentSection
-                  filmType={'feature'}
+                  filmType={"feature"}
                   setActiveSection={setActiveSection}
                 />
               )}

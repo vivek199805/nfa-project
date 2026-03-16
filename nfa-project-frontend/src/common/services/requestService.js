@@ -1,54 +1,52 @@
-import api from "./axiosService";
+// Previous implementation retained for compatibility:
+// import api from "./axiosService";
+// export const getRequest = async (url, config = {}) => { ... }
+// export const getRequestById = async (url, id, config = {}) => { ... }
+// export const postRequest = async (url, data = {}, config = {}) => { ... }
+// export const updateFormById = async (url, id, payload, config = {}) => { ... }
+
+import { http } from "../../services/apiClient";
+
+const normalizeError = (error) => {
+  if (error instanceof Error) {
+    return error;
+  }
+  const message =
+    error?.response?.data?.message ||
+    error?.response?.statusText ||
+    error?.message ||
+    "Something went wrong!";
+  return new Error(message);
+};
 
 export const getRequest = async (url, config = {}) => {
   try {
-    const response = await api.get(url, config);
-    return response.data;
+    return await http.get(url, config);
   } catch (error) {
-    throw handleError(error);
+    throw normalizeError(error);
   }
 };
 
 export const getRequestById = async (url, id, config = {}) => {
   try {
-    const response = await api.get(`${url}/${id}`, config);
-    return response.data;
+    return await http.get(`${url}/${id}`, config);
   } catch (error) {
-    throw handleError(error);
+    throw normalizeError(error);
   }
 };
 
 export const postRequest = async (url, data = {}, config = {}) => {
   try {
-    const response = await api.post(url, data, config);
-    console.log("POST Request URL:", response);
-    return response.data;
+    return await http.post(url, data, config);
   } catch (error) {
-    throw handleError(error);
+    throw normalizeError(error);
   }
 };
 
 export const updateFormById = async (url, id, payload, config = {}) => {
   try {
-    const res = await api.put(`${url}/${id}`, payload, config);
-    return res.data;
+    return await http.put(`${url}/${id}`, payload, config);
   } catch (error) {
-    throw handleError(error);
+    throw normalizeError(error);
   }
-};
-
-const handleError = (error) => {
-  let message = "Something went wrong!";
-  if (error.response) {
-    // Server responded with a status
-    message = error.response?.data?.message || error.response.statusText;
-  } else if (error.request) {
-    // No response received
-    message = "No response from API";
-  } else {
-    // Other errors
-    message = error.message;
-  }
-  // return { error: true, message };
-   return new Error(message);
 };
