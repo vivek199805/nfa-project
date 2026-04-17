@@ -2,10 +2,14 @@ name: Deploy to Render (Frontend + Backend)
 
 on:
   push:
+    # branches:
+    #   - main     # For production
+    #   - dev      # For staging
+    pull_request:
     branches:
-      - main     # For production
-      - dev      # For staging
-
+      - main
+    types:
+      - closed
 jobs:
   deploy:
     runs-on: ubuntu-latest

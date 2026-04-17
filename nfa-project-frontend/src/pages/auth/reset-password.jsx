@@ -2,7 +2,12 @@
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import {
+  useNavigate,
+  Link,
+  useSearchParams,
+  useLocation,
+} from "react-router-dom";
 import { postRequest } from "../../common/services/requestService";
 import {
   showErrorToast,
@@ -25,8 +30,10 @@ const ResetPasswordPage = () => {
   const [isPending, startTransition] = useTransition();
   // const { token } = useParams();
   const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const token = searchParams.get("token"); // ✅ Get ?token=XYZ
+  const location = useLocation();
+  const { email } = location.state || {};
 
   const {
     handleSubmit,
@@ -39,7 +46,6 @@ const ResetPasswordPage = () => {
   });
 
   console.log("token", token);
-  
 
   const username = "vivek"; // You can replace this with user info if available
   //   const newPassword = watch("newPassword");
@@ -48,7 +54,7 @@ const ResetPasswordPage = () => {
     startTransition(async () => {
       try {
         const payload = {
-          // token,
+          email,
           password: formData.newPassword,
         };
 
@@ -62,7 +68,7 @@ const ResetPasswordPage = () => {
           showErrorToast(res.message || "Reset failed");
         }
       } catch (err) {
-        showErrorToast(err.message || "Something went wrong");
+        // showErrorToast(err.message || "Something went wrong");
       }
     });
   };

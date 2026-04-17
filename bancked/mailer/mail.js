@@ -12,12 +12,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const testAccount = await nodemailer.createTestAccount();
 const transporter = nodemailer.createTransport({
-  host: process.env.MAIL_HOST,
-  port: Number(process.env.MAIL_PORT || 587),
-  secure: false,
+  // host: process.env.MAIL_HOST,
+  // port: Number(process.env.MAIL_PORT || 587),
+  // secure: false,
+  // auth: {
+  //   user: process.env.MAIL_USERNAME,
+  //   pass: process.env.MAIL_PASSWORD,
+  // },
+  service: "yahoo",
   auth: {
-    user: process.env.MAIL_USERNAME,
-    pass: process.env.MAIL_PASSWORD,
+    user: process.env.MAIL_USERNAME,      // your Yahoo email
+    pass: process.env.MAIL_PASSWORD,          // app password from Yahoo
   },
 });
 
@@ -27,16 +32,15 @@ async function renderTemplate(templateName, data) {
 }
 
 async function sendTemplateEmail({ To, Subject, templateName, Data }) {
-  const frontendBaseUrl =
-    process.env.FRONTEND_BASE_URL ?? "http://119.82.68.149/festival/";
+  const frontendBaseUrl = process.env.FRONTEND_BASE_URL ?? "http://119.82.68.149/festival/";
 
   const htmlContent = await renderTemplate(templateName, {
     ...Data,
     // frontendBaseUrl,
   });
 
-  // const from = process.env.MAIL_FROM_ADDRESS;
-  const from = `'URL SHORTENER' < ${testAccount.user}>`;
+  const from = process.env.MAIL_USERNAME;
+  // const from = `'URL SHORTENER' < ${testAccount.user}>`;
   try {
     const info = await transporter.sendMail({
       from,

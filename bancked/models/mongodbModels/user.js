@@ -17,8 +17,14 @@ const userSchema = new mongoose.Schema(
       required: true,
       //  select: false
     },
-    resetPasswordToken: String,
-    resetPasswordExpires: Date,
+    resetPasswordToken: {
+      type: String,
+      select: false
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false
+    },
     //  tokens:[{
     //   token:{
     //     type:String,
@@ -59,16 +65,18 @@ const userSchema = new mongoose.Schema(
 
 //     return user;
 // }
-// Hash the plain text password before saving
-// userSchema.pre('save', async function(next){
-//   const user = this
 
-//   if(user.isModified){
-//     user.password = await hashPassword(password);
-//   }
+// // HASH PASSWORD BEFORE SAVE
+// userSchema.pre("save", async function (next) {
+//   if (!this.isModified("password")) return next();
+//   this.password = await hashPassword(this.password);
+//   next();
+// });
 
-//   next()
-// })
+// //  Virtual field (optional but useful)
+// userSchema.virtual("fullName").get(function () {
+//   return `${this.firstName} ${this.lastName}`;
+// });
 
 // collection creation
 

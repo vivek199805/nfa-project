@@ -7,6 +7,7 @@ import {
   postRequest,
 } from "../../common/services/requestService";
 import { useFetchById } from "../../hooks/useFetchById";
+import { showErrorToast } from "../../common/services/toastService";
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 

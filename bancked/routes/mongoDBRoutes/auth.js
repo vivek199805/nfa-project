@@ -14,6 +14,7 @@ router.post('/forgot-password', UserController.forgotPassword);
 // router.post('/forgot-password', UserController.forgotPasswordWithToken);
 router.post('/reset-password', UserController.resetPassword);
 router.post('/verify-otp', UserController.verifyOtp);
+router.post('/resend-otp', UserController.resendOtp);
 // router.post("/logout",requireAuth, UserController.logoutUser);
 // router.get("/currentUser", UserController.getCurrentUser);
 // router.post("/updateProfile", UserController.updateProfile);

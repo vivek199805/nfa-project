@@ -51,9 +51,8 @@ const updateEntryById = async (req, res) => {
     if (missingFields.length > 0) {
       return res.status(200).json({
         statusCode: 203,
-        message: `${missingFields.join(" and ")} ${
-          missingFields.length > 1 ? "are" : "is"
-        } required`,
+        message: `${missingFields.join(" and ")} ${missingFields.length > 1 ? "are" : "is"
+          } required`,
       });
     }
     const payload = {
@@ -72,7 +71,7 @@ const updateEntryById = async (req, res) => {
     }
     // Check if the user is authorized to update this entry
     let stepHandler = {
-      [Common.stepsBestFilmCritic().CRITIC_DETAILS]: async ( existingEntry, payload) => await handleBestFilmCriticStep(existingEntry, payload),
+      [Common.stepsBestFilmCritic().CRITIC_DETAILS]: async (existingEntry, payload) => await handleBestFilmCriticStep(existingEntry, payload),
       [Common.stepsBestFilmCritic().CRITIC]: async (existingEntry, payload) => await handleCriticStep(existingEntry, payload),
       [Common.stepsBestFilmCritic().PUBLISHER]: async (existingEntry, payload) => await handlePublisherStep(existingEntry, payload),
       [Common.stepsBestFilmCritic().DECLARATION]: async (data, payload) => await handleDeclarationStep(data, payload),
@@ -80,6 +79,13 @@ const updateEntryById = async (req, res) => {
 
     if (stepHandler[+req.body.step]) {
       const result = await stepHandler[+req.body.step](existingEntry, payload);
+      if (!result?.status) {
+        return res.status(422).json({
+          statusCode: 422,        
+          message: result.message || "Step processing failed",
+        });
+      }
+
       // Update the document with request body
       Object.assign(result, payload);
 
@@ -132,7 +138,7 @@ const finalSubmit = async (req, res) => {
       });
     }
 
-    
+
 
     // const mailContent = {
     //   To: payload.user.email,
@@ -151,7 +157,8 @@ const finalSubmit = async (req, res) => {
     return res.status(500).json({
       status: "exception",
       message: error.message || "Internal Server Error",
-    });  }
+    });
+  }
 };
 
 const handleBestFilmCriticStep = async (data, payload) => {
@@ -218,7 +225,7 @@ const handleCriticStep = async (data, payload) => {
         });
 
         if (!fileUpload.status) {
-          return response("exception", { message: "Image not uploaded.!!" });
+          return fileUpload
         }
         data.critic_aadhaar_card = fileUpload?.data?.file ?? null;
       } else {

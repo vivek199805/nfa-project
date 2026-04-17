@@ -5,9 +5,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "cross-env NODE_ENV=development nodemon server.js",
-    "prod": "cross-env NODE_ENV=production node server.js"
+    "prod": "cross-env NODE_ENV=production node server.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "keywords": [],
   "author": "",
@@ -23,14 +24,19 @@
     "dotenv": "^16.5.0",
     "ejs": "^3.1.10",
     "express": "^4.21.2",
+    "express-rate-limit": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^6.9.1",
+    "mongoose-sequence": "^6.0.1",
+    "morgan": "^1.10.1",
     "multer": "^2.0.1",
     "nodemailer": "^7.0.5",
     "nodemon": "^3.1.10",
+    "redis": "^5.10.0",
     "zod": "^3.25.74"
   },
   "devDependencies": {
-    "cross-env": "^10.0.0"
+    "cross-env": "^10.0.0",
+    "eslint": "^10.2.0"
   }
 }

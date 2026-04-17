@@ -1,2 +1,40 @@
+# Dependencies
 node_modules
+npm-debug.log
+yarn.lock
+pnpm-lock.yaml
+
+# Environment files (SECURITY)
 .env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# Docker files
+docker-compose.yml
+docker-compose.*.yml
+Dockerfile.dev
+
+# Logs
+logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor config
+.vscode
+.idea
+
+# Tests & docs
+tests
+__tests__
+coverage
+README.md
+
+# Misc
+*.md

@@ -1,59 +1,71 @@
- const mongoose = require("mongoose");
+const mongoose = require("mongoose");
 // const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
- const userSchema = new mongoose.Schema({
-  _id : {
-    type: Number,   
-},
-   email : {
-       type: String,
-       unique: true      
-   },
-   name : {
+const { addAutoIncrementId } = require("../utils/autoIncrement");
+const userSchema = new mongoose.Schema({
+  _id: {
+    type: Number,
+  },
+  seq: { type: Number, unique: true },
+  email: {
     type: String,
-   
-},
- phone : {
-  type: String,   
+    unique: true
   },
- status : {
-  type: String, 
-},
- role : {
-  type: String,  
+  name: {
+    type: String,
+
   },
-   password : {
-       type: String,
-   },
-   tokens:[{
-    token:{
-      type:String,
+  phone: {
+    type: String,
+  },
+  status: {
+    type: String,
+  },
+  role: {
+    type: String,
+  },
+  password: {
+    type: String,
+  },
+  tokens: [{
+    token: {
+      type: String,
       required: true
     }
-   }]
+  }]
 });
 
+addAutoIncrementId(userSchema, mongoose, {
+  fieldName: "seq",
+  prefix: "NFA",
+  counterId: "user_seq",
+  virtualName: "userId",   // 👈 custom virtual name
+});
 
+// when the relationship is only one-way
+// In your User schema, you don’t have a tasks field.
 userSchema.virtual("Tasks", {
-  'ref': 'Task' ,// other Model name 
-   'localField': '_id',
-   foreignField: 'owner' // other Model field name
-})
+  ref: "Task",           // Reference model
+  localField: "_id",     // Field in User model
+  foreignField: "owner"  // Field in Task model
+});
+// enable virtuals in JSON output:
+// userSchema.set("toJSON", { virtuals: true });
 
-userSchema.methods.toJSON = async function(){
+userSchema.methods.toJSON = async function () {
   const user = this
- const  userObject = user.toObject();
- delete userObject.password
-delete userObject.tokens
+  const userObject = user.toObject();
+  delete userObject.password
+  delete userObject.tokens
   return userObject;
 }
 
-userSchema.methods.genarateAuthToken= async function(){
-    const user = this
-   const token = jwt.sign({_id:user._id.toString()},  'thisisnewproject');
-   user.tokens = user.tokens.concact({token});
-   await user.save()
-    return token;
+userSchema.methods.genarateAuthToken = async function () {
+  const user = this
+  const token = jwt.sign({ _id: user._id.toString() }, 'thisisnewproject');
+  user.tokens = user.tokens.concact({ token });
+  await user.save()
+  return token;
 }
 
 // userSchema.statics.findByCredentails = async (email, password) =>{
@@ -83,7 +95,7 @@ userSchema.methods.genarateAuthToken= async function(){
 
 // collection creation
 
-  const User = new mongoose.model("User", userSchema );
+const User = new mongoose.model("User", userSchema);
 
- module.exports = User;
+module.exports = User;
 

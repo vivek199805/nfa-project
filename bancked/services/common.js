@@ -76,6 +76,12 @@ export const formType = {
   BEST_FILM_CRITIC: 4,
 };
 
+function isValidFile(filename) {
+  const allowedExtensions = [".jpg", ".jpeg", ".png", ".pdf"];
+  const ext = filename.toLowerCase().substring(filename.lastIndexOf("."));
+  return allowedExtensions.includes(ext);
+}
+
 const imageUpload = async (data) => {
   const websiteTypeValue = websiteType[data.websiteType] || null;
   const formTypeValue = formType[data.formType] || null;
@@ -97,7 +103,10 @@ const imageUpload = async (data) => {
     const documentType = documentTypeMap[data.image_key.toUpperCase()] || null;
 
     if (!documentType) {
-      return false;
+       return {
+        status: false,
+        message: "Invalid document type",
+      };
     }
 
     const fileDetails = {
@@ -116,27 +125,52 @@ const imageUpload = async (data) => {
       website_type: websiteTypeValue,
     };
 
-    const existingDoc = await Document.findOne(filter);
+    const { file } = fileDetails; // assuming fileDetails has `fileName`
 
-    if (existingDoc) {
-      Object.assign(existingDoc, fileDetails);
-      await existingDoc.save();
+    if (!isValidFile(file)) {
       return {
-        status: true,
-        data: existingDoc,
-        message: "File updated successfully!!",
-      };
-    } else {
-      const newDoc = new Document(fileDetails);
-      await newDoc.save();
-      return {
-        status: true,
-        data: newDoc,
-        message: "File created successfully!!",
+        status: false,
+        message: "Only JPG, PNG, and PDF files are allowed!",
       };
     }
+
+    // const existingDoc = await Document.findOne(filter);
+    // if (existingDoc) {
+    //   Object.assign(existingDoc, fileDetails);
+    //   await existingDoc.save();
+    //   return {
+    //     status: true,
+    //     data: existingDoc,
+    //     message: "File updated successfully!!",
+    //   };
+    // } else {
+    //   const newDoc = new Document(fileDetails);
+    //   await newDoc.save();
+    //   return {
+    //     status: true,
+    //     data: newDoc,
+    //     message: "File created successfully!!",
+    //   };
+    // }
+
+    // Upsert (update if exists, else insert)
+    const updatedDoc = await Document.findOneAndUpdate(filter, fileDetails, {
+      new: true, // return updated doc
+      upsert: true, // create if not exists
+      rawResult: true, // return full MongoDB response
+    });
+
+    const wasNew = !!updatedDoc.lastErrorObject.upserted;
+    return {
+      status: true,
+      data: updatedDoc?.value,
+      message: wasNew ? "File created successfully!!" : "File updated successfully!!",
+    };
   } catch (error) {
-    return false;
+    return {
+      status: false,
+      message: "Error while uploading file",
+    };
   }
 }
 
