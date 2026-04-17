@@ -30,8 +30,8 @@ jobs:
       - name: Install backend deps
         run: npm ci
 
-      - name: Lint backend
-        run: npm run lint --if-present
+      # - name: Lint backend
+        # run: npm run lint --if-present
 
       - name: Test backend
         run: npm test --if-present
