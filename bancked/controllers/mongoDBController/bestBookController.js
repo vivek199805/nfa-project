@@ -123,14 +123,14 @@ const updateEntryById = async (req, res) => {
 const handleAuthorStep = async (data, payload) => {
   const lastId = payload.id || null;
 
-  if (lastId) {
-    if (
-      !data.active_step ||
-      data.active_step < Common.stepsBestBook().CRITIC_DETAILS
-    ) {
-      data.active_step = Common.stepsBestBook().CRITIC_DETAILS;
+    if (lastId) {
+      if (
+        !data.active_step ||
+      data.active_step < Common.stepsBestBook().AUTHOR
+      ) {
+      data.active_step = Common.stepsBestBook().AUTHOR;
+      }
     }
-  }
 
   return data;
 };
@@ -251,14 +251,14 @@ const finalSubmit = async (req, res) => {
     });
 
     if (!bestBook) {
-      res.status(200).json({
+      return res.status(200).json({
         message: "You do not have any entries.!!",
         statusCode: 203,
       });
     }
 
     if (bestBook.payment_status != 2) {
-      res.status(200).json({
+      return res.status(200).json({
         message: "Your payment is not completed.!!",
         statusCode: 203,
       });

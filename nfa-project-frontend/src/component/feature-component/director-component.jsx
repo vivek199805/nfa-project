@@ -4,7 +4,7 @@ import { z } from "zod";
 import { useInputRestriction } from "../../hooks/useInputRestriction";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { postRequest } from "../../common/services/requestService";
 import { showErrorToast, showSuccessToast } from "../../common/services/toastService";
 import { useParams } from "react-router-dom";
@@ -91,11 +91,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
     // shouldFocusError: false,
   });
 
-  useEffect(() => {
-    getDirector();
-  }, [id]);
-
-  const getDirector = async () => {
+  const getDirector = useCallback(async () => {
     try {
       const response = await postRequest("film/director-list", { id, film_type: filmType });
       if (response.statusCode === 200) {
@@ -106,7 +102,11 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
     } catch (error) {
       console.error("Failed to fetch data:", error);
     }
-  };
+  }, [filmType, id]);
+
+  useEffect(() => {
+    getDirector();
+  }, [getDirector]);
 
   // useEffect(() => {
   //   if (data?.directors?.length > 0) {
@@ -173,7 +173,6 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
   };
 
   const handleEdit = (index) => {
-    console.log("hhfhh", index);
     //  const data = directors[index];
     const data = directors.find((item) => item._id === index);
     reset({

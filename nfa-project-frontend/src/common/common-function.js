@@ -7,14 +7,19 @@ export const countWords = (text) => {
  export const formatDate = (isoDate) =>
   isoDate ? new Date(isoDate).toISOString().split("T")[0] : "";
 
- export function generatePDF({
+export function generatePDF({
   element,
   filename = 'document',
   isType = 'DOWNLOAD', // 'PRINT' or 'DOWNLOAD'
   customPage = false,
 }) {
-  html2canvas(element, {
-    scale: 3,
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+
+  return html2canvas(element, {
+    backgroundColor: '#ffffff',
+    scale: Math.max(2, pixelRatio * 2),
+    useCORS: true,
+    logging: false,
     onclone: (document, clonedElement) => {
       const receiptStampBox = clonedElement.querySelector('.receiptStampBox');
       if (receiptStampBox) {
@@ -22,22 +27,24 @@ export const countWords = (text) => {
       }
     },
   }).then((canvas) => {
-    const imageGeneratedFromTemplate = canvas.toDataURL('image/png');
+    const imageGeneratedFromTemplate = canvas.toDataURL('image/jpeg', 1.0);
     const fileWidth = 200;
     const generatedImageHeight = (canvas.height * fileWidth) / canvas.width;
 
-    const pageSize = customPage ? [fileWidth + 20, generatedImageHeight] : 'a4';
+    const pageSize = customPage
+      ? [fileWidth + 20, generatedImageHeight + 10]
+      : 'a4';
     const PDF = new jsPDF('p', 'mm', pageSize);
 
     PDF.addImage(
       imageGeneratedFromTemplate,
-      'PNG',
+      'JPEG',
       5,
       5,
       fileWidth,
       generatedImageHeight,
       '',
-      'MEDIUM'
+      'FAST'
     );
 
     PDF.rect(
@@ -52,7 +59,11 @@ export const countWords = (text) => {
       PDF.save(`${filename}.pdf`);
     } else if (isType === 'PRINT') {
       PDF.autoPrint();
-      window.open(PDF.output('bloburl'), '_blank');
+      const printWindow = window.open(PDF.output('bloburl'), '_blank');
+      if (!printWindow) {
+        PDF.save(`${filename}.pdf`);
+      }
     }
+    return PDF;
   });
 }

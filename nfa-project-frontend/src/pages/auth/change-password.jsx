@@ -5,11 +5,11 @@ import {
   showErrorToast,
   showSuccessToast,
 } from "../../common/services/toastService";
-import "../../styles/change-password.css"; // custom CSS (see below)
+import "../../styles/change-password.css";
 import { Link } from "react-router-dom";
 import { PasswordField } from "../../component/passwordInput";
-import { useTransition } from "react";
-import { postRequest } from "../../common/services/requestService";
+import { useMutation } from "@tanstack/react-query";
+import { authService } from "../../services/authService";
 
 const schema = z
   .object({
@@ -30,15 +30,10 @@ const schema = z
   });
 
 export default function ChangePasswordPage() {
-  const [isPending, startTransition] = useTransition();
   const {
     control,
     handleSubmit,
-    // register,
-    formState: {
-      // errors,
-      isSubmitting,
-    },
+    formState: { isSubmitting },
     reset,
   } = useForm({
     resolver: zodResolver(schema),
@@ -49,27 +44,24 @@ export default function ChangePasswordPage() {
     },
   });
 
+  const changePasswordMutation = useMutation({
+    mutationFn: authService.changePassword,
+    onSuccess: (res) => {
+      if (res?.statusCode == 200) {
+        showSuccessToast(res?.message || "Password updated successfully");
+        reset();
+      } else {
+        showErrorToast(res?.message || "Something went wrong");
+      }
+    },
+    onError: (error) =>
+      showErrorToast(error.message || "Failed to update password"),
+  });
+
   const onSubmit = (data) => {
-    startTransition(() => {
-      (async () => {
-        const payload = {
-          currentPassword: data.currentPassword,
-          newPassword: data.newPassword,
-        };
-
-        try {
-          const res = await postRequest("user/change-password", payload);
-
-          if (res?.statusCode == 200) {
-            showSuccessToast(res?.message || "Password updated successfully");
-            reset();
-          } else {
-            showErrorToast(res?.message || "Something went wrong");
-          }
-        } catch (error) {
-          // showErrorToast(error.message || "Failed to update password");
-        }
-      })();
+    changePasswordMutation.mutate({
+      currentPassword: data.currentPassword,
+      newPassword: data.newPassword,
     });
   };
 
@@ -88,7 +80,6 @@ export default function ChangePasswordPage() {
           <h3 className="mb-4 text-center">Change Password</h3>
 
           <form onSubmit={handleSubmit(onSubmit)}>
-            {/* ✅ Current Password */}
             <div className="mb-3">
               <label className="form-label">Current Password</label>
               <PasswordField
@@ -96,11 +87,10 @@ export default function ChangePasswordPage() {
                 name="currentPassword"
                 placeholder="Enter Current password"
                 showValidationBox={true}
-                username={"user122"} // Replace with actual user ID if needed
+                username={"user122"}
               />
             </div>
 
-            {/* ✅ New Password with custom password field */}
             <div className="mb-3">
               <label className="form-label">New Password</label>
               <PasswordField
@@ -108,11 +98,10 @@ export default function ChangePasswordPage() {
                 name="newPassword"
                 placeholder="Enter new password"
                 showValidationBox={true}
-                username={"user123"} // Replace with actual user ID if needed
+                username={"user123"}
               />
             </div>
 
-            {/* ✅ Confirm Password */}
             <div className="mb-3">
               <label className="form-label">Confirm Password</label>
               <PasswordField
@@ -120,16 +109,18 @@ export default function ChangePasswordPage() {
                 name="confirmPassword"
                 placeholder="Enter confirm password"
                 showValidationBox={true}
-                username={"user1234"} // Replace with actual user ID if needed
+                username={"user1234"}
               />
             </div>
 
             <button
               type="submit"
               className="btn btn-primary w-100"
-              disabled={isSubmitting}
+              disabled={isSubmitting || changePasswordMutation.isPending}
             >
-              {isSubmitting || isPending ? "Updating..." : "Change Password"}
+              {isSubmitting || changePasswordMutation.isPending
+                ? "Updating..."
+                : "Change Password"}
             </button>
           </form>
 

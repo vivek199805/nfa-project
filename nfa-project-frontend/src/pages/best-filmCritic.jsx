@@ -10,9 +10,9 @@ import DeclarationSection from "../component/best-filmCritic-component/declarati
 import { useFetchById } from "../hooks/useFetchById";
 
 const steps = [
-  "Best Flim Critic",
+  "Best Film Critic",
   "Critic",
-  "Publisher of the Newspaper Journal",
+  "Publisher / Journal",
   "Declaration",
   "View",
 ];

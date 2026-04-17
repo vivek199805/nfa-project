@@ -1,6 +1,7 @@
 import { CheckCircle, XCircle } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Controller } from "react-hook-form";
+import { createPortal } from "react-dom";
 
 const PasswordInput = ({ register, error, placeholder = "Password", name }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -46,12 +47,33 @@ export const PasswordField = ({
   name,
   placeholder = "Enter password",
   showValidationBox = false,
-    username = "",
+  username = "",
+  validationMode = "popover",
 }) => {
   const [showErrorBox, setShowErrorBox] = useState(false);
   const hideTimeout = useRef(null);
   const [showPassword, setShowPassword] = useState(false);
   const togglePassword = () => setShowPassword((prev) => !prev);
+  const useModalValidation = validationMode === "modal";
+
+  useEffect(() => {
+    if (!showErrorBox || !useModalValidation) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setShowErrorBox(false);
+      }
+    };
+
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [showErrorBox, useModalValidation]);
   // const wrapperRef = useRef(null);
 
   // Hide box on click outside
@@ -95,6 +117,7 @@ export const PasswordField = ({
                   }}
                   onBlur={() => {
                     field.onBlur?.();
+                    if (useModalValidation) return;
                     hideTimeout.current = setTimeout(() => {
                       setShowErrorBox(false);
                     }, 200);
@@ -116,7 +139,7 @@ export const PasswordField = ({
                 )}
               </div>
 
-              {showValidationBox && showErrorBox && (
+              {showValidationBox && showErrorBox && !useModalValidation && (
                 <div
                   className="mt-3 showValBoxList"
                   style={{ whiteSpace: "pre-line" }}
@@ -165,6 +188,78 @@ export const PasswordField = ({
                   />
                 </div>
               )}
+
+              {showValidationBox &&
+                showErrorBox &&
+                useModalValidation &&
+                createPortal(
+                  <div
+                    className="password-validation-modal-overlay"
+                    onMouseDown={() => setShowErrorBox(false)}
+                  >
+                    <div
+                      className="password-validation-modal-card"
+                      onMouseDown={(event) => event.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        className="password-validation-modal-close"
+                        onClick={() => setShowErrorBox(false)}
+                        aria-label="Close password validation"
+                      >
+                        x
+                      </button>
+                      <div className="password-validation-modal-title">
+                        Password requirements
+                      </div>
+                      <div style={{ whiteSpace: "pre-line" }}>
+                        <PasswordRequirement
+                          valid={password?.length >= 8}
+                          text="Must be at least 8 characters!"
+                        />
+                        <PasswordRequirement
+                          valid={password?.length <= 16}
+                          text="Must be between 8 to 16 characters!"
+                        />
+                        <PasswordRequirement
+                          valid={/[0-9]/.test(password)}
+                          text="Must contain at least 1 number!"
+                        />
+                        <PasswordRequirement
+                          valid={/[A-Z]/.test(password)}
+                          text="Must contain at least 1 uppercase letter!"
+                        />
+                        <PasswordRequirement
+                          valid={/[a-z]/.test(password)}
+                          text="Must contain at least 1 lowercase letter!"
+                        />
+                        <PasswordRequirement
+                          valid={/[!@#$%^&*(),.?":{}|<>]/.test(password)}
+                          text="Must contain at least 1 special character!"
+                        />
+                        <PasswordRequirement
+                          valid={
+                            !["john", "doe"].some((n) =>
+                              password?.toLowerCase().includes(n)
+                            )
+                          }
+                          text="Should not contain part of your name!"
+                        />
+                        <PasswordRequirement
+                          valid={password !== username}
+                          text="Must not be same as User ID!"
+                        />
+                        <PasswordRequirement
+                          valid={
+                            !["pass123", "welcome1", "abc@123"].includes(password)
+                          }
+                          text="New password cannot match your previous 3 passwords!"
+                        />
+                      </div>
+                    </div>
+                  </div>,
+                  document.body
+                )}
             </>
           );
         }}

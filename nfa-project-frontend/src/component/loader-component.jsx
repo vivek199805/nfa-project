@@ -1,8 +1,9 @@
+// Previous implementation retained in git history; this file now uses enterprise service/query architecture.
 import { useSelector } from "react-redux";
-import "../styles/loader.css"; // optional for styling
+import "../styles/loader.css";
 
 const Loader = () => {
-  const loading = useSelector((state) => state.loader);
+  const loading = useSelector((state) => state.ui?.globalLoader ?? state.loader?.visible ?? false);
 
   if (!loading) return null;
 
@@ -16,3 +17,4 @@ const Loader = () => {
 };
 
 export default Loader;
+

@@ -14,7 +14,7 @@ const storeEditor = async (req, res) => {
       payload.best_book_cinema_id.trim() !== ""
     ) {
       const bestBookCinema = await BestBookCinema.findOne({
-        id: payload.best_book_cinema_id,
+        _id: payload.best_book_cinema_id,
         client_id: payload.user.id || payload.user._id,
       });
 
@@ -185,14 +185,14 @@ const listEditor = async (req, res) => {
 
       whereTo = {
         best_book_cinema_id: payload.best_book_cinema_id,
-        client_id: payload.user.id,
+        client_id: payload.user.id || payload.user._id,
       };
     }
 
     if (payload.best_film_critic_id != null) {
       const checkBestFilmCritic = await BestFilmCritic.findOne({
         _id: payload.best_film_critic_id,
-        client_id: payload.user.id,
+        client_id: payload.user.id || payload.user._id,
       });
 
       if (!checkBestFilmCritic) {
@@ -204,7 +204,7 @@ const listEditor = async (req, res) => {
 
       whereTo = {
         best_film_critic_id: payload.best_film_critic_id,
-        client_id: payload.user.id,
+        client_id: payload.user.id || payload.user._id,
       };
     }
 
@@ -217,7 +217,7 @@ const listEditor = async (req, res) => {
 
     allEditor = await Editor.find(whereTo);
 
-    if (!allEditor) {
+    if (!allEditor || allEditor.length === 0) {
       return res.status(200).json({
         message: "No result found.!!",
         statusCode: 203,
@@ -243,7 +243,7 @@ const getEditor = async (req, res) => {
       user: req.user,
     };
     const editor = await Editor.findOne({
-      id: payload.id,
+      _id: payload.id,
       client_id: payload.user.id || payload.user._id,
     });
     if (!editor) {
@@ -276,7 +276,7 @@ const deleteEditor = async (req, res) => {
     });
 
     if (!editor) {
-      res.status(200).json({
+      return res.status(200).json({
         message: "editor not found",
         statusCode: 203,
       });

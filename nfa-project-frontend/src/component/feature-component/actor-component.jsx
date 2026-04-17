@@ -3,7 +3,7 @@ import {useForm } from "react-hook-form";
 import { z } from "zod";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   postRequest,
@@ -49,7 +49,6 @@ const ActorSection = ({ setActiveSection, filmType }) => {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
     reset,
     trigger,
@@ -65,11 +64,7 @@ const ActorSection = ({ setActiveSection, filmType }) => {
     // shouldFocusError: false,
   });
 
-  useEffect(() => {
-    getActorList();
-  }, [id]);
-
-  const getActorList = async () => {
+  const getActorList = useCallback(async () => {
     try {
       const response = await postRequest("film/actor-list", { id });
       if (response.statusCode === 200) {
@@ -80,7 +75,11 @@ const ActorSection = ({ setActiveSection, filmType }) => {
     } catch (error) {
       showErrorToast(error);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    getActorList();
+  }, [getActorList]);
 
   // useEffect(() => {
   //   if (data?.actors?.length > 0) {

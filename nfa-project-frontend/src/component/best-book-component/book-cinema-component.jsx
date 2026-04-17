@@ -4,7 +4,7 @@ import { z } from "zod";
 import { useInputRestriction } from "../../hooks/useInputRestriction";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   getRequest,
   getRequestById,
@@ -77,11 +77,7 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
     fetchLanguages();
   }, []);
 
-  useEffect(() => {
-    getBookList();
-  }, [id]);
-
-  const getBookList = async () => {
+  const getBookList = useCallback(async () => {
     try {
       const response = await postRequest("list-book", {
         best_book_cinema_id: id,
@@ -92,9 +88,13 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
         showErrorToast(response.message);
       }
     } catch (error) {
-      console.error("Failed to fetch data:", error);
+      showErrorToast(error?.message || "Failed to fetch data");
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    getBookList();
+  }, [getBookList]);
 
   useEffect(() => {
     setShowForm(bookList.length === 0);
@@ -102,8 +102,7 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
 
   const onSubmit = async (data) => {
     let url;
-    console.log("Form submitted:", data);
-    
+
     const formData = new FormData();
     formData.append("indian_national",data.indianNationality === "Yes" ? 1 : 0);
     formData.append("book_title_original", data.book_title_original);
@@ -141,7 +140,6 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
   };
 
   const handleEdit = (index) => {
-    console.log("hhfhh", index);
     const data = bookList.find((item) => item._id === index);
       
     reset({
@@ -175,9 +173,6 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
         // updated.splice(index, 1);
         // setBookList(updated);
         // if (bookList.length === 1) setShowForm(true);
-        const formData = new FormData();
-        formData.append("producerId", index);
-        formData.append("nfa_feature_id", id);
         try {
           const response = await getRequestById("delete-book", index);
           if (response.statusCode === 200) {
