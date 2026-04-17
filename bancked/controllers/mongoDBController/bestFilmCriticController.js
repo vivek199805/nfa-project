@@ -4,6 +4,8 @@ import Editor from "../../models/mongodbModels/editor.js";
 import common from "../../services/common.js";
 import Common from "../../services/common.js";
 
+const getUserId = (req) => req.user?._id || req.user?.id;
+
 // Create Feature Submission
 const createFilmCritic = async (req, res) => {
   try {
@@ -62,7 +64,10 @@ const updateEntryById = async (req, res) => {
 
     const { id: _id } = req.body;
     // Find the document by ID
-    const existingEntry = await BestFilmCritic.findById(_id);
+    const existingEntry = await BestFilmCritic.findOne({
+      _id,
+      client_id: getUserId(req),
+    });
     if (!existingEntry) {
       return res.status(200).json({
         statusCode: 203,

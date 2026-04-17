@@ -5,6 +5,8 @@ import Book from "../../models/mongodbModels/book.js";
 import Common from "../../services/common.js";
 import BestBookCinemaHelper from "../../helpers/BestBookCinemaHelper.js";
 
+const getUserId = (req) => req.user?._id || req.user?.id;
+
 // Create Feature Submission
 const createBook = async (req, res) => {
   //  const { isValid, errors } = BestBookCinemaHelper.validateStepInput(req.body, req.files);
@@ -72,15 +74,16 @@ const updateEntryById = async (req, res) => {
 
     const { id: _id } = req.body;
     // Find the document by ID
-    const existingEntry = await BestBookCinema.findById(_id);
+    const existingEntry = await BestBookCinema.findOne({
+      _id,
+      client_id: getUserId(req),
+    });
     if (!existingEntry) {
       return res.status(200).json({
         statusCode: 203,
         message: "Please provide valid details to update.!!",
       });
     }
-    console.log("hello", existingEntry);
-
     let stepHandler = {
       [Common.stepsBestBook().AUTHOR]: async (existingEntry, payload) =>
         await handleAuthorStep(existingEntry, payload),
@@ -109,7 +112,13 @@ const updateEntryById = async (req, res) => {
         message: "Feature submission updated successfully",
         data: updated,
       });
+      return;
     }
+
+    return res.status(200).json({
+      statusCode: 203,
+      message: "Invalid step provided",
+    });
   } catch (error) {
     res.status(500).json({
       statusCode: 500,
@@ -203,11 +212,11 @@ export const bestBookCinemaById = async (req, res) => {
     }
 
     const editors = await Editor.find({
-      best_book_cinemas_id: bestBookCinema._id,
+      best_book_cinema_id: bestBookCinema._id,
     });
 
     const book = await Book.find({
-      best_book_cinema_id: bestBookCinema._id,
+      best_book_cinemas_id: bestBookCinema._id,
     });
 
     const data = {

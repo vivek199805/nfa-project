@@ -2,7 +2,6 @@
 
 import express from "express";
 import dotenv from "dotenv";
-import mongoose from "mongoose";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/mongoDBRoutes/auth.js";
@@ -52,18 +51,6 @@ if (process.env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
   app.use(limiter); // apply rate limiting in production
 }
-
-// --- MongoDB Connection ---
-mongoose.set("strictQuery", true);
-export const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.DB_URL);
-    console.log('Connection Successful...');
-  } catch (err) {
-    console.error("MongoDB connection failed:", err.message);
-    process.exit(1);
-  }
-};
 
 // --- Routes ---
 app.use("/api/user", authRoutes);

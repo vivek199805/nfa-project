@@ -2,13 +2,17 @@ import { Document } from "../../models/mongodbModels/document.js";
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
 import Common from "../../services/common.js"
 
+const getUserId = (req) => req.user?._id || req.user?.id;
+
 
 const getAllDirectorsByFeatureId = async (req, res) => {
   const { id, film_type } = req.body;
 
   try {
-    const feature = await FeatureForm.findById(id, "directors");
-    console.log(feature);
+    const feature = await FeatureForm.findOne({
+      _id: id,
+      client_id: getUserId(req),
+    }, "directors");
 
     if (!feature) {
       return res.status(200).json({ message: "Records not found", statusCode: 201 });
@@ -20,7 +24,7 @@ const getAllDirectorsByFeatureId = async (req, res) => {
           context_id: director._id, // assuming context_id links a document to a director
           form_type: film_type === 'feature' ? 1 : 2,
           website_type: 5,
-          document_type: 4,
+          document_type: 5,
         });
 
         return {
@@ -56,7 +60,10 @@ const addDirectorToFeature = async (req, res) => {
       files: req.files,
     };
     // Find the feature form by ID
-    const feature = await FeatureForm.findById(_id);
+    const feature = await FeatureForm.findOne({
+      _id,
+      client_id: getUserId(req),
+    });
     if (!feature) {
       return res.status(200).json({ message: "Feature form not found", statusCode: 201 });
     }
@@ -128,7 +135,10 @@ const deleteDirectorById = async (req, res) => {
   const { nfa_feature_id: _id, directorId } = req.body;
 
   try {
-    const feature = await FeatureForm.findById(_id);
+    const feature = await FeatureForm.findOne({
+      _id,
+      client_id: getUserId(req),
+    });
 
     if (!feature) {
       return res.status(200).json({
