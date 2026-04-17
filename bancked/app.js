@@ -14,6 +14,7 @@ import { rateLimit } from "express-rate-limit";
 import morgan from "morgan";
 dotenv.config();
 const app = express();
+app.disable("x-powered-by");
 
 // Allow max 100 requests per 15 minutes per IP
 const limiter = rateLimit({
@@ -30,37 +31,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public")); // Serve static files from the "public" directory
 app.use(cookieParser());
 
-app.use(cors());
+const corsOrigin = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
+  : true;
 
-// const corsOrigin = process.env.CORS_ORIGIN
-//   ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
-//   : true;
-
-// app.use(
-//   cors({
-//     origin: corsOrigin,
-//     credentials: true,
-//   })
-// );
-
-// CORS middleware
-// app.use(cors({
-//   origin: 'http://localhost:5173', // frontend URL
-//   credentials: true
-// }));
-
-// app.use((req, res, next) => {
-//   res.setHeader("Access-Control-Allow-Origin", "*");
-//   res.setHeader(
-//     "Access-Control-Allow-Headers",
-//     "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-//   );
-//   res.setHeader(
-//     "Access-Control-Allow-Methods",
-//     "GET, POST, PATCH, PUT, DELETE, OPTIONS"
-//   );
-//   next();
-// });
+app.use(
+  cors({
+    origin: corsOrigin,
+    credentials: true,
+  })
+);
 
 // HTTP request logger (only in dev mode)
 if (process.env.NODE_ENV === "development") {
@@ -77,9 +57,7 @@ if (process.env.NODE_ENV === "production") {
 mongoose.set("strictQuery", true);
 export const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.DB_URL, {
-      useNewUrlParser: true,
-    });
+    await mongoose.connect(process.env.DB_URL);
     console.log('Connection Successful...');
   } catch (err) {
     console.error("MongoDB connection failed:", err.message);

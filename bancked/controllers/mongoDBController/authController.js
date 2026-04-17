@@ -35,15 +35,13 @@ const registerUser = async (req, res, next) => {
 
     // Check if user exists
     const existingUser = await User.findOne({ email });
-    console.log("existingUser", existingUser);
 
     if (existingUser) {
       return res.status(203).json({ message: "Email already registered" });
     }
 
     const hashedPassword = await hashPassword(password);
-    console.log("hashedPassword", hashedPassword);
-    // Create Appwrite user profile
+
     const newUser = new User({
       firstName,
       lastName,
@@ -109,9 +107,6 @@ const loginUser = async (req, res) => {
     }
     // 🔐 Generate JWT
     const token = generateToken({ userId: user._id, email: user.email });
-    // // Optional: Add token to user's token list
-    // user.tokens = user.tokens.concat({ token });
-    // await user.save();
     const userObj = user.toObject();
     delete userObj.password;
     // Prepare user data to send in response
@@ -260,7 +255,7 @@ const forgotPassword = async (req, res) => {
 
     res.status(200).json({
       message: "An OTP has been sent to your registered email address.!!",
-      data: { otp },
+      data: process.env.NODE_ENV === "production" ? {} : { otp },
       statusCode: 200,
     });
   } catch (err) {
@@ -279,7 +274,6 @@ const verifyOtp = async (req, res) => {
     //     statusCode: 400,
     //   });
 
-    const { otp: savedOtp, userId } = JSON.parse(data);
     const user = await User.findOne({ email });
     if (!user) return res.status(200).json({ message: "User not found", statusCode: 203 });
     const authdata = await Twoauth.findOne({
@@ -465,9 +459,14 @@ const deleteUser = async (req, res) => {
 
 const changePassword = async (req, res, next) => {
   const { currentPassword, password } = req.body;
-  console.log(req.user);
-
-  const userId = req.user.userId; // Assuming you're setting this from middleware
+  const userId = req.user?._id || req.user?.id;
+  if (!userId) {
+    return res.status(401).json({
+      msg: "Unauthorized",
+      status: false,
+      statusCode: 401,
+    });
+  }
 
   if (!currentPassword || !password) {
     return res.status(200).json({

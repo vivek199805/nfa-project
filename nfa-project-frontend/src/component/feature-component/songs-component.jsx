@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   postRequest,
@@ -32,7 +32,6 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
     reset,
     trigger,
@@ -50,11 +49,7 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
     // shouldFocusError: false,
   });
 
-  useEffect(() => {
-    getSongList();
-  }, [id]);
-
-  const getSongList = async () => {
+  const getSongList = useCallback(async () => {
     try {
       const response = await postRequest("film/song-list", { id });
       if (response.statusCode === 200) {
@@ -65,7 +60,11 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
     } catch (error) {
       showErrorToast(error);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    getSongList();
+  }, [getSongList]);
 
   useEffect(() => {
     setShowForm(songsData.length === 0);

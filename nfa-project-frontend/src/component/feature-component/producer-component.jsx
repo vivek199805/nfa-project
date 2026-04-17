@@ -4,7 +4,7 @@ import { z } from "zod";
 import { useInputRestriction } from "../../hooks/useInputRestriction";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   postRequest,
 } from "../../common/services/requestService";
@@ -94,11 +94,7 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
     // shouldFocusError: false,
   });
 
-  useEffect(() => {
-    getProducer();
-  }, [id]);
-
-  const getProducer = async () => {
+  const getProducer = useCallback(async () => {
     try {
       const response = await postRequest("film/producer-list", { id, film_type: filmType });
       if (response.statusCode === 200) {
@@ -109,7 +105,11 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
     } catch (error) {
       console.error("Failed to fetch data:", error);
     }
-  };
+  }, [filmType, id]);
+
+  useEffect(() => {
+    getProducer();
+  }, [getProducer]);
 
   useEffect(() => {
     setShowForm(producers.length === 0);

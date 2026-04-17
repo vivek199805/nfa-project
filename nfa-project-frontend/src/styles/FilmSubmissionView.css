@@ -1,0 +1,138 @@
+.submission-view-page {
+  background: linear-gradient(180deg, #fbfcff 0%, #f3f6fb 100%);
+  border-radius: 16px;
+  border: 1px solid #e5eaf2;
+  box-shadow: 0 12px 28px rgba(18, 35, 67, 0.12);
+}
+
+#invoiceBox {
+  background: #fff;
+  position: relative;
+  isolation: isolate;
+}
+
+.submission-header {
+  border-radius: 14px;
+  padding: 20px 16px;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+.submission-logo {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+
+.submission-badge {
+  color: #f8d589;
+  font-size: 0.78rem;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.submission-title {
+  color: #ffffff;
+  margin: 0;
+  font-size: clamp(1.25rem, 2vw, 1.7rem);
+  font-weight: 700;
+}
+
+.submission-section-title {
+  color: #8e732d;
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.submission-section-card {
+  height: 100%;
+  background: #ffffff;
+  border: 1px solid #e7ecf4;
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.submission-card-title {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #8e732d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.submission-field {
+  display: grid;
+  grid-template-columns: minmax(180px, 45%) 1fr;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px dashed #e8edf5;
+}
+
+.submission-field:last-child {
+  border-bottom: 0;
+}
+
+.submission-field-label {
+  color: #5f6f85;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.submission-field-value {
+  color: #182536;
+  font-size: 0.9rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* Capture-safe mode: remove visual effects that can cause html2canvas artifacts */
+#invoiceBox.pdf-capture-mode,
+#invoiceBox.pdf-capture-mode .submission-view-page,
+#invoiceBox.pdf-capture-mode .submission-section-card,
+#invoiceBox.pdf-capture-mode .submission-header {
+  background: #fff !important;
+  background-image: none !important;
+  color: #111 !important;
+  box-shadow: none !important;
+  border-color: #d9dfe8 !important;
+}
+
+#invoiceBox.pdf-capture-mode .submission-title,
+#invoiceBox.pdf-capture-mode .submission-badge,
+#invoiceBox.pdf-capture-mode .submission-section-title,
+#invoiceBox.pdf-capture-mode .submission-card-title,
+#invoiceBox.pdf-capture-mode .submission-field-label,
+#invoiceBox.pdf-capture-mode .submission-field-value {
+  color: #111 !important;
+}
+
+#invoiceBox.pdf-capture-mode * {
+  filter: none !important;
+  backdrop-filter: none !important;
+  mix-blend-mode: normal !important;
+  text-shadow: none !important;
+}
+
+@media (max-width: 991.98px) {
+  .submission-view-page {
+    border-radius: 12px;
+  }
+
+  .submission-header {
+    padding: 16px 12px;
+  }
+
+  .submission-field {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .submission-field-label,
+  .submission-field-value {
+    font-size: 0.85rem;
+  }
+}

@@ -10,7 +10,6 @@ dotenv.config();
 // Helpers for __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const testAccount = await nodemailer.createTestAccount();
 const transporter = nodemailer.createTransport({
   // host: process.env.MAIL_HOST,
   // port: Number(process.env.MAIL_PORT || 587),
@@ -40,7 +39,6 @@ async function sendTemplateEmail({ To, Subject, templateName, Data }) {
   });
 
   const from = process.env.MAIL_USERNAME;
-  // const from = `'URL SHORTENER' < ${testAccount.user}>`;
   try {
     const info = await transporter.sendMail({
       from,

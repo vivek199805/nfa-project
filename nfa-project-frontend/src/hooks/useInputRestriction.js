@@ -4,7 +4,7 @@ export const useInputRestriction = (type, customPattern) => {
   const isAllowedKey = (key) =>
     ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"].includes(key);
 
-  const getPattern = () => {
+  const getPattern = useCallback(() => {
     switch (type) {
       case "number":
         return /^\d$/;
@@ -17,7 +17,7 @@ export const useInputRestriction = (type, customPattern) => {
       default:
         return null;
     }
-  };
+  }, [type, customPattern]);
 
   const onKeyDown = useCallback(
     (e) => {
@@ -29,7 +29,7 @@ export const useInputRestriction = (type, customPattern) => {
         e.preventDefault();
       }
     },
-    [type, customPattern]
+    [getPattern],
   );
 
   const onPaste = useCallback(
@@ -46,7 +46,7 @@ export const useInputRestriction = (type, customPattern) => {
         e.preventDefault();
       }
     },
-    [type, customPattern]
+    [getPattern, type, customPattern],
   );
 
   return { onKeyDown, onPaste };

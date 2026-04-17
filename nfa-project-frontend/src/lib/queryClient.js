@@ -1,34 +1,40 @@
 import { QueryClient } from "@tanstack/react-query";
-import api from "../common/services/axiosService";
 
-export function getQueryFn({ on401 = "throw" } = {}) {
-  return async ({ queryKey }) => {
-    try {
-      const res = await api.get(queryKey[0]);
-      return res.data;
-    } catch (err) {
-      if (err.response?.status === 401 && on401 === "returnNull") {
-        return null;
-      }
-      throw err;
-    }
-  };
-}
-
-
+const isProd = import.meta.env.PROD;
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 30,
+      retry: (failureCount, error) => {
+        const status = error?.response?.status;
+        if (status && status >= 400 && status < 500 && status !== 429) {
+          return false;
+        }
+        return failureCount < 2;
+      },
+      refetchOnWindowFocus: !isProd,
+      refetchOnReconnect: true,
       refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
-      refetchIntervalInBackground: false,
     },
     mutations: {
-      retry: false,
+      retry: 0,
     },
   },
 });
+
+export const queryKeys = {
+  auth: {
+    currentUser: ["auth", "currentUser"],
+  },
+  dashboard: {
+    entries: ["dashboard", "entries"],
+  },
+  entry: {
+    byId: (endpoint, id) => ["entry", endpoint, String(id ?? "")],
+  },
+  common: {
+    languages: ["common", "languages"],
+  },
+};

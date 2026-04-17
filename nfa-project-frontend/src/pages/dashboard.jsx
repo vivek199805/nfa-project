@@ -1,43 +1,46 @@
+// Previous implementation retained in git history; this file now uses enterprise service/query architecture.
 import { useState } from "react";
 import { Autoplay, EffectFade, Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import FeatureModalComponent from "../common/modal/feature-modal";
-import { useQuery } from "@tanstack/react-query";
 import { NavLink, useNavigate } from "react-router-dom";
 import "../styles/dashboard.css";
 import { useAuth } from "../hooks/use-auth";
 import { useEffect } from "react";
-import { getRequest } from "../common/services/requestService";
+import { useDashboardEntriesQuery } from "../hooks/queries/useDashboardQueries";
+
 const slides = [
   { image: "/images/login-01.jpg" },
   { image: "/images/login-02.jpg" },
 ];
 
-const getUserForms = async () => {
-  const res = await getRequest("/entry-list"); // Update this endpoint based on your backend
-  return res.data;
-};
+// const getUserForms = async () => {
+//   const res = await getRequest("/entry-list"); // Update this endpoint based on your backend
+//   return res.data;
+// };
+
 const DashboardPage = () => {
   const [showModal, setShowModal] = useState(false);
   const { user, logoutMutation } = useAuth();
   const navigate = useNavigate();
 
   // Simulate skipping fetch and using static data
-  const {
-    data: formCards,
-    isLoading,
-    isError,
-  } = useQuery({
-    queryKey: ["/entry-list"],
-    queryFn: getUserForms,
-    // enabled: true, // disables automatic query
-    // initialData: staticForms, // sets mock data
-    refetchOnMount: true,
-    staleTime: 0,
-  });
-  useEffect(() => {
-    console.log("user", user);
+  // const {
+  //   data: formCards,
+  //   isLoading,
+  //   isError,
+  // } = useQuery({
+  //   queryKey: ["/entry-list"],
+  //   queryFn: getUserForms,
+  //   // enabled: true, // disables automatic query
+  //   // initialData: staticForms, // sets mock data
+  //   refetchOnMount: true,
+  //   staleTime: 0,
+  // });
 
+  const { data: formCards, isLoading, isError } = useDashboardEntriesQuery();
+
+  useEffect(() => {
     if (!isLoading && !user) {
       navigate("/");
     }
@@ -47,8 +50,8 @@ const DashboardPage = () => {
 
   return (
     <div className="dashboard">
-      <div className="row">
-        <div className="col-lg-6 col-md-6">
+      <div className="dashboard-layout">
+        <section className="dashboard-left">
           <div className="form-container scrolling-form p-5">
             <div className="top-logo d-flex justify-content-between">
               <a href="#">
@@ -83,11 +86,9 @@ const DashboardPage = () => {
                   </div>
                 </div>
 
-                {/* Show notification only if there are no forms */}
                 {(!formCards ||
-                  // (!formCards.feature?.length && !formCards["non-feature"]?.length)
                   Object.keys(formCards).every(
-                    (key) => !formCards[key] || formCards[key].length === 0
+                    (key) => !formCards[key] || formCards[key].length === 0,
                   )) && (
                   <div className="notification mt-4 col-out-div">
                     <h3>You have not created any form yet.</h3>
@@ -103,12 +104,12 @@ const DashboardPage = () => {
                     </p>
                   </div>
                 )}
-                {/* Add button to create new project if forms exist */}
+
                 {formCards &&
-                  // formCards?.feature?.length > 0 || formCards?.["non-feature"]?.length > 0
                   Object.keys(formCards).some(
                     (key) =>
-                      Array.isArray(formCards[key]) && formCards[key].length > 0
+                      Array.isArray(formCards[key]) &&
+                      formCards[key].length > 0,
                   ) && (
                     <div className="mt-3">
                       <button
@@ -197,14 +198,14 @@ const DashboardPage = () => {
                           </div>
                         </div>
                       </div>
-                    ))
+                    )),
                 )}
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div className="col-lg-6 col-md-6 p-0">
+        <aside className="dashboard-right">
           <Swiper
             modules={[Autoplay, Navigation, Pagination, EffectFade]}
             autoplay={{ delay: 3000, disableOnInteraction: false }}
@@ -222,7 +223,7 @@ const DashboardPage = () => {
               </SwiperSlide>
             ))}
           </Swiper>
-        </div>
+        </aside>
       </div>
 
       {user?.usertype == 1 ? (

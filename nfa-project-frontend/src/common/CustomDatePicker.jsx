@@ -1,11 +1,10 @@
 // components/CustomDatePicker.jsx
-import { Box, TextField } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { DateRangePicker } from '@mui/x-date-pickers-pro/DateRangePicker';
 import dayjs from 'dayjs';
-import { DemoContainer, DemoItem } from '@mui/x-date-pickers/internals/demo';
+import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
 
 const rangeShortcuts = [
   {
@@ -84,6 +83,12 @@ const CustomDatePicker = ({
                   items: rangeShortcuts,
                 },
                 actionBar: { actions: [] },
+                textField: {
+                  label,
+                  error,
+                  helperText,
+                  fullWidth,
+                },
                 openPickerIcon: {
                   color: 'primary',
                 },
@@ -124,6 +129,12 @@ const CustomDatePicker = ({
                   sx={width}
                   slotProps={{
                     actionBar: { actions: [] },
+                    textField: {
+                      label,
+                      error,
+                      helperText,
+                      fullWidth,
+                    },
                     openPickerIcon: {
                       color: 'primary',
                     },

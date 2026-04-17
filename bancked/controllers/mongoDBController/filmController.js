@@ -623,14 +623,14 @@ const finalSubmit = async (req, res) => {
     });
 
     if (!nfaFeature) {
-      res.status(200).json({
+      return res.status(200).json({
         message: "You do not have any entries.!!",
         statusCode: 203,
       });
     }
 
     if (nfaFeature.payment_status != 2) {
-      res.status(200).json({
+      return res.status(200).json({
         message: "Your payment is not completed.!!",
         statusCode: 203,
       });
