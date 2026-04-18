@@ -1,11 +1,15 @@
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
 
+const getUserId = (req) => req.user?._id || req.user?.id;
+
 const getAllAudiographerByFeatureId = async (req, res) => {
     const { id } = req.body;
 
     try {
-        const feature = await FeatureForm.findById(id, "audiographer");
-        console.log(feature);
+        const feature = await FeatureForm.findOne({
+            _id: id,
+            client_id: getUserId(req),
+        }, "audiographer");
 
         if (!feature) {
             return res.status(200).json({ message: "Records not found", statusCode: 201 });
@@ -25,7 +29,10 @@ const addAudiographerToFeature = async (req, res) => {
     const { nfa_feature_id: _id, audiographerId } = req.body; // audiographer data from client
     try {
         // Find the feature form by ID
-        const feature = await FeatureForm.findById(_id);
+        const feature = await FeatureForm.findOne({
+            _id,
+            client_id: getUserId(req),
+        });
         if (!feature) {
             return res.status(200).json({ message: "Feature form not found", statusCode: 201 });
         }
@@ -70,7 +77,10 @@ const deleteAudiographerById = async (req, res) => {
     const { nfa_feature_id, audiographerId } = req.body;
 
     try {
-        const feature = await FeatureForm.findById({ _id: nfa_feature_id });
+        const feature = await FeatureForm.findOne({
+            _id: nfa_feature_id,
+            client_id: getUserId(req),
+        });
 
         if (!feature) {
             return res.status(200).json({

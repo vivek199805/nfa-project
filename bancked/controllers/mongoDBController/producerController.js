@@ -1,14 +1,18 @@
-import { all } from "axios";
 import { Document } from "../../models/mongodbModels/document.js";
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
 import Common from "../../services/common.js"
+
+const getUserId = (req) => req.user?._id || req.user?.id;
 
 
 const getAllProducersByFeatureId = async (req, res) => {
   const { id, film_type } = req.body;
 
   try {
-    const producersData = await FeatureForm.findById(id, "producers");
+    const producersData = await FeatureForm.findOne({
+      _id: id,
+      client_id: getUserId(req),
+    }, "producers");
 
     if (!producersData) {
       return res.status(200).json({ message: "Records not found", statusCode: 201 });
@@ -57,7 +61,10 @@ const addProducerToFeature = async (req, res) => {
       files: req.files,
     };
     // Find the feature form by ID
-    const feature = await FeatureForm.findById(_id);
+    const feature = await FeatureForm.findOne({
+      _id,
+      client_id: getUserId(req),
+    });
     if (!feature) {
       return res.status(200).json({ message: "Feature form not found", statusCode: 201 });
     }
@@ -134,7 +141,10 @@ const deleteProducerById = async (req, res) => {
   const { nfa_feature_id: _id, producerId } = req.body;
 
   try {
-    const feature = await FeatureForm.findById(_id);
+    const feature = await FeatureForm.findOne({
+      _id,
+      client_id: getUserId(req),
+    });
 
     if (!feature) {
       return res.status(200).json({

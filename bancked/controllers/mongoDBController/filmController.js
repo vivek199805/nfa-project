@@ -3,10 +3,11 @@ import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
 import Common from "../../services/common.js";
 import NfaFilmHelper from "../../helpers/nfaFilmHelper.js";
 
+const getUserId = (req) => req.user?._id || req.user?.id;
+
 // Create Feature Submission
 const createFeatureSubmission = async (req, res) => {
   try {
-    console.log(req.body);
     const user = req.user.toObject();
     const client_id = user._id || user.id;
     const {
@@ -59,6 +60,8 @@ const createFeatureSubmission = async (req, res) => {
 // Create Non-Feature Submission
 const createNonFeatureSubmission = async (req, res) => {
   try {
+    const user = req.user.toObject();
+    const client_id = user._id || user.id;
     const {
       film_title_roman,
       film_title_devnagri,
@@ -91,6 +94,7 @@ const createNonFeatureSubmission = async (req, res) => {
       step,
       active_step: "1",
       film_type: "non-feature",
+      client_id,
     });
     await filmData.save();
     const finalData = filmData.toObject(); // Convert Mongoose document to plain JS object
@@ -107,7 +111,9 @@ const createNonFeatureSubmission = async (req, res) => {
 // Get all Feature & non-feature List
 const getFilmEntryList = async (req, res) => {
   try {
-    const filmEntryData = await FeatureForm.find().populate(
+    const filmEntryData = await FeatureForm.find({
+      client_id: getUserId(req),
+    }).populate(
       "producers directors songs actors audiographer documents"
     );
 
@@ -151,7 +157,10 @@ const getFilmDetailsById = async (req, res) => {
       });
     }
     // Step 1: Find FeatureForm by ID and populate nested arrays
-    const featureForm = await FeatureForm.findById(id).populate([
+    const featureForm = await FeatureForm.findOne({
+      _id: id,
+      client_id: getUserId(req),
+    }).populate([
       "producers",
       "directors",
       "songs",
@@ -212,7 +221,10 @@ const updateFeatureNonfeatureById = async (req, res) => {
 
     const { id: _id, film_type } = req.body;
     // Find the document by ID
-    const existingEntry = await FeatureForm.findById(_id);
+    const existingEntry = await FeatureForm.findOne({
+      _id,
+      client_id: getUserId(req),
+    });
     if (!existingEntry) {
       return res
         .status(200)
@@ -275,6 +287,12 @@ const updateFeatureNonfeatureById = async (req, res) => {
 
     if (stepHandler[+req.body.step]) {
       const result = await stepHandler[+req.body.step](existingEntry, payload);
+      if (result?.status === false) {
+        return res.status(422).json({
+          statusCode: 422,
+          message: result.message || "Step processing failed",
+        });
+      }
       // Update the document with request body
       Object.assign(result, payload);
 
@@ -286,7 +304,13 @@ const updateFeatureNonfeatureById = async (req, res) => {
         message: "Feature submission updated successfully",
         data: updated,
       });
+      return;
     }
+
+    return res.status(200).json({
+      statusCode: 203,
+      message: "Invalid step provided",
+    });
   } catch (error) {
     res.status(500).json({
       statusCode: 500,
@@ -299,7 +323,10 @@ const updateFeatureNonfeatureById = async (req, res) => {
 // Get all Non-Feature Submissions
 const getNonFeatureSubmissions = async (req, res) => {
   try {
-    const submissions = await FeatureForm.find().populate(
+    const submissions = await FeatureForm.find({
+      film_type: "non-feature",
+      client_id: getUserId(req),
+    }).populate(
       "producers directors songs actors audiographer documents"
     );
     res.status(200).json(submissions);
@@ -309,10 +336,6 @@ const getNonFeatureSubmissions = async (req, res) => {
 };
 
 const handleGeneralStep = async (data, payload) => {
-  const lastId = payload.id;
-  console.log("handleGeneralStep", data);
-  console.log("handleGeneralStep payload", payload);
-
   if (payload?.film_type === "feature") {
     if (!data.active_step || data.active_step < Common.stepsFeature().GENERAL) {
       data.active_step = Common.stepsFeature().GENERAL;
@@ -374,7 +397,7 @@ const handleCensorStep = async (data, payload) => {
       });
 
       if (!fileUpload.status) {
-        return response("exception", { message: "Image not uploaded.!!" });
+        return { status: false, message: "Image not uploaded.!!" };
       }
 
       data.censor_certificate_file = fileUpload?.data?.file ?? null;
@@ -421,7 +444,7 @@ const handleCompanyRegistrationStep = async (data, payload) => {
       });
 
       if (!fileUpload.status) {
-        return response("exception", { message: "Image not uploaded.!!" });
+        return { status: false, message: "Image not uploaded.!!" };
       }
       data.company_reg_doc = fileUpload?.data?.file ?? null;
     } else {
@@ -543,10 +566,10 @@ const handleOtherStep = async (data, payload) => {
       });
 
       if (!fileUpload.status) {
-        return response("exception", { message: "Image not uploaded.!!" });
+        return { status: false, message: "Image not uploaded.!!" };
       }
 
-      data.original_work_copy = originalFile.originalname ?? null;
+      data.original_work_copy = fileUpload?.data?.file ?? null;
     } else {
       data.original_work_copy = null;
     }
@@ -579,9 +602,6 @@ const handleReturnAddressStep = async (data, payload) => {
 };
 
 const handleDeclarationStep = async (data, payload) => {
-  const lastId = payload.id;
-  console.log("handleReturnAddressStep", data);
-  console.log("handleReturnAddressStep payload", payload);
   if (payload.film_type === "feature") {
     if (
       !data.active_step ||

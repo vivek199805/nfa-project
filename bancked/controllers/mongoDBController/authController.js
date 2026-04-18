@@ -11,7 +11,7 @@ dotenv.config();
 
 // import { redis } from "../../utils/redis.js";
 
-const registerUser = async (req, res, next) => {
+const registerUser = async (req, res) => {
   const { isValid, errors } = ClientSchemaHelper.validateRegisterData(req.body);
   if (!isValid) {
     return res.status(422).json({
@@ -55,10 +55,11 @@ const registerUser = async (req, res, next) => {
     });
 
     await newUser.save();
-    delete newUser.password;
+    const userData = newUser.toObject();
+    delete userData.password;
     res.status(200).json({
       message: "User registered successfully",
-      user: newUser,
+      user: userData,
       statusCode: 200,
     });
   } catch (err) {
@@ -145,8 +146,7 @@ const verifyEmail = async (req, res) => {
     });
   }
   try {
-    const { email, password } = req.body;
-    console.log("user", email);
+    const { email } = req.body;
     // Validate input
     if (!email) {
       return res
@@ -176,21 +176,15 @@ const verifyEmail = async (req, res) => {
 
 const logoutUser = async (req, res) => {
   try {
-    // Remove the current token from the user's token list
-    req.user.tokens = req.user.tokens.filter((t) => t.token !== req.token);
-    await req.user.save();
-
-    res.status(200).json({ message: "Logout successful" });
+    res.status(200).json({ message: "Logout successful", statusCode: 200 });
   } catch (err) {
     return res.status(500).json({ message: "Failed to logout", error: err.message });
   }
 };
 
-const logoutAllUser = async (req, res, next) => {
+const logoutAllUser = async (req, res) => {
   try {
-    req.user.tokens = [];
-    await req.user.save();
-    res.send();
+    res.status(200).json({ message: "Logout successful on all devices", statusCode: 200 });
   } catch (error) {
     res.status(500).send({ message: "Invalid authentication credentials" });
   }
@@ -457,7 +451,7 @@ const deleteUser = async (req, res) => {
 //   }
 // }
 
-const changePassword = async (req, res, next) => {
+const changePassword = async (req, res) => {
   const { currentPassword, password } = req.body;
   const userId = req.user?._id || req.user?.id;
   if (!userId) {
@@ -614,7 +608,7 @@ const resetPasswordWithToken = async (req, res) => {
 
     return res.status(200).json({
       message: "Password updated successfully",
-      statusCode: 203,
+      statusCode: 200,
     });
   } catch (error) {
     return res.status(500).json({ message: "Server error while resetting password." });
