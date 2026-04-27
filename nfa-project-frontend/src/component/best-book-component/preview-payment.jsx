@@ -1,16 +1,26 @@
 import { useEffect, useState } from "react";
 import "../../styles/accordion.css";
 import { ChevronDown, Pencil } from "lucide-react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useFetchById } from "../../hooks/useFetchById";
 import { postRequest } from "../../common/services/requestService";
-import { showSuccessToast } from "../../common/services/toastService";
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../common/services/toastService";
+import { startRazorpayPayment } from "../../common/services/paymentService";
+import { useAuth } from "../../hooks/use-auth";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "../../lib/queryClient";
 
 const PreviewPaymentSection = ({ setActiveSection }) => {
   const [activeIndex, setActiveIndex] = useState(null);
+  const [isPaying, setIsPaying] = useState(false);
   const { id } = useParams();
   const { data: formData } = useFetchById("best-book-cinema-entry-by", id);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const steps = [
     "Author",
@@ -27,13 +37,37 @@ const PreviewPaymentSection = ({ setActiveSection }) => {
   }, [formData]);
 
   const onPayment = async () => {
-    // payment logic here
-    const formData = new FormData();
-    formData.append("form_type", "BEST_BOOK");
-    formData.append("id", id);
-    const response = await postRequest("generate-hash", formData);
-    if (response.statusCode == 200) {
-      showSuccessToast(response.message);
+    if (String(formData?.data?.payment_status) === "2" || isPaying) {
+      return;
+    }
+
+    try {
+      setIsPaying(true);
+      const result = await startRazorpayPayment({
+        entryId: id,
+        formType: "BEST_BOOK",
+        customer: {
+          name: user?.name,
+          email: user?.email,
+          contact: user?.phone,
+        },
+        description: "Best Book on Cinema Registration Payment",
+      });
+
+      showSuccessToast(
+        result?.verificationResponse?.message ||
+          "Payment completed successfully",
+      );
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.entry.byId("best-book-cinema-entry-by", id),
+        }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.entries }),
+      ]);
+    } catch (error) {
+      showErrorToast(error.message || "Payment could not be completed");
+    } finally {
+      setIsPaying(false);
     }
   };
   const onFinish = async () => {
@@ -81,8 +115,13 @@ const PreviewPaymentSection = ({ setActiveSection }) => {
           type="button"
           className="btn btn-danger"
           onClick={() => onPayment()}
+          disabled={isPaying || String(formData?.data?.payment_status) === "2"}
         >
-          Pay with Build Desk
+          {String(formData?.data?.payment_status) === "2"
+            ? "Payment Completed"
+            : isPaying
+              ? "Processing Payment..."
+              : "Pay with Build Desk"}
         </button>
       </div>
 

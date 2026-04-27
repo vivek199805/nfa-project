@@ -1,21 +1,61 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { postRequest } from "../../common/services/requestService";
-import { showErrorToast, showSuccessToast } from "../../common/services/toastService";
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../common/services/toastService";
+import { startRazorpayPayment } from "../../common/services/paymentService";
+import { useAuth } from "../../hooks/use-auth";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "../../lib/queryClient";
+import { useFetchById } from "../../hooks/useFetchById";
+import { useState } from "react";
 
 const PaymentSection = ({ setActiveSection, filmType }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [isPaying, setIsPaying] = useState(false);
+  const endpoint =
+    filmType == "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by";
+  const { data: entryData } = useFetchById(endpoint, id);
 
   const onPayment = async () => {
-    // payment logic here
-    const formData = new FormData();
-    formData.append("form_type", filmType == "feature" ? "FEATURE" : "NON_FEATURE");
-    formData.append("id", id);
-    const response = await postRequest("generate-hash", formData);
-    if (response?.statusCode == 200) {
-      showSuccessToast(response?.message);
-    }else{
-      showErrorToast(response?.message);
+    if (String(entryData?.data?.payment_status) === "2" || isPaying) {
+      return;
+    }
+
+    try {
+      setIsPaying(true);
+      const result = await startRazorpayPayment({
+        entryId: id,
+        formType: filmType == "feature" ? "FEATURE" : "NON_FEATURE",
+        customer: {
+          name: user?.name,
+          email: user?.email,
+          contact: user?.phone,
+        },
+        description:
+          filmType == "feature"
+            ? "Feature Film Registration Payment"
+            : "Non Feature Film Registration Payment",
+      });
+
+      showSuccessToast(
+        result?.verificationResponse?.message ||
+          "Payment completed successfully",
+      );
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.entry.byId(endpoint, id),
+        }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.entries }),
+      ]);
+    } catch (error) {
+      showErrorToast(error.message || "Payment could not be completed");
+    } finally {
+      setIsPaying(false);
     }
   };
 
@@ -35,8 +75,13 @@ const PaymentSection = ({ setActiveSection, filmType }) => {
           type="button"
           className="btn btn-danger"
           onClick={() => onPayment()}
+          disabled={isPaying || String(entryData?.data?.payment_status) === "2"}
         >
-          Pay with Build Desk
+          {String(entryData?.data?.payment_status) === "2"
+            ? "Payment Completed"
+            : isPaying
+              ? "Processing Payment..."
+              : "Pay with Build Desk"}
         </button>
       </div>
       <div className="d-flex justify-content-between">

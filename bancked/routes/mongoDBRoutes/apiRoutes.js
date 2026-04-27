@@ -47,6 +47,8 @@ router.delete("/editor/:id", requireAuth, EditorController.deleteEditor);
 router.get("/documents/:id/download", requireAuth, DocumentController.downloadDocument);
 
 //*****************************PAYMENT*****************************//
+router.post("/payment/order", requireAuth, upload.none(), PaymentController.createOrder);
+router.post("/payment/verify", requireAuth, upload.none(), PaymentController.verifyPayment);
 router.post("/generate-hash",requireAuth, upload.any(), PaymentController.generateHash);
 router.post("/payment-confirm", upload.none(), PaymentController.confirmPayment);
 

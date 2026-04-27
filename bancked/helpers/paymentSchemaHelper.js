@@ -30,16 +30,15 @@ const paymentSchema = z.object({
 });
 
 const paymentConfirmationSchema = z.object({
-  payment_id: z.string().trim().refine((val) => isMongoObjectId(val), {
-    message: "payment_id must be a valid MongoDB ObjectId.",
-  }),
-  auth_status: z.union([z.string().trim().min(1), z.number()]),
-  amount: amountSchema.optional(),
-  bank_ref_no: z.string().trim().min(1, "bank_ref_no is required"),
-  payment_method_type: z.string().trim().optional(),
-  currency: z.string().trim().min(3).max(3).optional(),
-  payment_date: z.string().trim().optional(),
-  signature: z.string().trim().min(1, "signature is required"),
+  razorpay_order_id: z.string().trim().min(1, "razorpay_order_id is required"),
+  razorpay_payment_id: z
+    .string()
+    .trim()
+    .min(1, "razorpay_payment_id is required"),
+  razorpay_signature: z
+    .string()
+    .trim()
+    .min(1, "razorpay_signature is required"),
 });
 
 const formatValidation = (result) => ({

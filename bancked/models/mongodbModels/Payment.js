@@ -22,8 +22,32 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    response_payload: {
+      type: String,
+      default: null,
+    },
     amount: {
       type: mongoose.Types.Decimal128,
+      default: null,
+    },
+    gateway: {
+      type: String,
+      default: null,
+    },
+    gateway_order_id: {
+      type: String,
+      default: null,
+    },
+    gateway_payment_id: {
+      type: String,
+      default: null,
+    },
+    gateway_signature: {
+      type: String,
+      default: null,
+    },
+    receipt: {
+      type: String,
       default: null,
     },
     payment_date: {
