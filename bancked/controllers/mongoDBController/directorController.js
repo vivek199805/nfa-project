@@ -15,7 +15,7 @@ const getAllDirectorsByFeatureId = async (req, res) => {
     }, "directors");
 
     if (!feature) {
-      return res.status(200).json({ message: "Records not found", statusCode: 201 });
+      return res.status(200).json({ message: "Records not found", statusCode: 203 });
     }
     // 2. Attach matching documents to each director manually
     const allDirectorWithDocs = await Promise.all(
@@ -35,10 +35,12 @@ const getAllDirectorsByFeatureId = async (req, res) => {
     );
     allDirectorWithDocs.forEach((director) => {
       if (director?.documents?.file) {
-        director.documents.file = `documents/NFA/${director.documents.file}`;
+        director.documents.file = `/api/documents/${director.documents._id}/download`;
       }
       if (director?.director_self_attested_doc) {
-        director.director_self_attested_doc = `documents/NFA/${director.director_self_attested_doc}`;
+        director.director_self_attested_doc = director.documents?._id
+          ? `/api/documents/${director.documents._id}/download`
+          : null;
       }
     });
 
@@ -53,7 +55,7 @@ const getAllDirectorsByFeatureId = async (req, res) => {
 };
 
 const addDirectorToFeature = async (req, res) => {
-  const { nfa_feature_id: _id, id: directorId } = req.body; // Producer data from client
+  const { nfa_feature_id: _id, id: directorId } = req.body; // Director data from client
   try {
     const payload = {
       ...req.body,
@@ -65,14 +67,14 @@ const addDirectorToFeature = async (req, res) => {
       client_id: getUserId(req),
     });
     if (!feature) {
-      return res.status(200).json({ message: "Feature form not found", statusCode: 201 });
+      return res.status(200).json({ message: "Feature form not found", statusCode: 203 });
     }
     let updatedDirector;
     if (directorId) {
-      // ✅ Update existing producer
+      // ✅ Update existing director
       const existingDirector = feature.directors.id(directorId);
       if (!existingDirector) {
-        return res.status(200).json({ message: "director not found", statusCode: 201 });
+        return res.status(200).json({ message: "director not found", statusCode: 203 });
       }
 
       Object.entries(req.body).forEach(([key, value]) => {
@@ -147,7 +149,7 @@ const deleteDirectorById = async (req, res) => {
       });
     }
 
-    // Find the producer by ID and remove it
+    // Find the director by ID and remove it
     const director = feature.directors.id(directorId);
     if (!director) {
       return res.status(200).json({
@@ -156,7 +158,7 @@ const deleteDirectorById = async (req, res) => {
       });
     }
 
-    director.remove(); // Remove from embedded array
+    feature.directors.pull(directorId); // Remove from embedded array
 
     await feature.save(); // Save the updated document
 
@@ -168,7 +170,7 @@ const deleteDirectorById = async (req, res) => {
 
   } catch (error) {
     return res.status(500).json({
-      message: 'Error deleting producer',
+      message: 'Error deleting director',
       error: error.message,
       statusCode: 500,
     });

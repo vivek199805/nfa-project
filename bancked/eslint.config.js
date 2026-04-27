@@ -5,10 +5,6 @@ export default [
       "public/documents/**",
       "**/*.backup.js",
       "app.backup.js",
-      "middleware/auth.js",
-      "models/counter.js",
-      "models/user.js",
-      "utils/counter.util.js",
     ],
   },
   {

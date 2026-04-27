@@ -49,6 +49,8 @@ const bookSchema = z.object({
       return val.flatMap((v) =>
         typeof v === "string" && v.includes(",")
           ? v.split(",").map((i) => i.trim())
+          : v && typeof v === "object" && "value" in v
+            ? [v.value]
           : [v]
       );
     }

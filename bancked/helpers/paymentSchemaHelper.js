@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// Allowed form types
 const ALLOWED_FORMS = [
   "FEATURE",
   "NON_FEATURE",
@@ -8,13 +7,11 @@ const ALLOWED_FORMS = [
   "BEST_FILM_CRITIC",
 ];
 
-// Function to check if value is a valid ObjectId
 const isMongoObjectId = (val) => /^[0-9a-fA-F]{24}$/.test(val);
-
-// Function to check if value is a numeric string
 const isNumericString = (val) => /^\d+$/.test(val);
 
-// Zod schema
+const amountSchema = z.union([z.string().trim().min(1), z.number().positive()]);
+
 const paymentSchema = z.object({
   id: z
     .string()
@@ -28,39 +25,32 @@ const paymentSchema = z.object({
         "Form type must be one of: FEATURE, NON_FEATURE, BEST_BOOK, BEST_FILM_CRITIC.",
     }),
   }),
+  amount: amountSchema.optional(),
+  currency: z.string().trim().min(3).max(3).optional(),
 });
 
-// Validation function
-export const validatePaymentData = (data) => {
-  const result = paymentSchema.safeParse(data);
+const paymentConfirmationSchema = z.object({
+  payment_id: z.string().trim().refine((val) => isMongoObjectId(val), {
+    message: "payment_id must be a valid MongoDB ObjectId.",
+  }),
+  auth_status: z.union([z.string().trim().min(1), z.number()]),
+  amount: amountSchema.optional(),
+  bank_ref_no: z.string().trim().min(1, "bank_ref_no is required"),
+  payment_method_type: z.string().trim().optional(),
+  currency: z.string().trim().min(3).max(3).optional(),
+  payment_date: z.string().trim().optional(),
+  signature: z.string().trim().min(1, "signature is required"),
+});
 
-  //   if (result.success) {
-  //     return {
-  //       isValid: true,
-  //       errors: {},
-  //       data: result.data,
-  //     };
-  //   } else {
-  //     const errors = {};
-  //     for (const issue of result.error.issues) {
-  //       errors[issue.path[0]] = issue.message;
-  //     }
-  //     return {
-  //       isValid: false,
-  //       errors,
-  //     };
-  //   }
+const formatValidation = (result) => ({
+  isValid: result.success,
+  data: result.success ? result.data : null,
+  errors: result.success
+    ? {}
+    : result.error.issues.reduce((acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }), {}),
+});
 
-//     const errors = result.error.issues.reduce((acc, issue) => {
-//     acc[issue.path[0]] = issue.message;
-//     return acc;
-//   }, {});
+export const validatePaymentData = (data) => formatValidation(paymentSchema.safeParse(data));
 
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce((acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }), {}),
-  };
-
-};
+export const validatePaymentConfirmationData = (data) =>
+  formatValidation(paymentConfirmationSchema.safeParse(data));

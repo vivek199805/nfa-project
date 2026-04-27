@@ -2,8 +2,40 @@ import BestBookCinema from "../../models/mongodbModels/BestBookCinema.js";
 import Book from "../../models/mongodbModels/book.js";
 import BookSchemaHelper from "../../helpers/bookSchemaHelper.js";
 
+const normalizeLanguageIds = (languageIds) => {
+  if (typeof languageIds === "string") {
+    return languageIds.split(",").map((item) => item.trim()).filter(Boolean);
+  }
+
+  if (Array.isArray(languageIds)) {
+    return languageIds.flatMap((item) => {
+      if (typeof item === "string") {
+        return item.includes(",")
+          ? item.split(",").map((value) => value.trim()).filter(Boolean)
+          : [item];
+      }
+
+      if (item && typeof item === "object" && "value" in item) {
+        return [item.value];
+      }
+
+      return [];
+    });
+  }
+
+  return [];
+};
 
 const storeBook = async (req, res) => {
+  const { isValid, errors } = BookSchemaHelper.validateStore(req.body);
+  if (!isValid) {
+    return res.status(422).json({
+      message: "Validation failed",
+      errors,
+      statusCode: 422,
+    });
+  }
+
   try {
     const payload = {
       ...req.body,
@@ -22,7 +54,7 @@ const storeBook = async (req, res) => {
       if (!bestBookCinema) {
         return res
           .status(200)
-          .json({ message: "Records not found", statusCode: 201 });
+          .json({ message: "Records not found", statusCode: 203 });
       }
     }
 
@@ -33,7 +65,7 @@ const storeBook = async (req, res) => {
       book_title_english: payload.book_title_english,
       english_translation_book: payload.english_translation_book ?? null,
       receive_producer_award: payload.receive_producer_award ?? null,
-      language_id: JSON.stringify(payload.language_id),
+      language_id: normalizeLanguageIds(payload.language_id),
       author_name: payload.author_name,
       page_count: payload.page_count ?? null,
       date_of_publication: payload.date_of_publication,
@@ -45,7 +77,7 @@ const storeBook = async (req, res) => {
     if (!book) {
       return res.status(200).json({
         message: "Book not created.!!",
-        statusCode: 201,
+        statusCode: 203,
       });
     }
     const result = await book.save();
@@ -57,7 +89,7 @@ const storeBook = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
-      error: "Failed to fetch producers",
+      error: "Failed to create book",
       message: error.message,
     });
   }
@@ -116,8 +148,8 @@ const updateBook = async (req, res) => {
       book_price: payload.book_price ?? book.book_price,
     };
 
-    if (typeof payload.language_id === "object") {
-      updatedData.language_id = JSON.stringify(payload.language_id);
+    if (payload.language_id !== undefined) {
+      updatedData.language_id = normalizeLanguageIds(payload.language_id);
     }
 
     await Book.findByIdAndUpdate(book._id, updatedData, { new: true });
@@ -184,7 +216,7 @@ const listBook = async (req, res) => {
     if (Object.keys(whereTo).length === 0) {
       return res.status(200).json({
         message: "No valid identifier provided.",
-        statusCode: 201,
+        statusCode: 203,
       });
     }
 
@@ -203,7 +235,7 @@ const listBook = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
-      error: "Failed to fetch producers",
+      error: "Failed to list books",
       message: error.message,
     });
   }
@@ -222,7 +254,7 @@ const getBook = async (req, res) => {
     if (!book) {
       return res.status(200).json({
         message: "No result found.!!",
-        statusCode: 201,
+        statusCode: 203,
       });
     }
     return res.status(200).json({

@@ -7,16 +7,35 @@ import BestBookCinemaHelper from "../../helpers/BestBookCinemaHelper.js";
 
 const getUserId = (req) => req.user?._id || req.user?.id;
 
+function syncDocumentRef(data, documentId) {
+  if (!documentId) return;
+
+  if (!Array.isArray(data.documents)) {
+    data.documents = [];
+  }
+
+  const exists = data.documents?.some(
+    (id) => String(id) === String(documentId)
+  );
+
+  if (!exists) {
+    data.documents.push(documentId);
+  }
+}
+
 // Create Feature Submission
 const createBook = async (req, res) => {
-  //  const { isValid, errors } = BestBookCinemaHelper.validateStepInput(req.body, req.files);
-  // if (!isValid) {
-  //   return res.status(200).json({
-  //     message: "Validation failed",
-  //     errors,
-  //     statusCode: 203,
-  //   });
-  // }
+  const { isValid, errors } = BestBookCinemaHelper.validateStepInput(
+    req.body,
+    req.files
+  );
+  if (!isValid) {
+    return res.status(422).json({
+      message: "Validation failed",
+      errors,
+      statusCode: 422,
+    });
+  }
   try {
     const user = req.user.toObject();
     const client_id = user._id || user.id;
@@ -50,7 +69,7 @@ const createBook = async (req, res) => {
       data: finalData,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message, statusCode: 500 });
   }
 };
 
@@ -71,6 +90,24 @@ const updateEntryById = async (req, res) => {
       ...req.body,
       files: req.files,
     };
+    const step = String(req.body.step ?? "");
+
+    if (
+      step === String(Common.stepsBestBook().AUTHOR) ||
+      step === String(Common.stepsBestBook().DECLARATION)
+    ) {
+      const { isValid, errors } = BestBookCinemaHelper.validateStepInput(
+        req.body,
+        req.files
+      );
+      if (!isValid) {
+        return res.status(422).json({
+          message: "Validation failed",
+          errors,
+          statusCode: 422,
+        });
+      }
+    }
 
     const { id: _id } = req.body;
     // Find the document by ID
@@ -101,6 +138,12 @@ const updateEntryById = async (req, res) => {
 
     if (stepHandler[+req.body.step]) {
       const result = await stepHandler[+req.body.step](existingEntry, payload);
+      if (result?.status === false) {
+        return res.status(422).json({
+          statusCode: 422,
+          message: result.message || "Step processing failed",
+        });
+      }
       // Update the document with request body
       Object.assign(result, payload);
 
@@ -138,6 +181,29 @@ const handleAuthorStep = async (data, payload) => {
       data.active_step < Common.stepsBestBook().AUTHOR
       ) {
       data.active_step = Common.stepsBestBook().AUTHOR;
+      }
+
+      if (payload?.files && Array.isArray(payload.files)) {
+        const authorAadhaar = payload.files.find(
+          (file) => file.fieldname === "author_aadhaar_card"
+        );
+
+        if (authorAadhaar) {
+          const fileUpload = await Common.imageUpload({
+            id: lastId,
+            image_key: "author_aadhaar_card",
+            websiteType: "NFA",
+            formType: "BEST_BOOK",
+            image: authorAadhaar,
+          });
+
+          if (!fileUpload.status) {
+            return fileUpload;
+          }
+
+          data.author_aadhaar_card = fileUpload?.data?.file ?? null;
+          syncDocumentRef(data, fileUpload?.data?._id);
+        }
       }
     }
 
@@ -228,12 +294,14 @@ export const bestBookCinemaById = async (req, res) => {
     return res.status(200).json({
       status: "success",
       message: "Success.!!",
+      statusCode: 200,
       data,
     });
   } catch (error) {
     return res.status(500).json({
       status: "exception",
       message: error.message || "Internal Server Error",
+      statusCode: 500,
     });
   }
 };
@@ -290,6 +358,7 @@ const finalSubmit = async (req, res) => {
     return res.status(500).json({
       status: "exception",
       message: error.message || "Internal Server Error",
+      statusCode: 500,
     });
   }
 };

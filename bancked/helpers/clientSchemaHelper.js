@@ -77,19 +77,23 @@ export const verifyOtpSchema = z.object({
 
 // Change Password Schema
 export const changePasswordSchema = z.object({
-    email: z
-      .string({ required_error: "Email is required." })
-      .email("Enter a valid email address."),
-    password: z
-      .string({ required_error: "Password is required." })
-      .min(6, "Password must be at least 6 characters long."),
-    password_confirmation: z.string({
-      required_error: "Password confirmation is required.",
-    }),
-  })
-  .refine((data) => data.password === data.password_confirmation, {
-    path: ["password_confirmation"],
+  currentPassword: z
+    .string({ required_error: "Current password is required." })
+    .min(6, "Current password must be at least 6 characters long."),
+  password: z
+    .string({ required_error: "Password is required." })
+    .min(6, "Password must be at least 6 characters long."),
+  confirmPassword: z.string({
+    required_error: "Password confirmation is required.",
+  }),
+})
+  .refine((data) => data.password === data.confirmPassword, {
+    path: ["confirmPassword"],
     message: "Passwords do not match.",
+  })
+  .refine((data) => data.currentPassword !== data.password, {
+    path: ["password"],
+    message: "New password must be different from current password.",
   });
 
   export const resetPasswordSchema = z.object({

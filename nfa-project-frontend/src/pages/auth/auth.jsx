@@ -10,14 +10,12 @@ const slides = [
 
 const AuthPage = () => {
   return (
-    <div className="row form-div">
-      {/* Left Column: Dynamic content (login/signup) */}
-      <div className="col-lg-6 col-md-6 mt-5">
+    <div className="row form-div auth-layout">
+      <div className="col-lg-6 auth-main-pane mt-5">
         <Outlet />
       </div>
 
-      {/* Right Column - Carousel (shared for both login/signup) */}
-      <div className="col-lg-6 col-md-6 p-0">
+      <div className="col-lg-6 auth-carousel-pane d-none d-lg-flex p-0">
         <Swiper
           modules={[Autoplay, Navigation, Pagination, EffectFade]}
           autoplay={{ delay: 3000, disableOnInteraction: false }}

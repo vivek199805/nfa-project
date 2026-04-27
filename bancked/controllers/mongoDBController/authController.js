@@ -10,6 +10,7 @@ import { Mail } from "../../mailer/mail.js";
 dotenv.config();
 
 // import { redis } from "../../utils/redis.js";
+const normalizeEmail = (email) => email?.trim().toLowerCase();
 
 const registerUser = async (req, res) => {
   const { isValid, errors } = ClientSchemaHelper.validateRegisterData(req.body);
@@ -24,20 +25,21 @@ const registerUser = async (req, res) => {
     const {
       firstName,
       lastName,
-      email,
       phone,
       address,
       pinCode,
       aadharNumber,
       category: usertype,
       password,
+      email: rawEmail,
     } = req.body;
+    const email = normalizeEmail(rawEmail);
 
     // Check if user exists
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
-      return res.status(203).json({ message: "Email already registered" });
+      return res.status(200).json({ message: "Email already registered", statusCode: 203 });
     }
 
     const hashedPassword = await hashPassword(password);
@@ -79,7 +81,8 @@ const loginUser = async (req, res) => {
     });
   }
   try {
-    const { email, password } = req.body;
+    const { email: rawEmail, password } = req.body;
+    const email = normalizeEmail(rawEmail);
 
     // Validate input
     if (!email || !password) {
@@ -146,7 +149,8 @@ const verifyEmail = async (req, res) => {
     });
   }
   try {
-    const { email } = req.body;
+    const { email: rawEmail } = req.body;
+    const email = normalizeEmail(rawEmail);
     // Validate input
     if (!email) {
       return res
@@ -192,7 +196,8 @@ const logoutAllUser = async (req, res) => {
 
 const forgotPassword = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email: rawEmail } = req.body;
+    const email = normalizeEmail(rawEmail);
 
     const user = await User.findOne({ email });
     if (!user)
@@ -216,14 +221,14 @@ const forgotPassword = async (req, res) => {
         email: user.email,
         otp: otp,
         isVerified: "0",
-        otpExpiry: Date.now() + 5 * 60 * 1000, // 5 minutes
+        otpExpiry: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes
       });
       await data.save();
     } else {
       twoAuth.userId = user._id;
       twoAuth.otp = otp;
       twoAuth.isVerified = "0";
-      twoAuth.otpExpiry = Date.now() + 300000;
+      twoAuth.otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
       await twoAuth.save();
     }
     // Cookie options
@@ -238,7 +243,7 @@ const forgotPassword = async (req, res) => {
     res.cookie("resetEmail", email, cookieOptions);
 
     const mailContent = {
-      To: req.body.email,
+      To: email,
       Subject: "National Film Awards (NFA) Password Reset - One Time Code",
       Data: {
         clientName: `${user.firstName} ${user.lastName}`,
@@ -259,7 +264,8 @@ const forgotPassword = async (req, res) => {
 
 const verifyOtp = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const { email: rawEmail, otp } = req.body;
+    const email = normalizeEmail(rawEmail);
 
     // const data = await redis.get(`otp:forgot:${email}`);
     // if (!data)
@@ -282,7 +288,10 @@ const verifyOtp = async (req, res) => {
         statusCode: 203,
       });
     }
-    const isDevBypass = process.env.NODE_ENV !== "production" && otp == "9999";
+    const isDevBypass =
+      process.env.NODE_ENV !== "production" &&
+      process.env.ALLOW_DEV_OTP_BYPASS === "true" &&
+      otp == "9999";
 
     // if (!isDevBypass && otp !== savedOtp)
     //   return res.status(401).json({
@@ -323,7 +332,8 @@ const verifyOtp = async (req, res) => {
 
 const resendOtp = async (req, res, next) => {
   try {
-    const { email } = req.body;
+    const { email: rawEmail } = req.body;
+    const email = normalizeEmail(rawEmail);
     if (!email) {
       return res.status(422).json({
         message: "Email is required",
@@ -342,9 +352,10 @@ const resendOtp = async (req, res, next) => {
       {
         userId: user._id,
         phone: user.phone,
+        email,
         otp,
         isVerified: "0",
-        otpExpiry: Date.now() + 5 * 60 * 1000,
+        otpExpiry: new Date(Date.now() + 5 * 60 * 1000),
       },
       { upsert: true, new: true }
     );
@@ -360,7 +371,7 @@ const resendOtp = async (req, res, next) => {
     res.cookie("resetEmail", email, cookieOptions);
 
     const mailContent = {
-      To: req.body.email,
+      To: email,
       Subject: "National Film Awards (NFA) Password Reset - One Time Code",
       Data: {
         clientName: `${user.firstName} ${user.lastName}`,
@@ -452,6 +463,16 @@ const deleteUser = async (req, res) => {
 // }
 
 const changePassword = async (req, res) => {
+  const { isValid, errors } =
+    ClientSchemaHelper.ValidateChangePasswordSchemaData(req.body);
+  if (!isValid) {
+    return res.status(422).json({
+      message: "Validation failed",
+      errors,
+      statusCode: 422,
+    });
+  }
+
   const { currentPassword, password } = req.body;
   const userId = req.user?._id || req.user?.id;
   if (!userId) {
@@ -459,14 +480,6 @@ const changePassword = async (req, res) => {
       msg: "Unauthorized",
       status: false,
       statusCode: 401,
-    });
-  }
-
-  if (!currentPassword || !password) {
-    return res.status(200).json({
-      msg: "Both current and new passwords are required",
-      status: false,
-      statusCode: 203,
     });
   }
 
@@ -517,7 +530,8 @@ const resetPassword = async (req, res) => {
   }
 
   try {
-    const { password, email } = req.body;
+    const { password, email: rawEmail } = req.body;
+    const email = normalizeEmail(rawEmail);
     // Step 1: Check OTP verification status
     const authData = await Twoauth.findOne({ email, isVerified: 1 });
 
@@ -551,7 +565,8 @@ const resetPassword = async (req, res) => {
 
 const forgotPasswordWithToken = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email: rawEmail } = req.body;
+    const email = normalizeEmail(rawEmail);
 
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -566,7 +581,7 @@ const forgotPasswordWithToken = async (req, res) => {
 
     // Send email
     const mailContent = {
-      To: req.body.email,
+      To: email,
       Subject: "National Film Awards (NFA) Password Reset - One Time Token",
       Data: {
         clientName: user.firstName + " " + user.lastName,
@@ -576,7 +591,6 @@ const forgotPasswordWithToken = async (req, res) => {
     await Mail.resetPasswordMail(mailContent);
     res.status(200).json({
       message: "A reset email has been sent to your registered email address.!!",
-      resetLink,
       statusCode: 200,
     });
   } catch (err) {

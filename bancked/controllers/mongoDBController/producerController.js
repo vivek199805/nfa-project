@@ -15,7 +15,7 @@ const getAllProducersByFeatureId = async (req, res) => {
     }, "producers");
 
     if (!producersData) {
-      return res.status(200).json({ message: "Records not found", statusCode: 201 });
+      return res.status(200).json({ message: "Records not found", statusCode: 203 });
     }
     // 2. Attach matching documents to each producer manually
     const allProducerWithDocs = await Promise.all(
@@ -36,10 +36,12 @@ const getAllProducersByFeatureId = async (req, res) => {
 
     allProducerWithDocs.forEach((producer) => {
       if (producer?.documents?.file) {
-      producer.documents.file = `documents/NFA/${producer.documents.file}`;
+      producer.documents.file = `/api/documents/${producer.documents._id}/download`;
       }
       if (producer?.producer_self_attested_doc) {
-      producer.producer_self_attested_doc = `documents/NFA/${producer.producer_self_attested_doc}`;
+      producer.producer_self_attested_doc = producer.documents?._id
+        ? `/api/documents/${producer.documents._id}/download`
+        : null;
       }
     });
 
@@ -66,7 +68,7 @@ const addProducerToFeature = async (req, res) => {
       client_id: getUserId(req),
     });
     if (!feature) {
-      return res.status(200).json({ message: "Feature form not found", statusCode: 201 });
+      return res.status(200).json({ message: "Feature form not found", statusCode: 203 });
     }
     let updatedProducer;
     // 2. Update existing producer
@@ -74,7 +76,7 @@ const addProducerToFeature = async (req, res) => {
       // ✅ Update existing producer
       const existingProducer = feature.producers.id(producerId);
       if (!existingProducer) {
-        return res.status(200).json({ message: "Producer not found", statusCode: 201 });
+        return res.status(200).json({ message: "Producer not found", statusCode: 203 });
       }
 
       Object.entries(req.body).forEach(([key, value]) => {
@@ -162,7 +164,7 @@ const deleteProducerById = async (req, res) => {
       });
     }
 
-    producer.remove(); // Remove from embedded array
+    feature.producers.pull(producerId); // Remove from embedded array
 
     await feature.save(); // Save the updated document
 
