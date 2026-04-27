@@ -8,8 +8,8 @@ export default function Navbar() {
 
   return (
     <>
-      <div className="form-container p-5">
-        <div className="mx-auto">
+      <div className="form-container app-navbar">
+        <div className="mx-auto app-navbar-inner">
           <div className="top-logo d-flex justify-content-between">
             <a href="#">
               <img src="/images/nfa-logo.png" alt="NFA Logo" />
@@ -19,21 +19,20 @@ export default function Navbar() {
             </a>
           </div>
 
-          <div className="mt-2 d-flex justify-content-end">
+          <div className="mt-2 d-flex justify-content-end app-navbar-actions">
             <button
               type="button"
               className="btn btn-primary"
               onClick={() => navigate("/dashboard")}
             >
-              {" "}
               DASHBOARD
             </button>
             <button
               type="button"
-              className="btn btn-danger mx-2"
+              className="btn btn-danger"
               onClick={() => logoutMutation.mutate()}
             >
-              LOG OUT{" "}
+              LOG OUT
             </button>
           </div>
         </div>

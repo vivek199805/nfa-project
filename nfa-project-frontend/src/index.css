@@ -4,6 +4,12 @@ body {
   overflow-x: hidden;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 #root {
   height: 100%;
   padding: 0;
@@ -13,6 +19,14 @@ body {
 body {
   font-size: 14px;
   overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+  height: auto;
 }
 
 p {
@@ -624,7 +638,9 @@ h6 {
   color: #fff;
 }
 
-.form-container input {
+.form-container input,
+.form-container select,
+.form-container textarea {
   background: transparent;
   border-color: #444443;
   color: white;
@@ -632,6 +648,8 @@ h6 {
   padding: 10px;
   margin: 5px 0;
   outline: none;
+  width: 100%;
+  max-width: 100%;
 }
 
 .form-container input.filled {
@@ -658,6 +676,39 @@ h6 {
 .form-container::-ms-input-placeholder {
   /* Edge 12 -18 */
   color: #fff;
+}
+
+.app-navbar {
+  margin-top: 0;
+  padding: 1.5rem !important;
+}
+
+.app-navbar-inner {
+  width: 100%;
+}
+
+.app-navbar .top-logo {
+  position: static;
+  top: auto;
+  width: 100%;
+  align-items: center;
+  gap: 1rem;
+}
+
+.app-navbar .top-logo img {
+  width: auto;
+  max-width: min(100%, 140px);
+  height: auto;
+  object-fit: contain;
+}
+
+.app-navbar-actions {
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.app-navbar-actions .btn {
+  min-height: 44px;
 }
 
 .form-div {
@@ -831,6 +882,30 @@ h6 {
   border: solid 1px #bea460;
   color: #000;
   background: #bea460;
+}
+
+.film-form-container .form-control,
+.film-form-container .form-select,
+.film-form-container .react-dropdown-select {
+  width: 100%;
+  max-width: 100%;
+}
+
+.film-form-container textarea.form-control {
+  min-height: 120px;
+}
+
+.film-form-container .row,
+.form-box .row,
+.accordion-body .row {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+.film-form-container [class*="col-"],
+.form-box [class*="col-"],
+.accordion-body [class*="col-"] {
+  min-width: 0;
 }
 
 .form-offcanvas {
@@ -1109,6 +1184,44 @@ h6 {
   .top-logo-auth img {
     height: 44px;
   }
+
+  .app-navbar {
+    padding: 1rem !important;
+  }
+
+  .app-navbar .top-logo {
+    justify-content: center !important;
+  }
+
+  .app-navbar-actions {
+    justify-content: stretch !important;
+  }
+
+  .app-navbar-actions .btn {
+    width: 100%;
+  }
+
+  .form-box form[style] {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .film-form-container .btn,
+  .form-box .btn,
+  .modal-card .btn {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .film-form-container .text-end,
+  .form-box .text-end {
+    text-align: left !important;
+  }
+
+  .film-form-container .d-flex,
+  .form-box .d-flex {
+    flex-wrap: wrap;
+  }
 }
 
 @media (max-width: 991.98px) {
@@ -1161,7 +1274,7 @@ h6 {
     margin: 0;
     max-height: none;
     overflow: visible;
-    margin-left: 10px;
+    margin-left: 0;
   }
 }
 
@@ -1178,6 +1291,24 @@ h6 {
   .auth-form-container .input-group .form-control,
   .auth-form-container .input-group .input-group-text {
     min-height: 46px;
+  }
+
+  .film-form-container {
+    padding: 0.875rem;
+  }
+
+  .form-box {
+    padding: 1rem;
+    margin-top: 0.75rem;
+  }
+
+  .form-title {
+    font-size: 1.35rem;
+  }
+
+  .form-subtitle {
+    font-size: 1rem;
+    margin-bottom: 1rem;
   }
 }
 

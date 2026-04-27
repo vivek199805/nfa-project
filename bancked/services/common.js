@@ -181,19 +181,17 @@ const imageUpload = async (data) => {
     const updatedDoc = await Document.findOneAndUpdate(filter, fileDetails, {
       new: true,
       upsert: true,
-      rawResult: true,
     });
 
-    const wasNew = !!updatedDoc.lastErrorObject.upserted;
     return {
       status: true,
-      data: updatedDoc?.value,
-      message: wasNew ? "File created successfully!!" : "File updated successfully!!",
+      data: updatedDoc,
+      message: "File uploaded successfully!!",
     };
-  } catch {
+  } catch (error) {
     return {
       status: false,
-      message: "Error while uploading file",
+      message: error?.message || "Error while uploading file",
     };
   }
 }

@@ -64,21 +64,25 @@ const DashboardPage = () => {
 
             <div className="user-details">
               <div className="mt-4">
-                <div className="porfile-info">
-                  <h4 className="mb-2">{user?.name}</h4>
-                  <ul>
-                    <li>
-                      <i className="bi bi-telephone"></i> {user?.phone}
-                    </li>
-                    <li>
-                      <i className="bi bi-envelope"></i>
-                      {user?.email}
-                    </li>
-                  </ul>
-                  <div className="d-flex justify-content-end">
+                <div className="porfile-info dashboard-profile-card">
+                  <div className="dashboard-profile-main">
+                    <h4 className="mb-2">{user?.name}</h4>
+                    <ul>
+                      <li>
+                        <i className="bi bi-telephone"></i>
+                        <span>{user?.phone}</span>
+                      </li>
+                      <li>
+                        <i className="bi bi-envelope"></i>
+                        <span>{user?.email}</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="dashboard-actions">
                     <button
                       type="button"
-                      className="btn btn-danger mx-2"
+                      className="btn btn-danger"
                       onClick={() => logoutMutation.mutate()}
                     >
                       LOG OUT
@@ -111,7 +115,7 @@ const DashboardPage = () => {
                       Array.isArray(formCards[key]) &&
                       formCards[key].length > 0,
                   ) && (
-                    <div className="mt-3">
+                    <div className="mt-3 dashboard-actions">
                       <button
                         className="btn btn-common-form"
                         onClick={() => setShowModal(true)}
@@ -125,75 +129,73 @@ const DashboardPage = () => {
               {isLoading && <p>Loading forms...</p>}
               {isError && <p>Failed to load forms.</p>}
 
-              <div className="row mt-4">
+              <div className="row mt-4 g-3">
                 {["feature", "non-feature", "bestBooks", "bestFilmCritic"].map(
                   (type) =>
                     formCards?.[type]?.map((card, index) => (
                       <div
-                        className="col-md-6 col-lg-12"
+                        className="col-12 col-md-6 col-xl-12"
                         key={`${type}-${index}`}
                       >
-                        <div className="card mb-3">
+                        <div className="card h-100">
                           <div className="card-header">
                             <h5 className="card-title mb-0">
                               {card.film_title_english || card.author_name}
                             </h5>
                           </div>
-                          <div className="card-body">
-                            <div className="d-flex">
+                          <div className="card-body dashboard-card-content">
+                            <div className="dashboard-card-meta">
+                              <p className="card-text mb-0">
+                                <b>Type of form:</b>{" "}
+                                {{
+                                  feature: "Feature",
+                                  "non-feature": "Non-Feature",
+                                  bestBooks: "Best Book on Cinema",
+                                  bestFilmCritic: "Best Critic on Cinema",
+                                }[type] || type}
+                              </p>
+                              <p className="card-text mb-2">
+                                <b>Your Step:</b> {card.active_step} step
+                              </p>
                               <div>
-                                <p className="card-text mb-0">
-                                  <b>Type of form:</b>{" "}
-                                  {{
-                                    feature: "Feature",
-                                    "non-feature": "Non-Feature",
-                                    bestBooks: "Best Book on Cinema",
-                                    bestFilmCritic: "Best Critic on Cinema",
-                                  }[type] || type}
-                                </p>
-                                <p className="card-text mb-2">
-                                  <b>Your Step:</b> {card.active_step} step
-                                </p>
-                                <div>
-                                  <NavLink
-                                    to={
+                                <NavLink
+                                  to={
+                                    card.payment_status != 2
+                                      ? `/${
+                                          {
+                                            feature: "feature",
+                                            "non-feature": "non-feature",
+                                            bestBooks: "best-book",
+                                            bestFilmCritic: "film-critic",
+                                          }[type]
+                                        }/${card.id}`
+                                      : `/${
+                                          {
+                                            feature: "feature",
+                                            "non-feature": "non-feature",
+                                            bestBooks: "best-book",
+                                            bestFilmCritic: "film-critic",
+                                          }[type]
+                                        }/view/${card.id}`
+                                  }
+                                  className="text-decoration-none"
+                                >
+                                  <i
+                                    className={`bi bi-${
                                       card.payment_status != 2
-                                        ? `/${
-                                            {
-                                              feature: "feature",
-                                              "non-feature": "non-feature",
-                                              bestBooks: "best-book",
-                                              bestFilmCritic: "film-critic",
-                                            }[type]
-                                          }/${card.id}`
-                                        : `/${
-                                            {
-                                              feature: "feature",
-                                              "non-feature": "non-feature",
-                                              bestBooks: "best-book",
-                                              bestFilmCritic: "film-critic",
-                                            }[type]
-                                          }/view/${card.id}`
-                                    }
-                                    className="text-decoration-none"
-                                  >
-                                    <i
-                                      className={`bi bi-${
-                                        card.payment_status != 2
-                                          ? "pencil"
-                                          : "eye"
-                                      }`}
-                                    ></i>{" "}
-                                    {card.payment_status != 2 ? "Edit" : "View"}
-                                  </NavLink>
-                                </div>
+                                        ? "pencil"
+                                        : "eye"
+                                    }`}
+                                  ></i>{" "}
+                                  {card.payment_status != 2 ? "Edit" : "View"}
+                                </NavLink>
                               </div>
-                              <div className="m-auto">
-                                <p className="card-text mb-2">
-                                  <b>Payment:</b>{" "}
-                                  {card.payment_status != 2 ? "Unpaid" : "Paid"}
-                                </p>
-                              </div>
+                            </div>
+                            <div className="dashboard-card-status">
+                              <p className="card-text mb-0">
+                                <b>Payment:</b>{" "}
+                                {card.payment_status != 2 ? "Unpaid" : "Paid"}
+                              </p>
                             </div>
                           </div>
                         </div>

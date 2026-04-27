@@ -52,7 +52,7 @@ const NonFeatureFilmPage = () => {
     <>
       <Navbar />
 
-      <div className="row">
+      <div className="row form-div">
         <div className="col-lg-12 mt-5">
           <div className="film-form-container">
             <StepIndicator

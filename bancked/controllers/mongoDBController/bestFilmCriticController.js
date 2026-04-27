@@ -82,8 +82,7 @@ const updateEntryById = async (req, res) => {
     if (missingFields.length > 0) {
       return res.status(200).json({
         statusCode: 203,
-        message: `${missingFields.join(" and ")} ${missingFields.length > 1 ? "are" : "is"
-          } required`,
+        message: `${missingFields.join(" and ")} ${missingFields.length > 1 ? "are" : "is"} required`,
       });
     }
     const payload = {
