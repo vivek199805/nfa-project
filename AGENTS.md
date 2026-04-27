@@ -312,3 +312,185 @@ These areas deserve extra caution during AI-assisted work:
 - Testing is minimal, so contract regressions are easy to introduce silently.
 
 When in doubt, make the smallest change that preserves the existing vertical slice end to end.
+
+## 10. Technical Reference Appendix
+
+This appendix consolidates the concrete implementation notes that were previously documented separately in `agent.md`, so this file can serve as the single high-signal reference for both repository rules and current technical context.
+
+### Architecture Snapshot
+
+- Frontend app: `nfa-project-frontend` using React + Vite
+- Backend app: `bancked` using Express + MongoDB/Mongoose
+- Domain coverage includes:
+  - feature films
+  - non-feature films
+  - best book on cinema
+  - best film critic on cinema
+
+### Runtime Shape
+
+```mermaid
+flowchart LR
+  U[User Browser] --> F[React Frontend\nVite App]
+  F -->|HTTP JSON + Bearer JWT| B[Express API\nbancked/app.js]
+  B --> M[(MongoDB\nMongoose Models)]
+  B --> FS[(Local File Storage\npublic/documents/NFA)]
+  B --> SMTP[SMTP Mailer\nNodemailer]
+  B -. optional/legacy .-> A[Appwrite Client & Controllers]
+```
+
+### Frontend Stack and Behavior
+
+- React 19
+- Vite 6
+- React Router v7 with `createBrowserRouter`
+- Redux Toolkit
+- TanStack React Query
+- Axios with interceptors
+- React Hook Form + Zod
+- MUI, Bootstrap, Swiper, Sonner
+
+Current frontend behavior:
+
+- Router is defined in `nfa-project-frontend/src/App.jsx`
+- Auth state is managed through the auth provider and `localStorage`
+- The Axios request interceptor attaches `Authorization: Bearer <token>` for protected requests
+- The response interceptor handles `401` by clearing auth state and redirecting to login
+- The API base URL comes from `import.meta.env.VITE_API_URL`
+
+### Backend Stack and Behavior
+
+- Node.js with ES modules
+- Express 4
+- Mongoose 6
+- `jsonwebtoken`
+- `bcrypt`
+- `multer` with memory storage
+- `nodemailer`
+- `morgan`, `cors`, `cookie-parser`, `express-rate-limit`
+- optional or legacy Redis/Appwrite code paths
+
+Current backend behavior:
+
+- App wiring lives in `bancked/app.js` and `bancked/server.js`
+- Active routes are mounted from `bancked/routes/mongoDBRoutes`
+- Active controllers live in `bancked/controllers/mongoDBController`
+- Shared step and upload utilities live in `bancked/services/common.js`
+- JWT auth is enforced via `bancked/middleware/requireAuth.js`
+
+### Authentication Flow Reference
+
+1. `POST /api/user/register` creates a user with a hashed password.
+2. `POST /api/user/login` verifies credentials and returns a JWT plus user data.
+3. Protected routes use `requireAuth`, which reads the Bearer token, verifies it, and attaches `req.user`.
+4. Password recovery uses the `forgot-password`, `verify-otp`, `resend-otp`, and `reset-password` route sequence.
+
+### Active API Surface Reference
+
+Base URL is supplied by the frontend through `VITE_API_URL`.
+
+| Method | Endpoint | Mounted From | Auth Required | Purpose |
+|---|---|---|---|---|
+| POST | `/api/user/register` | auth.js | No | Register user |
+| POST | `/api/user/login` | auth.js | No | Login and receive JWT |
+| POST | `/api/user/verify-email` | auth.js | No | Validate email before login |
+| POST | `/api/user/forgot-password` | auth.js | No | Generate/send OTP |
+| POST | `/api/user/verify-otp` | auth.js | No | Verify OTP |
+| POST | `/api/user/resend-otp` | auth.js | No | Resend OTP |
+| POST | `/api/user/reset-password` | auth.js | No | Reset password after OTP |
+| POST | `/api/user/change-password` | auth.js | Yes | Change password |
+| GET | `/api/get-languages` | languages.js | Yes | Master language list |
+| GET | `/api/entry-list` | entryList.js | Yes | Dashboard entry aggregation |
+| POST | `/api/film/feature-create` | filmSubmission.js | Yes | Create feature film entry |
+| GET | `/api/film/entry-list` | filmSubmission.js | Yes | List feature/non-feature entries |
+| POST | `/api/film/feature-update` | filmSubmission.js | Yes | Step-wise feature update |
+| GET | `/api/film/feature-entry-by/:id` | filmSubmission.js | Yes | Feature entry details |
+| POST | `/api/film/non-feature-create` | filmSubmission.js | Yes | Create non-feature entry |
+| GET | `/api/film/non-feature-list` | filmSubmission.js | Yes | List non-feature entries |
+| GET | `/api/film/non-feature-entry-by/:id` | filmSubmission.js | Yes | Non-feature entry details |
+| POST | `/api/film/non-feature-update` | filmSubmission.js | Yes | Step-wise non-feature update |
+| POST | `/api/film/final-submit` | filmSubmission.js | Yes | Final form submission |
+| POST | `/api/film/producer-list` | filmSubmission.js | Yes | List producers |
+| POST | `/api/film/store-producer` | filmSubmission.js | Yes | Add producer |
+| POST | `/api/film/delete-producer` | filmSubmission.js | Yes | Delete producer |
+| POST | `/api/film/director-list` | filmSubmission.js | Yes | List directors |
+| POST | `/api/film/store-director` | filmSubmission.js | Yes | Add director |
+| POST | `/api/film/delete-director` | filmSubmission.js | Yes | Delete director |
+| POST | `/api/film/actor-list` | filmSubmission.js | Yes | List actors |
+| POST | `/api/film/store-actor` | filmSubmission.js | Yes | Add actor |
+| POST | `/api/film/delete-actor` | filmSubmission.js | Yes | Delete actor |
+| POST | `/api/film/song-list` | filmSubmission.js | Yes | List songs |
+| POST | `/api/film/store-song` | filmSubmission.js | Yes | Add song |
+| POST | `/api/film/delete-song` | filmSubmission.js | Yes | Delete song |
+| POST | `/api/film/audiographer-list` | filmSubmission.js | Yes | List audiographers |
+| POST | `/api/film/store-audiographer` | filmSubmission.js | Yes | Add audiographer |
+| POST | `/api/film/delete-audiographer` | filmSubmission.js | Yes | Delete audiographer |
+| POST | `/api/create-entry` | apiRoutes.js | Yes | Create best film critic entry |
+| GET | `/api/best-film-critic-entry-by/:id` | apiRoutes.js | Yes | Get best film critic entry |
+| POST | `/api/update-entry` | apiRoutes.js | Yes | Update best film critic entry |
+| POST | `/api/best-film-critic-final-submit` | apiRoutes.js | Yes | Final submit best film critic |
+| POST | `/api/best-book-cinema-entry` | apiRoutes.js | Yes | Create best book entry |
+| POST | `/api/best-book-cinema-update` | apiRoutes.js | Yes | Update best book entry |
+| POST | `/api/best-book-cinema-final-submit` | apiRoutes.js | Yes | Final submit best book entry |
+| GET | `/api/best-book-cinema-entry-by/:id` | apiRoutes.js | Yes | Get best book entry |
+| POST | `/api/store-book` | apiRoutes.js | Yes | Add book |
+| POST | `/api/update-book` | apiRoutes.js | Yes | Update book |
+| POST | `/api/list-book` | apiRoutes.js | Yes | List books |
+| GET | `/api/get-book-by/:id` | apiRoutes.js | Yes | Book details |
+| GET | `/api/delete-book/:id` | apiRoutes.js | Yes | Delete book |
+| POST | `/api/store-editor` | apiRoutes.js | Yes | Add editor/publisher |
+| POST | `/api/update-editor` | apiRoutes.js | Yes | Update editor/publisher |
+| POST | `/api/list-editor` | apiRoutes.js | Yes | List editors/publishers |
+| GET | `/api/delete-editor/:id` | apiRoutes.js | Yes | Delete editor/publisher |
+| POST | `/api/generate-hash` | apiRoutes.js | Yes | Create payment record and mark paid |
+
+### Dormant Route Note
+
+- `bancked/routes/appWriteRoutes/*` contains additional Appwrite-oriented routes, but these are not part of the active production path unless `bancked/app.js` is intentionally changed to mount them.
+
+### Environment and Runbook
+
+Prerequisites:
+
+- Node.js 18+ and preferably Node.js 20
+- npm
+- MongoDB connection string
+
+Backend setup:
+
+1. `cd bancked`
+2. `npm install`
+3. Configure environment values such as:
+   - `NODE_ENV`
+   - `PORT`
+   - `DB_URL`
+   - `JWT_SECRET`
+   - `MAIL_USERNAME`
+   - `MAIL_PASSWORD`
+   - `FRONTEND_BASE_URL`
+4. Run development or start commands already defined in `bancked/package.json`
+
+Frontend setup:
+
+1. `cd nfa-project-frontend`
+2. `npm install`
+3. Set `VITE_API_URL` to the backend `/api` base URL
+4. Use the existing `dev`, `build`, and preview scripts from `nfa-project-frontend/package.json`
+
+### Deployment Reference
+
+- CI/CD is defined in `.github/workflows/deploy.yml`
+- The workflow installs dependencies, builds the frontend, and triggers deploy hooks
+- Backend Docker files exist in `bancked/`, including dev and prod compose variants
+- Compose environment filename expectations should be verified before relying on them unchanged
+
+### Existing Improvement Backlog
+
+These are observations, not standing instructions. Treat them as candidates for deliberate work, not opportunistic cleanup during unrelated tasks.
+
+1. Remove or clearly isolate dormant Appwrite code if it is not meant to be revived.
+2. Add `.env.example` files and ensure secrets are not committed.
+3. Audit OTP and change-password flows carefully before modifying auth behavior.
+4. Standardize inconsistent status handling only as a coordinated frontend/backend change.
+5. Add targeted tests around auth, validation, step progression, and payload mapping.
+6. Tighten production CORS and configuration handling.
