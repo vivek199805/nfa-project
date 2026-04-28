@@ -5,10 +5,7 @@ import BestFilmCritic from "../../models/mongodbModels/BestFilmCritic.js";
 import Payment from "../../models/mongodbModels/Payment.js";
 import { formType } from "../../services/common.js";
 import BestBookCinema from "../../models/mongodbModels/BestBookCinema.js";
-import {
-  validatePaymentConfirmationData,
-  validatePaymentData,
-} from "../../helpers/paymentSchemaHelper.js";
+import { validatePaymentConfirmationData, validatePaymentData, } from "../../helpers/paymentSchemaHelper.js";
 
 const RAZORPAY_GATEWAY = "RAZORPAY";
 const DEFAULT_CURRENCY = "INR";
@@ -168,8 +165,7 @@ const createOrder = async (req, res) => {
 
     if (!applicationData) {
       return res.status(200).json({
-        message:
-          "You are not authorized to pay for this application. Please contact support.",
+        message: "You are not authorized to pay for this application. Please contact support.",
         status: false,
         statusCode: 203,
       });
@@ -183,8 +179,7 @@ const createOrder = async (req, res) => {
       });
     }
 
-    const amountInRupees =
-      getConfiguredAmount(payload.form_type) || normalizeAmount(payload.amount);
+    const amountInRupees = getConfiguredAmount(payload.form_type) || normalizeAmount(payload.amount);
     const amountInPaise = toPaiseAmount(amountInRupees);
 
     if (!amountInPaise) {

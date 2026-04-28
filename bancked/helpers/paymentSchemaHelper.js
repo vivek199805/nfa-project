@@ -51,5 +51,4 @@ const formatValidation = (result) => ({
 
 export const validatePaymentData = (data) => formatValidation(paymentSchema.safeParse(data));
 
-export const validatePaymentConfirmationData = (data) =>
-  formatValidation(paymentConfirmationSchema.safeParse(data));
+export const validatePaymentConfirmationData = (data) => formatValidation(paymentConfirmationSchema.safeParse(data));
