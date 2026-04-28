@@ -22,7 +22,6 @@ const BestFilmCriticPage = () => {
   const { data: formData } = useFetchById("best-film-critic-entry-by", id);
 
   useEffect(() => {
-    console.log("Form cards data:", formData);
     if (id && formData?.data?.active_step !== undefined) {
       const step = +formData.data.active_step;
       setActiveSection(step < steps.length ? step + 1 : steps.length);

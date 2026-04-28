@@ -4,10 +4,7 @@ import { ChevronDown, Pencil } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useFetchById } from "../../hooks/useFetchById";
 import { postRequest } from "../../common/services/requestService";
-import {
-  showErrorToast,
-  showSuccessToast,
-} from "../../common/services/toastService";
+import { showErrorToast, showSuccessToast } from "../../common/services/toastService";
 import { startRazorpayPayment } from "../../common/services/paymentService";
 import { useAuth } from "../../hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
@@ -54,10 +51,7 @@ const PreviewPaymentSection = ({ setActiveSection }) => {
         description: "Best Book on Cinema Registration Payment",
       });
 
-      showSuccessToast(
-        result?.verificationResponse?.message ||
-          "Payment completed successfully",
-      );
+      showSuccessToast(result?.verificationResponse?.message || "Payment completed successfully");
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: queryKeys.entry.byId("best-book-cinema-entry-by", id),
@@ -70,14 +64,12 @@ const PreviewPaymentSection = ({ setActiveSection }) => {
       setIsPaying(false);
     }
   };
+
   const onFinish = async () => {
     // payment logic here
     const formData = new FormData();
     formData.append("id", id);
-    const response = await postRequest(
-      "best-book-cinema-final-submit",
-      formData
-    );
+    const response = await postRequest("best-book-cinema-final-submit", formData);
     if (response.statusCode == 200) {
       showSuccessToast(response.message);
       navigate("/dashboard");

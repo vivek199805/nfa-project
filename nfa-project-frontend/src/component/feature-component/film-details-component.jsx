@@ -216,7 +216,7 @@ const FilmDetailsSection = ({ setActiveSection, filmType }) => {
         formData?.data.language_id?.includes(opt.value.toString())
       ),
       englishSubtitle: formData?.data.english_subtitle == 1 ? "Yes" : "No",
-      colorFormat: formData?.data.color_bw == 1 ? "Color" : "Black and White",
+      colorFormat: formData?.data.color_bw == 1 ? "Color" : "Black & White",
       aspectRatio: formData?.data.aspect_ratio,
       runningTime: formData?.data.running_time,
       format:
@@ -242,7 +242,6 @@ const FilmDetailsSection = ({ setActiveSection, filmType }) => {
 
   const onSubmit = async (data) => {
     // Call API to submit form data
-    console.log("Form submitted:", data);
     let url = "";
     const formData = new FormData();
     formData.append("film_title_roman", data.titleRoman);

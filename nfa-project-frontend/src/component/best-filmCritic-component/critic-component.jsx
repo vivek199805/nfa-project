@@ -76,7 +76,6 @@ const CriticSection = ({ setActiveSection }) => {
 
   const onSubmit = async (data) => {
     // Call API to submit form data
-    console.log("Form submitted:", data);
     const formData = new FormData();
     formData.append("critic_name", data.critic_name);
     formData.append("critic_address", data.critic_address);

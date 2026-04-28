@@ -79,7 +79,6 @@ const BestFilmSection = ({ setActiveSection }) => {
 
   const onSubmit = async (data) => {
     // Call API to submit form data
-    console.log("Form submitted:", data);
     let url = "";
     const formData = new FormData();
     formData.append("writer_name", data.writer_name);

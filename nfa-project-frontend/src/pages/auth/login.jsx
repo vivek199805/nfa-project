@@ -90,7 +90,9 @@ const LoginPage = () => {
             className="bi bi-info-circle"
             data-bs-toggle="offcanvas"
             href="#offcanvasExample"
+            aria-label="Open information panel"
             role="button"
+            tabIndex={0}
           ></i>
         </div>
 
@@ -111,12 +113,14 @@ const LoginPage = () => {
                 errors.username ? "is-invalid" : ""
               }`}
               placeholder="Username"
+              aria-invalid={Boolean(errors.username)}
+              aria-describedby={errors.username ? "username-error" : undefined}
               {...register("username", {
                 onBlur: () => handleVerifyEmail(),
               })}
             />
             {errors.username && (
-              <div className="invalid-feedback auth-error">
+              <div id="username-error" className="invalid-feedback auth-error">
                 {errors.username.message}
               </div>
             )}

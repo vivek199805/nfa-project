@@ -7,7 +7,7 @@ import { postRequest } from "../common/services/requestService";
 ...
 */
 
-import { createContext, use, useEffect, useMemo } from "react";
+import { createContext, useContext, useEffect, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { showErrorToast, showSuccessToast } from "../common/services/toastService";
 import { useNavigate } from "react-router-dom";
@@ -90,7 +90,7 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  const context = use(AuthContext);
+  const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }

@@ -1,9 +1,6 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { postRequest } from "../../common/services/requestService";
-import {
-  showErrorToast,
-  showSuccessToast,
-} from "../../common/services/toastService";
+import { showErrorToast, showSuccessToast, } from "../../common/services/toastService";
 import { startRazorpayPayment } from "../../common/services/paymentService";
 import { useAuth } from "../../hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
@@ -42,10 +39,7 @@ const PaymentSection = ({ setActiveSection, filmType }) => {
             : "Non Feature Film Registration Payment",
       });
 
-      showSuccessToast(
-        result?.verificationResponse?.message ||
-          "Payment completed successfully",
-      );
+      showSuccessToast(result?.verificationResponse?.message || "Payment completed successfully",);
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: queryKeys.entry.byId(endpoint, id),
@@ -68,6 +62,7 @@ const PaymentSection = ({ setActiveSection, filmType }) => {
       navigate("/dashboard");
     }
   };
+
   return (
     <>
       <div className="col-12 text-center mt-3">

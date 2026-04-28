@@ -17,7 +17,7 @@ const ViewSection = ({ setActiveSection }) => {
   const [activeIndex, setActiveIndex] = useState(null);
   const [isPaying, setIsPaying] = useState(false);
   const { id } = useParams();
-  const  navigate = useNavigate();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -55,10 +55,7 @@ const ViewSection = ({ setActiveSection }) => {
         description: "Best Film Critic Registration Payment",
       });
 
-      showSuccessToast(
-        result?.verificationResponse?.message ||
-          "Payment completed successfully",
-      );
+      showSuccessToast(result?.verificationResponse?.message || "Payment completed successfully");
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: queryKeys.entry.byId("best-film-critic-entry-by", id),
@@ -71,6 +68,7 @@ const ViewSection = ({ setActiveSection }) => {
       setIsPaying(false);
     }
   };
+  
   const onFinish = async () => {
     // payment logic here
     const formData = new FormData();
@@ -228,9 +226,8 @@ const CriticView = ({ data }) => {
             {data.critic_aadhaar_card ? (
               <>
                 <a
-                  href={`${import.meta.env.VITE_API_URL}/${
-                    data.critic_aadhaar_card
-                  }`}
+                  href={`${import.meta.env.VITE_API_URL}/${data.critic_aadhaar_card
+                    }`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn btn-sm btn-outline-primary ms-2"

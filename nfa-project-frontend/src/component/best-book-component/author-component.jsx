@@ -72,7 +72,6 @@ const AuthorSection = ({ setActiveSection }) => {
 
   const onSubmit = async (data) => {
     // Call API to submit form data
-    console.log("Form submitted:", data);
     let url = "";
     const formData = new FormData();
     formData.append("author_name", data.author_name);

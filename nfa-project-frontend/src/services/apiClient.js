@@ -17,11 +17,21 @@ export const apiClient = axios.create({
 });
 
 let reduxStore;
+let requestInterceptorId;
+let responseInterceptorId;
 
 export function attachApiInterceptors(store) {
   reduxStore = store;
 
-  apiClient.interceptors.request.use(
+  if (requestInterceptorId !== undefined) {
+    apiClient.interceptors.request.eject(requestInterceptorId);
+  }
+
+  if (responseInterceptorId !== undefined) {
+    apiClient.interceptors.response.eject(responseInterceptorId);
+  }
+
+  requestInterceptorId = apiClient.interceptors.request.use(
     (config) => {
       const isExcluded = excludedRoutes.some((route) =>
         config.url?.endsWith(route),
@@ -47,7 +57,7 @@ export function attachApiInterceptors(store) {
     },
   );
 
-  apiClient.interceptors.response.use(
+  responseInterceptorId = apiClient.interceptors.response.use(
     (response) => {
       reduxStore?.dispatch(setGlobalLoader(false));
       return response;

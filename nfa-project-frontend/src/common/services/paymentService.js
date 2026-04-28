@@ -67,8 +67,7 @@ export const createRazorpayOrder = async ({ entryId, formType }) => {
   return postRequest("payment/order", formData);
 };
 
-export const verifyRazorpayPayment = async (payload) =>
-  postRequest("payment/verify", payload);
+export const verifyRazorpayPayment = async (payload) => postRequest("payment/verify", payload);
 
 export const startRazorpayPayment = async ({
   entryId,

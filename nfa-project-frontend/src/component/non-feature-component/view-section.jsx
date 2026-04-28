@@ -216,7 +216,7 @@ const GeneralView = ({ data }) => {
                   : "Other"}
           </div>
           <div>{data.running_time}</div>
-          <div>{data.color_bw == 1 ? "Color" : "Black and White"}</div>
+          <div>{data.color_bw == 1 ? "Color" : "Black & White"}</div>
           <div>{data.film_synopsis}</div>
         </div>
       </div>

@@ -61,7 +61,7 @@ h6 {
 }
 
 .bannerbg {
-  background: url(..images/banner-bg.svg) left top no-repeat;
+  background: url("/images/banner-bg.svg") left top no-repeat;
   height: 807px;
   position: absolute;
   top: 0;
@@ -119,7 +119,7 @@ h6 {
 
 .aboutUs {
   padding: 50px 0;
-  background: url(../images/aboutbg.png) left bottom no-repeat;
+  background: url("/images/aboutbg.png") left bottom no-repeat;
 }
 
 .btn-common {
@@ -369,7 +369,7 @@ h6 {
 
 .gallery {
   padding: 50px 0;
-  background: url(../images/gallery.jpg) left top no-repeat;
+  background: url("/images/gallery.jpg") left top no-repeat;
   background-size: cover;
   width: 100%;
 }
@@ -429,7 +429,7 @@ h6 {
 /*For Login Page*/
 .formpageBG {
   background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
-    url(../images/banner2.jpg) left top no-repeat;
+    url("/images/banner2.jpg") left top no-repeat;
   background-size: cover;
   font-size: 14px;
   height: 100vh;
@@ -779,7 +779,7 @@ h6 {
 .formBG {
   display: flex;
   flex-direction: column;
-  background: #000 url(../images/aboutbg.png) left bottom no-repeat;
+  background: #000 url("/images/aboutbg.png") left bottom no-repeat;
   background-size: cover;
   background-attachment: fixed;
   background-position: center;

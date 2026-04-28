@@ -52,7 +52,6 @@ const OtherSection = ({ setActiveSection, filmType }) => {
   }, [formData, reset]);
 
   const onSubmit =  async (data) => {
-    console.log("Form submitted:", data);
     // Call API to submit form data
     const formData = new FormData();
     formData.append("cinemetographer", data.cinemetographer);

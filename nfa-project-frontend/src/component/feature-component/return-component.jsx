@@ -57,7 +57,6 @@ const ReturnSection = ({ setActiveSection, filmType }) => {
   }, [formData, reset]);
 
   const onSubmit = async (data) => {
-    console.log("Form submitted:", data);
     // Call API to submit form data
     let url = filmType == 'feature' ? "film/feature-update" : "film/non-feature-update";
     const formData = new FormData();

@@ -80,7 +80,6 @@ const CensorSection = ({ setActiveSection, filmType }) => {
   }, [formData, reset, storedFilmData]);
 
   const onSubmit = async (data) => {
-    console.log("Form submitted:", data);
     //  dispatch(setFormData(data));
     // Call API to submit form data
 
