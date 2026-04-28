@@ -1,7 +1,9 @@
 import { postRequest } from "./requestService";
 
-const RAZORPAY_SCRIPT_ID = "rzp_test_SicSCTBmKwh4Bk";
-const RAZORPAY_SCRIPT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
+const RAZORPAY_SCRIPT_ID = import.meta.env.VITE_RAZORPAY_SCRIPT_ID;
+const RAZORPAY_SCRIPT_SRC = import.meta.env.VITE_RAZORPAY_SCRIPT_SRC;
+// VITE_RAZORPAY_SCRIPT_ID=rzp_test_SicSCTBmKwh4Bk
+// VITE_RAZORPAY_SCRIPT_SRC=https://checkout.razorpay.com/v1/checkout.js
 
 let razorpayScriptPromise = null;
 
@@ -15,6 +17,18 @@ const toFormData = (payload) => {
   return formData;
 };
 
+/**
+ * Dynamically loads the Razorpay checkout script into the browser.
+ *
+ * - Returns `false` immediately when running outside the browser (`window` is undefined).
+ * - Returns `true` immediately if Razorpay is already available on `window`.
+ * - Reuses an in-progress script load promise if a load is already underway.
+ * - Rejects if Razorpay script configuration is missing.
+ * - Injects a `<script>` element with configured ID and source, resolving on load and rejecting on error.
+ * - Resets the cached load promise when loading fails so future attempts may retry.
+ *
+ * @returns {Promise<boolean>} Promise resolving to `true` when Razorpay is available, or `false` in non-browser environments.
+ */
 export const loadRazorpayScript = () => {
   if (typeof window === "undefined") {
     return Promise.resolve(false);
@@ -26,6 +40,10 @@ export const loadRazorpayScript = () => {
 
   if (razorpayScriptPromise) {
     return razorpayScriptPromise;
+  }
+
+  if (!RAZORPAY_SCRIPT_ID || !RAZORPAY_SCRIPT_SRC) {
+    return Promise.reject(new Error("Razorpay checkout is not configured"));
   }
 
   razorpayScriptPromise = new Promise((resolve, reject) => {
@@ -69,12 +87,31 @@ export const createRazorpayOrder = async ({ entryId, formType }) => {
 
 export const verifyRazorpayPayment = async (payload) => postRequest("payment/verify", payload);
 
+/**
+ * Initiates a Razorpay checkout flow for an application payment.
+ *
+ * Creates a Razorpay order, loads the Razorpay checkout script,
+ * opens the payment modal, and verifies the payment on completion.
+ *
+ * @param {Object} params
+ * @param {string|number} params.entryId - The application entry identifier.
+ * @param {string} params.formType - The type of form being paid for.
+ * @param {Object} [params.customer] - Customer prefill data.
+ * @param {string} [params.customer.name] - Customer name.
+ * @param {string} [params.customer.email] - Customer email address.
+ * @param {string} [params.customer.contact] - Customer contact number.
+ * @param {string} [params.description] - Optional payment description.
+ * @returns {Promise<Object>} Resolves with order, verification, and Razorpay response objects when payment succeeds.
+ * @throws {Error} If order creation fails, Razorpay checkout is unavailable, payment is cancelled, or verification fails.
+ */
+
 export const startRazorpayPayment = async ({
   entryId,
   formType,
   customer,
   description,
 }) => {
+
   const orderResponse = await createRazorpayOrder({ entryId, formType });
 
   if (orderResponse?.statusCode !== 200 || !orderResponse?.data?.order_id) {
@@ -133,10 +170,7 @@ export const startRazorpayPayment = async ({
           });
 
           if (verificationResponse?.statusCode !== 200) {
-            throw new Error(
-              verificationResponse?.message ||
-                "Payment verification did not complete successfully"
-            );
+            throw new Error(verificationResponse?.message || "Payment verification did not complete successfully");
           }
 
           settleResolve({
