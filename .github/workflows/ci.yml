@@ -1,3 +1,121 @@
+# name: Monorepo CI
+
+# on:
+#   push:
+#     branches:
+#       - vivek
+#   pull_request:
+#     branches:
+#       - staging
+#     types: [opened, synchronize, reopened]
+
+# permissions:
+#   contents: read
+#   pull-requests: write
+#   issues: write
+
+# jobs:
+#   backend:
+#     name: Backend checks
+#     runs-on: ubuntu-latest
+#     defaults:
+#       run:
+#         working-directory: bancked
+
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4
+
+#       - name: Setup Node
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: 20
+#           cache: npm
+#           cache-dependency-path: bancked/package-lock.json
+
+#       - name: Install backend deps
+#         run: npm ci
+
+#       - name: Test backend
+#         run: npm test --if-present
+
+#       - name: Build backend
+#         run: npm run build --if-present
+
+#   frontend:
+#     name: Frontend checks
+#     runs-on: ubuntu-latest
+#     defaults:
+#       run:
+#         working-directory: nfa-project-frontend
+
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4
+
+#       - name: Setup Node
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: 20
+#           cache: npm
+#           cache-dependency-path: nfa-project-frontend/package-lock.json
+
+#       - name: Install frontend deps
+#         run: npm ci
+
+#       - name: Lint frontend
+#         run: npm run lint --if-present
+
+#       - name: Test frontend
+#         run: npm test --if-present
+
+#       - name: Build frontend
+#         run: npm run build --if-present
+
+#   create-pr:
+#     name: Create PR vivek to staging
+#     runs-on: ubuntu-latest
+#     needs:
+#       - backend
+#       - frontend
+
+#     if: github.event_name == 'push' && github.ref == 'refs/heads/vivek'
+
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4
+
+#       - name: Check existing PR
+#         id: check_pr
+#         env:
+#           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         run: |
+#           PR_URL=$(gh pr list \
+#             --head vivek \
+#             --base staging \
+#             --state open \
+#             --json url \
+#             --jq '.[0].url')
+
+#           echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+
+#       - name: Create Pull Request
+#         if: steps.check_pr.outputs.pr_url == ''
+#         env:
+#           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         run: |
+#           gh pr create \
+#             --base staging \
+#             --head vivek \
+#             --title "Auto PR: vivek to staging" \
+#             --body "Auto-created after backend and frontend checks passed." \
+#             --reviewer vivek199805
+
+#       - name: Existing PR found
+#         if: steps.check_pr.outputs.pr_url != ''
+#         run: |
+#           echo "PR already exists: ${{ steps.check_pr.outputs.pr_url }}"
+
 name: Monorepo CI
 
 on:
@@ -7,81 +125,102 @@ on:
   pull_request:
     branches:
       - staging
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
   pull-requests: write
+  issues: write
+
+env:
+  SOURCE_BRANCH: vivek
+  TARGET_BRANCH: staging
+  PR_REVIEWERS: vivek199805
 
 jobs:
+  changes:
+    name: Detect changed files
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect backend/frontend changes
+        id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            backend:
+              - 'bancked/**'
+            frontend:
+              - 'nfa-project-frontend/**'
+
   backend:
     name: Backend checks
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     defaults:
       run:
         working-directory: bancked
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: bancked/package-lock.json
 
-      - name: Install backend deps
-        run: npm ci
-
-      - name: Test backend
-        run: npm test --if-present
-
-      - name: Build backend
-        run: npm run build --if-present
+      - run: npm ci
+      - run: npm test --if-present
+      - run: npm run build --if-present
 
   frontend:
     name: Frontend checks
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     defaults:
       run:
         working-directory: nfa-project-frontend
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: nfa-project-frontend/package-lock.json
 
-      - name: Install frontend deps
-        run: npm ci
-
-      - name: Lint frontend
-        run: npm run lint --if-present
-
-      - name: Test frontend
-        run: npm test --if-present
-
-      - name: Build frontend
-        run: npm run build --if-present
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm test --if-present
+      - run: npm run build --if-present
 
   create-pr:
     name: Create PR vivek to staging
     runs-on: ubuntu-latest
     needs:
+      - changes
       - backend
       - frontend
 
-    if: github.event_name == 'push' && github.ref == 'refs/heads/vivek'
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/vivek' &&
+      (needs.backend.result == 'success' || needs.backend.result == 'skipped') &&
+      (needs.frontend.result == 'success' || needs.frontend.result == 'skipped')
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Check existing PR
         id: check_pr
@@ -89,13 +228,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_URL=$(gh pr list \
-            --head vivek \
-            --base staging \
+            --head "$SOURCE_BRANCH" \
+            --base "$TARGET_BRANCH" \
             --state open \
             --json url \
             --jq '.[0].url')
 
-          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
 
       - name: Create Pull Request
         if: steps.check_pr.outputs.pr_url == ''
@@ -103,14 +242,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr create \
-            --base staging \
-            --head vivek \
-            --title "Auto PR: vivek to staging" \
-            --body "Auto-created after backend and frontend checks passed." \
-            --reviewer vivek199805
+            --base "$TARGET_BRANCH" \
+            --head "$SOURCE_BRANCH" \
+            --title "Auto PR: $SOURCE_BRANCH to $TARGET_BRANCH" \
+            --body "Auto-created after changed project checks passed." \
+            --reviewer "$PR_REVIEWERS"
 
       - name: Existing PR found
         if: steps.check_pr.outputs.pr_url != ''
         run: |
           echo "PR already exists: ${{ steps.check_pr.outputs.pr_url }}"
-          
