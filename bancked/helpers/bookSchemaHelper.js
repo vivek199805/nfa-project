@@ -74,7 +74,7 @@ const bookSchema = z.object({
 });
 
 // Validation function
-const validateStore = (payload, files) => {
+const validateStore = (payload) => {
   let schema = bookSchema;
 
   schema = schema.merge(best_book_cinema_id);
@@ -88,7 +88,7 @@ const validateStore = (payload, files) => {
   };
 };
 
-const validateUpdate = (payload, files) => {
+const validateUpdate = (payload) => {
   let schema = bookSchema;
   schema = schema.merge(best_book_cinema_id).merge(IDSchema);
 

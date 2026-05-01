@@ -93,7 +93,7 @@ const editorSchema = z.object({
 });
 
 // Validation function
-const validateStore = (payload, files) => {
+const validateStore = (payload) => {
   let schema = editorSchema;
 
   schema = schema.merge(linkedEntrySchema);
@@ -107,7 +107,7 @@ const validateStore = (payload, files) => {
   };
 };
 
-const validateUpdate = (payload, files) => {
+const validateUpdate = (payload) => {
   let schema = editorSchema;
   schema = schema.merge(linkedEntrySchema).merge(IDSchema);
 
