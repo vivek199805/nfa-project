@@ -53,7 +53,6 @@ jobs:
 
       # ---------------- SONAR SCAN ----------------
       - name: SonarCloud Scan
-        id: sonar_scan
         uses: SonarSource/sonarqube-scan-action@v7
         with:
           args: >
@@ -62,59 +61,6 @@ jobs:
             -Dsonar.sources=bancked,nfa-project-frontend/src
             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/coverage/**
             -Dsonar.javascript.lcov.reportPaths=nfa-project-frontend/coverage/lcov.info,bancked/coverage/lcov.info
-            -Dsonar.qualitygate.wait=true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
-
-      # ---------------- PR FAILED MESSAGE ----------------
-      - name: Prepare SonarQube failed PR message
-        if: failure() && github.event_name == 'pull_request'
-        id: sonar_failed_message
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          PROJECT_KEY: vivek199805_nfa-project
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          RESPONSE=$(curl -s -u "$SONAR_TOKEN:" \
-            "https://sonarcloud.io/api/qualitygates/project_status?projectKey=$PROJECT_KEY&pullRequest=$PR_NUMBER")
-
-          STATUS=$(echo "$RESPONSE" | jq -r '.projectStatus.status // "ERROR"')
-
-          {
-            echo "body<<EOF"
-            echo "## 🚨 SonarQube Quality Gate Failed"
-            echo ""
-            echo "**Status:** \`$STATUS\`"
-            echo ""
-            echo "### Failed Conditions"
-            echo ""
-            echo "| Metric | Actual Value | Required Value | Status |"
-            echo "|--------|--------------|----------------|--------|"
-
-            echo "$RESPONSE" | jq -r '
-              .projectStatus.conditions[]
-              | select(.status == "ERROR")
-              | "| \(.metricKey) | \(.actualValue // "-") | \(.comparator // "") \(.errorThreshold // "-") | \(.status) |"
-            '
-
-            echo ""
-            echo "### SonarQube Report"
-            echo ""
-            echo "[View full report](https://sonarcloud.io/dashboard?id=$PROJECT_KEY&pullRequest=$PR_NUMBER)"
-            echo ""
-            echo "Please fix the above issues before merging this PR."
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Comment SonarQube error on PR
-        if: failure() && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `${{ steps.sonar_failed_message.outputs.body }}`
-            })

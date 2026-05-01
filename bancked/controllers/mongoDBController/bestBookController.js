@@ -239,7 +239,7 @@ const handlePublisherStep = async (data, payload) => {
   return data;
 };
 
-const handleDeclarationStep = async (data) => {
+const handleDeclarationStep = async (data, _payload) => {
   if (
     !data.active_step ||
     data.active_step < Common.stepsBestBook().DECLARATION

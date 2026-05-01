@@ -244,8 +244,10 @@ Status: Pending.
   - Removed the unused assigned `user` local from the password reset update while keeping `await User.findOneAndUpdate(...)`.
 - Updated `controllers/mongoDBController/bestBookController.js`.
   - Removed unused `lastId` and unused `payload` parameter from the declaration-step helper.
+  - Follow-up correction: restored the declaration-step helper's second `_payload` parameter to match existing two-argument step handler calls while keeping it intentionally unused.
 - Updated `controllers/mongoDBController/bestFilmCriticController.js`.
   - Removed unused `lastId` and unused `payload` parameter from the declaration-step helper.
+  - Follow-up correction: restored the declaration-step helper's second `_payload` parameter to match existing two-argument step handler calls while keeping it intentionally unused.
 - Updated `controllers/mongoDBController/entryListController.js`.
   - Removed unused `next` argument.
 - Updated `controllers/mongoDBController/languagesController.js`.
@@ -341,6 +343,7 @@ Phase 0 fixes applied:
 Phase 1 fixes applied:
 
 - Removed unused bindings/parameters and unused locals identified by ESLint.
+- Restored compatible helper arity for best book and film critic declaration-step handlers after static analysis detected two-argument calls.
 - Kept all business behavior and response contracts unchanged.
 - Verified that lint no longer reports warnings.
 
