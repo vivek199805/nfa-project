@@ -38,7 +38,7 @@ jobs:
 
       - name: Run frontend tests with coverage
         working-directory: nfa-project-frontend
-        run: npm test --if-present -- --coverage
+        run: npm run test:coverage
         continue-on-error: true
 
       # ---------------- BACKEND ----------------
@@ -64,4 +64,3 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
-          
