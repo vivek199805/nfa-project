@@ -6,6 +6,8 @@ on:
       - vivek
       - staging
   pull_request:
+    branches:
+      - staging
     types: [opened, synchronize, reopened]
 
 permissions:
@@ -51,6 +53,7 @@ jobs:
 
       # ---------------- SONAR SCAN ----------------
       - name: SonarCloud Scan
+        id: sonar_scan
         uses: SonarSource/sonarqube-scan-action@v7
         with:
           args: >
@@ -59,171 +62,59 @@ jobs:
             -Dsonar.sources=bancked,nfa-project-frontend/src
             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/coverage/**
             -Dsonar.javascript.lcov.reportPaths=nfa-project-frontend/coverage/lcov.info,bancked/coverage/lcov.info
+            -Dsonar.qualitygate.wait=true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || 'https://sonarcloud.io' }}
+          SONAR_HOST_URL: https://sonarcloud.io
 
-      - name: Check SonarQube Quality Gate
-        id: quality_gate
-        shell: bash
+      # ---------------- PR FAILED MESSAGE ----------------
+      - name: Prepare SonarQube failed PR message
+        if: failure() && github.event_name == 'pull_request'
+        id: sonar_failed_message
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || 'https://sonarcloud.io' }}
+          PROJECT_KEY: vivek199805_nfa-project
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          set -euo pipefail
+          RESPONSE=$(curl -s -u "$SONAR_TOKEN:" \
+            "https://sonarcloud.io/api/qualitygates/project_status?projectKey=$PROJECT_KEY&pullRequest=$PR_NUMBER")
 
-          REPORT_TASK_FILE=".scannerwork/report-task.txt"
-          COMMENT_FILE="sonarqube-quality-gate-comment.md"
-
-          if [ ! -f "$REPORT_TASK_FILE" ]; then
-            echo "failed=true" >> "$GITHUB_OUTPUT"
-            echo "status=UNKNOWN" >> "$GITHUB_OUTPUT"
-            {
-              echo "## SonarQube Quality Gate: UNKNOWN"
-              echo
-              echo "SonarQube analysis metadata was not found at \`$REPORT_TASK_FILE\`."
-              echo
-              echo "Please check the SonarQube scan logs for the full analysis error."
-            } > "$COMMENT_FILE"
-            exit 0
-          fi
-
-          CE_TASK_URL="$(grep '^ceTaskUrl=' "$REPORT_TASK_FILE" | cut -d= -f2-)"
-          DASHBOARD_URL="$(grep '^dashboardUrl=' "$REPORT_TASK_FILE" | cut -d= -f2-)"
-
-          if [ -z "$CE_TASK_URL" ]; then
-            echo "failed=true" >> "$GITHUB_OUTPUT"
-            echo "status=UNKNOWN" >> "$GITHUB_OUTPUT"
-            {
-              echo "## SonarQube Quality Gate: UNKNOWN"
-              echo
-              echo "SonarQube did not provide a Compute Engine task URL."
-              echo
-              echo "Please check the SonarQube scan logs for the full analysis error."
-            } > "$COMMENT_FILE"
-            exit 0
-          fi
-
-          ANALYSIS_ID=""
-          CE_STATUS=""
-
-          for attempt in {1..30}; do
-            CE_RESPONSE="$(curl --fail --silent --show-error --user "$SONAR_TOKEN:" "$CE_TASK_URL")"
-            CE_STATUS="$(echo "$CE_RESPONSE" | jq -r '.task.status')"
-
-            if [ "$CE_STATUS" = "SUCCESS" ]; then
-              ANALYSIS_ID="$(echo "$CE_RESPONSE" | jq -r '.task.analysisId')"
-              break
-            fi
-
-            if [ "$CE_STATUS" = "FAILED" ] || [ "$CE_STATUS" = "CANCELED" ]; then
-              break
-            fi
-
-            sleep 10
-          done
-
-          if [ "$CE_STATUS" != "SUCCESS" ] || [ -z "$ANALYSIS_ID" ] || [ "$ANALYSIS_ID" = "null" ]; then
-            echo "failed=true" >> "$GITHUB_OUTPUT"
-            echo "status=UNKNOWN" >> "$GITHUB_OUTPUT"
-            {
-              echo "## SonarQube Quality Gate: UNKNOWN"
-              echo
-              echo "- **Compute Engine status:** \`${CE_STATUS:-TIMEOUT}\`"
-              echo "- **SonarQube report:** ${DASHBOARD_URL:-Unavailable}"
-              echo
-              echo "SonarQube did not complete analysis successfully before the Quality Gate check."
-            } > "$COMMENT_FILE"
-            exit 0
-          fi
-
-          QUALITY_GATE_RESPONSE="$(
-            curl --fail --silent --show-error \
-              --user "$SONAR_TOKEN:" \
-              "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID"
-          )"
-
-          QUALITY_GATE_STATUS="$(echo "$QUALITY_GATE_RESPONSE" | jq -r '.projectStatus.status')"
-          echo "status=$QUALITY_GATE_STATUS" >> "$GITHUB_OUTPUT"
-
-          FAILED_CONDITIONS_JSON="$(
-            echo "$QUALITY_GATE_RESPONSE" |
-              jq -c '[.projectStatus.conditions[]? | select(.status != "OK")]'
-          )"
-
-          METRIC_KEYS="$(
-            echo "$FAILED_CONDITIONS_JSON" |
-              jq -r '.[].metricKey' |
-              paste -sd, -
-          )"
-
-          METRICS_RESPONSE='{"metrics":[]}'
-          if [ -n "$METRIC_KEYS" ]; then
-            METRICS_RESPONSE="$(
-              curl --fail --silent --show-error \
-                --user "$SONAR_TOKEN:" \
-                "$SONAR_HOST_URL/api/metrics/search?ps=500&metricKeys=$METRIC_KEYS"
-            )"
-          fi
+          STATUS=$(echo "$RESPONSE" | jq -r '.projectStatus.status // "ERROR"')
 
           {
-            echo "## SonarQube Quality Gate: ${QUALITY_GATE_STATUS}"
-            echo
-            echo "- **Quality Gate status:** \`${QUALITY_GATE_STATUS}\`"
-            echo "- **SonarQube report:** ${DASHBOARD_URL:-Unavailable}"
-            echo
+            echo "body<<EOF"
+            echo "## 🚨 SonarQube Quality Gate Failed"
+            echo ""
+            echo "**Status:** \`$STATUS\`"
+            echo ""
+            echo "### Failed Conditions"
+            echo ""
+            echo "| Metric | Actual Value | Required Value | Status |"
+            echo "|--------|--------------|----------------|--------|"
 
-            if [ "$QUALITY_GATE_STATUS" = "OK" ]; then
-              echo "All Quality Gate conditions passed."
-            else
-              echo "### Failed Conditions"
-              echo
-              echo "| Metric name | Metric key | Actual value | Required value | Status |"
-              echo "| --- | --- | ---: | ---: | --- |"
+            echo "$RESPONSE" | jq -r '
+              .projectStatus.conditions[]
+              | select(.status == "ERROR")
+              | "| \(.metricKey) | \(.actualValue // "-") | \(.comparator // "") \(.errorThreshold // "-") | \(.status) |"
+            '
 
-              jq -r --argjson metrics "$METRICS_RESPONSE" '
-                .[] |
-                .metricKey as $metricKey |
-                ($metrics.metrics[]? | select(.key == $metricKey) | .name) as $metricName |
-                [
-                  ($metricName // $metricKey),
-                  $metricKey,
-                  (.actualValue // "N/A"),
-                  (.errorThreshold // "N/A"),
-                  (.status // "UNKNOWN")
-                ] |
-                @tsv
-              ' <<< "$FAILED_CONDITIONS_JSON" |
-              while IFS=$'\t' read -r metric_name metric_key actual_value required_value condition_status; do
-                echo "| ${metric_name} | \`${metric_key}\` | ${actual_value} | ${required_value} | \`${condition_status}\` |"
-              done
-            fi
-          } > "$COMMENT_FILE"
+            echo ""
+            echo "### SonarQube Report"
+            echo ""
+            echo "[View full report](https://sonarcloud.io/dashboard?id=$PROJECT_KEY&pullRequest=$PR_NUMBER)"
+            echo ""
+            echo "Please fix the above issues before merging this PR."
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
-          if [ "$QUALITY_GATE_STATUS" != "OK" ]; then
-            echo "failed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "failed=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Comment on PR when SonarQube Quality Gate fails
-        if: github.event_name == 'pull_request' && steps.quality_gate.outputs.failed == 'true'
+      - name: Comment SonarQube error on PR
+        if: failure() && github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const fs = require('fs');
-            const body = fs.readFileSync('sonarqube-quality-gate-comment.md', 'utf8');
-
-            await github.rest.issues.createComment({
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body,
-            });
-
-      - name: Fail workflow when SonarQube Quality Gate fails
-        if: steps.quality_gate.outputs.failed == 'true'
-        run: |
-          echo "SonarQube Quality Gate failed with status: ${{ steps.quality_gate.outputs.status }}"
-          exit 1
+              body: `${{ steps.sonar_failed_message.outputs.body }}`
+            })
