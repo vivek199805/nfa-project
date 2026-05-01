@@ -5,14 +5,10 @@ dotenv.config();
 
 function getJwtSecret() {
   const secret = process.env.JWT_SECRET;
-  if (secret) return secret;
-
-  if (process.env.NODE_ENV !== "production") {
-    // Keep local/dev environments running when .env is not loaded yet.
-    return "dev-insecure-jwt-secret";
+  if (!secret) {
+    throw new Error("JWT_SECRET environment variable is required");
   }
-
-  throw new Error("JWT_SECRET is required in production");
+  return secret;
 }
 
 export function generateToken(payload, expiresIn = "1h") {
