@@ -132,7 +132,7 @@ const loginUser = async (req, res) => {
       data,
       statusCode: 200
     });
-  } catch (err) {
+  } catch {
     return res.status(500).json({ message: "Login failed" });
   }
 };
@@ -189,7 +189,7 @@ const logoutUser = async (req, res) => {
 const logoutAllUser = async (req, res) => {
   try {
     res.status(200).json({ message: "Logout successful on all devices", statusCode: 200 });
-  } catch (error) {
+  } catch {
     res.status(500).send({ message: "Invalid authentication credentials" });
   }
 };
@@ -398,7 +398,7 @@ const getUserDetails = async (req, res) => {
     }
 
     res.status(200).json({ message: "User fetched successfully", user, statusCode: 200 });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Server error" });
   }
 };
@@ -415,7 +415,7 @@ const deleteUser = async (req, res) => {
     }
 
     res.status(200).json({ message: "User deleted successfully", user, statusCode: 200 });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Server error" });
   }
 };
@@ -512,7 +512,7 @@ const changePassword = async (req, res) => {
       status: true,
       statusCode: 200,
     });
-  } catch (err) {
+  } catch {
     return res.status(500).json({ msg: "Password update failed" });
   }
 };
@@ -545,7 +545,7 @@ const resetPassword = async (req, res) => {
 
     // Step 2: Update user's password
     const hashed = await hashPassword(password);
-    const user = await User.findOneAndUpdate(
+    await User.findOneAndUpdate(
       { _id: authData.userId },
       { password: hashed },
       { new: true }
@@ -558,7 +558,7 @@ const resetPassword = async (req, res) => {
       status: true,
       statusCode: 200,
     });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Server error while resetting password." });
   }
 };
@@ -624,7 +624,7 @@ const resetPasswordWithToken = async (req, res) => {
       message: "Password updated successfully",
       statusCode: 200,
     });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Server error while resetting password." });
   }
 };

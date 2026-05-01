@@ -10,7 +10,7 @@ const formatItems = (items) =>
     return obj;
   });
 
-const entryList = async (req, res, next) => {
+const entryList = async (req, res) => {
   try {
     
     const user = req.user.toObject();    

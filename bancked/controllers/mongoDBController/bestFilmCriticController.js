@@ -317,9 +317,7 @@ const handlePublisherStep = async (data, payload) => {
   return data;
 };
 
-const handleDeclarationStep = async (data, payload) => {
-  const lastId = payload.id || null;
-
+const handleDeclarationStep = async (data) => {
   if (
     !data.active_step ||
     data.active_step < Common.stepsBestFilmCritic().DECLARATION
