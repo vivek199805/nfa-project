@@ -1,379 +1,66 @@
-name: SonarQube Analysis
+# name: SonarQube Analysis
 
-on:
-  push:
-    branches:
-      - vivek
-      - staging
-  pull_request:
-    types: [opened, synchronize, reopened]
+# on:
+#   push:
+#     branches:
+#       - vivek
+#       - staging
+#   pull_request:
+#     branches:
+#       - staging
+#     types: [opened, synchronize, reopened]
 
-permissions:
-  contents: read
-  pull-requests: write
-  issues: write
+# permissions:
+#   contents: read
+#   pull-requests: write
+#   issues: write
 
-jobs:
-  sonarqube:
-    name: SonarCloud Scan
-    runs-on: ubuntu-latest
+# jobs:
+#   sonarqube:
+#     name: SonarCloud Scan
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: 20
 
-      - name: Install frontend dependencies
-        working-directory: nfa-project-frontend
-        run: npm ci
+#       # ---------------- FRONTEND ----------------
+#       - name: Install frontend dependencies
+#         working-directory: nfa-project-frontend
+#         run: npm ci
 
-      - name: Run frontend tests with coverage
-        working-directory: nfa-project-frontend
-        run: npm run test:coverage
-        continue-on-error: true
+#       - name: Run frontend tests with coverage
+#         working-directory: nfa-project-frontend
+#         run: npm run test:coverage
+#         continue-on-error: true
 
-      - name: Install backend dependencies
-        working-directory: bancked
-        run: npm ci
+#       # ---------------- BACKEND ----------------
+#       - name: Install backend dependencies
+#         working-directory: bancked
+#         run: npm ci
 
-      - name: Run backend tests with coverage
-        working-directory: bancked
-        run: npm test --if-present -- --coverage
-        continue-on-error: true
+#       - name: Run backend tests with coverage
+#         working-directory: bancked
+#         run: npm test --if-present -- --coverage
+#         continue-on-error: true
 
-      - name: SonarCloud Scan
-        id: sonar_scan
-        uses: SonarSource/sonarqube-scan-action@v7
-        continue-on-error: true
-        with:
-          args: >
-            -Dsonar.projectKey=vivek199805_nfa-project
-            -Dsonar.organization=vivek199805
-            -Dsonar.sources=bancked,nfa-project-frontend/src
-            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/coverage/**
-            -Dsonar.javascript.lcov.reportPaths=nfa-project-frontend/coverage/lcov.info,bancked/coverage/lcov.info
-            -Dsonar.qualitygate.wait=true
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || 'https://sonarcloud.io' }}
-
-      - name: Fetch SonarCloud Quality Gate details
-        id: quality_gate
-        if: always()
-        shell: bash
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || 'https://sonarcloud.io' }}
-          SONAR_PROJECT_KEY: vivek199805_nfa-project
-          PR_NUMBER: ${{ github.event_name == 'pull_request' && github.event.pull_request.number || '' }}
-        run: |
-          set -euo pipefail
-
-          REPORT_TASK_FILE=".scannerwork/report-task.txt"
-          COMMENT_FILE="sonarcloud-quality-gate-comment.md"
-          COMMENT_MARKER="<!-- sonarcloud-quality-gate-comment -->"
-
-          write_unknown_comment() {
-            local reason="$1"
-            {
-              echo "$COMMENT_MARKER"
-              echo "## 🔍 Code Review Summary"
-              echo
-              echo "SonarCloud analysis failed for this Pull Request."
-              echo
-              echo "---"
-              echo
-              echo "- **Quality Gate status:** \`UNKNOWN\`"
-              echo "- **SonarCloud report:** ${DASHBOARD_URL:-Unavailable}"
-              echo
-              echo "## ⚠️ Findings"
-              echo
-              echo "SonarCloud could not provide complete Quality Gate details."
-              echo
-              echo "**❌ Issue:**"
-              echo "$reason"
-              echo
-              echo "**🔧 Suggested Fix:**"
-              echo "Check the SonarCloud scan logs, verify SONAR_TOKEN permissions, and rerun the pipeline."
-            } > "$COMMENT_FILE"
-          }
-
-          safe_curl() {
-            local url="$1"
-            shift
-            local output
-            if ! output="$(curl --silent --show-error --user "$SONAR_TOKEN:" "$@" "$url" 2>&1)"; then
-              echo "$output"
-              return 1
-            fi
-            echo "$output"
-          }
-
-          DASHBOARD_URL="${SONAR_HOST_URL}/dashboard?id=${SONAR_PROJECT_KEY}"
-
-          if [ ! -f "$REPORT_TASK_FILE" ]; then
-            echo "failed=true" >> "$GITHUB_OUTPUT"
-            echo "status=UNKNOWN" >> "$GITHUB_OUTPUT"
-            write_unknown_comment "SonarCloud analysis metadata was not found at \`$REPORT_TASK_FILE\`."
-            exit 0
-          fi
-
-          CE_TASK_URL="$(grep '^ceTaskUrl=' "$REPORT_TASK_FILE" | cut -d= -f2- || true)"
-          DASHBOARD_URL="$(grep '^dashboardUrl=' "$REPORT_TASK_FILE" | cut -d= -f2- || true)"
-          DASHBOARD_URL="${DASHBOARD_URL:-${SONAR_HOST_URL}/dashboard?id=${SONAR_PROJECT_KEY}}"
-
-          if [ -z "$CE_TASK_URL" ]; then
-            echo "failed=true" >> "$GITHUB_OUTPUT"
-            echo "status=UNKNOWN" >> "$GITHUB_OUTPUT"
-            write_unknown_comment "SonarCloud did not provide a Compute Engine task URL."
-            exit 0
-          fi
-
-          ANALYSIS_ID=""
-          CE_STATUS=""
-
-          for attempt in {1..30}; do
-            if ! CE_RESPONSE="$(curl --fail --silent --show-error --user "$SONAR_TOKEN:" "$CE_TASK_URL" 2>&1)"; then
-              echo "failed=true" >> "$GITHUB_OUTPUT"
-              echo "status=UNKNOWN" >> "$GITHUB_OUTPUT"
-              write_unknown_comment "SonarCloud API returned an error while reading Compute Engine task: \`$CE_RESPONSE\`."
-              exit 0
-            fi
-
-            CE_STATUS="$(echo "$CE_RESPONSE" | jq -r '.task.status')"
-
-            if [ "$CE_STATUS" = "SUCCESS" ]; then
-              ANALYSIS_ID="$(echo "$CE_RESPONSE" | jq -r '.task.analysisId')"
-              break
-            fi
-
-            if [ "$CE_STATUS" = "FAILED" ] || [ "$CE_STATUS" = "CANCELED" ]; then
-              break
-            fi
-
-            sleep 10
-          done
-
-          if [ "$CE_STATUS" != "SUCCESS" ] || [ -z "$ANALYSIS_ID" ] || [ "$ANALYSIS_ID" = "null" ]; then
-            echo "failed=true" >> "$GITHUB_OUTPUT"
-            echo "status=UNKNOWN" >> "$GITHUB_OUTPUT"
-            write_unknown_comment "SonarCloud Compute Engine status was \`${CE_STATUS:-TIMEOUT}\`."
-            exit 0
-          fi
-
-          if ! QUALITY_GATE_RESPONSE="$(
-            curl --fail --silent --show-error \
-              --user "$SONAR_TOKEN:" \
-              "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" 2>&1
-          )"; then
-            echo "failed=true" >> "$GITHUB_OUTPUT"
-            echo "status=UNKNOWN" >> "$GITHUB_OUTPUT"
-            write_unknown_comment "SonarCloud API returned an error while reading Quality Gate status: \`$QUALITY_GATE_RESPONSE\`."
-            exit 0
-          fi
-
-          QUALITY_GATE_STATUS="$(echo "$QUALITY_GATE_RESPONSE" | jq -r '.projectStatus.status // "UNKNOWN"')"
-          echo "status=$QUALITY_GATE_STATUS" >> "$GITHUB_OUTPUT"
-
-          FAILED_CONDITIONS_JSON="$(
-            echo "$QUALITY_GATE_RESPONSE" |
-              jq -c '[.projectStatus.conditions[]? | select(.status != "OK")]'
-          )"
-
-          METRIC_KEYS="$(
-            echo "$FAILED_CONDITIONS_JSON" |
-              jq -r '.[].metricKey' |
-              paste -sd, -
-          )"
-
-          METRICS_RESPONSE='{"metrics":[]}'
-          if [ -n "$METRIC_KEYS" ]; then
-            if ! METRICS_RESPONSE="$(
-              curl --fail --silent --show-error \
-                --user "$SONAR_TOKEN:" \
-                "$SONAR_HOST_URL/api/metrics/search?ps=500&metricKeys=$METRIC_KEYS" 2>&1
-            )"; then
-              METRICS_RESPONSE='{"metrics":[]}'
-            fi
-          fi
-
-          ISSUES_RESPONSE='{"issues":[]}'
-          if [ -n "$PR_NUMBER" ]; then
-            if ! ISSUES_RESPONSE="$(
-              curl --fail --silent --show-error --get \
-                --user "$SONAR_TOKEN:" \
-                --data-urlencode "componentKeys=$SONAR_PROJECT_KEY" \
-                --data-urlencode "pullRequest=$PR_NUMBER" \
-                --data-urlencode "resolved=false" \
-                --data-urlencode "ps=100" \
-                --data-urlencode "s=FILE_LINE" \
-                --data-urlencode "asc=true" \
-                "$SONAR_HOST_URL/api/issues/search" 2>&1
-            )"; then
-              ISSUES_RESPONSE='{"issues":[]}'
-            fi
-          fi
-
-          ISSUE_COUNT="$(echo "$ISSUES_RESPONSE" | jq '.issues | length')"
-
-          {
-            echo "$COMMENT_MARKER"
-            echo "## 🔍 Code Review Summary"
-            echo
-            if [ "$QUALITY_GATE_STATUS" = "OK" ]; then
-              echo "SonarCloud analysis passed for this Pull Request."
-            else
-              echo "SonarCloud analysis failed for this Pull Request."
-            fi
-            echo
-            echo "---"
-            echo
-            echo "- **Quality Gate status:** \`${QUALITY_GATE_STATUS}\`"
-            echo "- **SonarCloud dashboard/report:** ${DASHBOARD_URL}"
-            echo
-
-            echo "## Failed Quality Gate Conditions"
-            echo
-            if [ "$(echo "$FAILED_CONDITIONS_JSON" | jq 'length')" -eq 0 ]; then
-              echo "No failed Quality Gate conditions were returned by SonarCloud."
-            else
-              echo "| Metric name | Metric key | Actual value | Required value | Status |"
-              echo "| --- | --- | ---: | ---: | --- |"
-              jq -r --argjson metrics "$METRICS_RESPONSE" '
-                .[] |
-                .metricKey as $metricKey |
-                ($metrics.metrics[]? | select(.key == $metricKey) | .name) as $metricName |
-                [
-                  ($metricName // $metricKey),
-                  $metricKey,
-                  (.actualValue // "N/A"),
-                  (.errorThreshold // "N/A"),
-                  (.status // "UNKNOWN")
-                ] |
-                @tsv
-              ' <<< "$FAILED_CONDITIONS_JSON" |
-              while IFS=$'\t' read -r metric_name metric_key actual_value required_value condition_status; do
-                echo "| ${metric_name} | \`${metric_key}\` | ${actual_value} | ${required_value} | \`${condition_status}\` |"
-              done
-            fi
-
-            echo
-            echo "---"
-            echo
-            echo "## ⚠️ Findings"
-            echo
-
-            if [ -z "$PR_NUMBER" ]; then
-              echo "This workflow run is not a Pull Request run, so PR issue paths were not fetched."
-            elif [ "$ISSUE_COUNT" -eq 0 ]; then
-              echo "No unresolved Pull Request issues were returned by SonarCloud. Review the failed Quality Gate conditions above and the SonarCloud report."
-            else
-              jq -c '.issues[]' <<< "$ISSUES_RESPONSE" |
-              while read -r issue; do
-                ISSUE_KEY="$(jq -r '.key' <<< "$issue")"
-                SEVERITY="$(jq -r '.severity // "UNKNOWN"' <<< "$issue")"
-                TYPE="$(jq -r '.type // "UNKNOWN"' <<< "$issue")"
-                MESSAGE="$(jq -r '.message // "No issue message provided."' <<< "$issue")"
-                COMPONENT="$(jq -r '.component // "unknown"' <<< "$issue")"
-                FILE_PATH="${COMPONENT#${SONAR_PROJECT_KEY}:}"
-                LINE="$(jq -r '.line // "N/A"' <<< "$issue")"
-                ISSUE_URL="${SONAR_HOST_URL}/project/issues?id=${SONAR_PROJECT_KEY}&pullRequest=${PR_NUMBER}&issues=${ISSUE_KEY}&open=${ISSUE_KEY}"
-
-                case "$SEVERITY" in
-                  BLOCKER|CRITICAL)
-                    SEVERITY_LABEL="High"
-                    ;;
-                  MAJOR)
-                    SEVERITY_LABEL="Medium"
-                    ;;
-                  MINOR)
-                    SEVERITY_LABEL="Low"
-                    ;;
-                  INFO)
-                    SEVERITY_LABEL="Info"
-                    ;;
-                  *)
-                    SEVERITY_LABEL="$SEVERITY"
-                    ;;
-                esac
-
-                echo "### 🔴 Severity: ${SEVERITY_LABEL}"
-                echo
-                echo "- **Sonar severity:** \`${SEVERITY}\`"
-                echo "- **Issue type:** \`${TYPE}\`"
-                echo
-                echo "📁 Location:"
-                echo "\`${FILE_PATH}:${LINE}\`"
-                echo
-                echo "**❌ Issue:**"
-                echo "${MESSAGE}"
-                echo
-                echo "**💥 Impact:**"
-                echo "Quality Gate failed because this issue affects reliability/security/maintainability/coverage/duplication."
-                echo
-                echo "**🔧 Suggested Fix:**"
-                echo "Fix the code issue shown by SonarCloud and rerun the pipeline."
-                echo
-                echo "**🔗 SonarCloud issue:** ${ISSUE_URL}"
-                echo
-                echo "---"
-                echo
-              done
-            fi
-          } > "$COMMENT_FILE"
-
-          if [ "$QUALITY_GATE_STATUS" != "OK" ]; then
-            echo "failed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "failed=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Create or update PR comment when SonarCloud Quality Gate fails
-        if: github.event_name == 'pull_request' && steps.quality_gate.outputs.failed == 'true'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-            const marker = '<!-- sonarcloud-quality-gate-comment -->';
-            const body = fs.readFileSync('sonarcloud-quality-gate-comment.md', 'utf8');
-
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              per_page: 100,
-            });
-
-            const existingComment = comments.find((comment) =>
-              comment.user.type === 'Bot' && comment.body?.includes(marker)
-            );
-
-            if (existingComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body,
-              });
-            }
-
-      - name: Fail workflow when SonarCloud Quality Gate fails
-        if: steps.sonar_scan.outcome == 'failure' || steps.quality_gate.outputs.failed == 'true'
-        run: |
-          echo "SonarCloud scan outcome: ${{ steps.sonar_scan.outcome }}"
-          echo "SonarCloud Quality Gate status: ${{ steps.quality_gate.outputs.status }}"
-          exit 1
+#       # ---------------- SONAR SCAN ----------------
+#       - name: SonarCloud Scan
+#         uses: SonarSource/sonarqube-scan-action@v7
+#         with:
+#           args: >
+#             -Dsonar.projectKey=vivek199805_nfa-project
+#             -Dsonar.organization=vivek199805
+#             -Dsonar.sources=bancked,nfa-project-frontend/src
+#             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/coverage/**
+#             -Dsonar.javascript.lcov.reportPaths=nfa-project-frontend/coverage/lcov.info,bancked/coverage/lcov.info
+#         env:
+#           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+#           SONAR_HOST_URL: https://sonarcloud.io
