@@ -48,7 +48,7 @@ jobs:
 
       - name: Run backend tests with coverage
         working-directory: bancked
-        run: npm test --if-present -- --coverage
+        run: npm test
         # continue-on-error: true
 
       # ---------------- SONAR SCAN ----------------
