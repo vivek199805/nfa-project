@@ -1,12 +1,17 @@
 import mongoose from "mongoose";
 // import jwt from 'jsonwebtoken'
-import { hashPassword } from "../../utils/hashPassword.js";
 
 const userSchema = new mongoose.Schema(
   {
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true
+    },
     phone: { type: String, required: true },
     address: { type: String, required: true },
     pinCode: { type: String, required: true },

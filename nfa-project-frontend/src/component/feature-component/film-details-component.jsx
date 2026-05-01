@@ -7,10 +7,18 @@ import { countWords } from "../../common/common-function";
 import {
   getRequest,
   postRequest,
-} from "../../common/services/requestService";
+} from "../../services/requestService";
 import { useNavigate, useParams } from "react-router-dom";
 import { useFetchById } from "../../hooks/useFetchById";
 import { useAuth } from "../../hooks/use-auth";
+import {
+  getFilmCreateEndpoint,
+  getFilmEntryByEndpoint,
+  getFilmNextSection,
+  getFilmSectionStep,
+  getFilmUpdateEndpoint,
+} from "../../common/film-workflow";
+import { apiConfig } from "../../services/apiEndpoints";
 
 const filmSchema = z.object({
   titleRoman: z.string().min(1, "This field is required"),
@@ -52,111 +60,21 @@ const filmSchema = z.object({
     ),
 });
 
-// let options = [
-//   { id: 1, name: "Assamese" },
-//   { id: 2, name: "Bengali" },
-//   { id: 3, name: "Bodo" },
-//   {
-//     id: 4,
-//     name: "Dogri",
-//   },
-//   {
-//     id: 5,
-//     name: "English",
-//   },
-//   {
-//     id: 6,
-//     name: "Gujarati",
-//   },
-//   {
-//     id: 7,
-//     name: "Hindi",
-//   },
-//   {
-//     id: 8,
-//     name: "Kannada",
-//   },
-//   {
-//     id: 9,
-//     name: "Kashmiri",
-//   },
-//   {
-//     id: 10,
-//     name: "Konkani",
-//   },
-//   {
-//     id: 11,
-//     name: "Malayalam",
-//   },
-//   {
-//     id: 12,
-//     name: "Manipuri",
-//   },
-//   {
-//     id: 13,
-//     name: "Marathi",
-//   },
-//   {
-//     id: 14,
-//     name: "Maithili",
-//   },
-//   {
-//     id: 15,
-//     name: "Nepali",
-//   },
-//   {
-//     id: 16,
-//     name: "Oriya",
-//   },
-//   {
-//     id: 17,
-//     name: "Punjabi",
-//   },
-//   {
-//     id: 18,
-//     name: "Sanskrit",
-//   },
-//   {
-//     id: 19,
-//     name: "Sindhi",
-//   },
-//   {
-//     id: 20,
-//     name: "Other",
-//   },
-//   {
-//     id: 21,
-//     name: "Tamil",
-//   },
-//   {
-//     id: 22,
-//     name: "Telugu",
-//   },
-//   {
-//     id: 23,
-//     name: "Urdu",
-//   },
-//   {
-//     id: 24,
-//     name: "Santhali",
-//   },
-// ];
-
 const FilmDetailsSection = ({ setActiveSection, filmType }) => {
   const [synopsisWordCount, setSynopsisWordCount] = useState(0);
-    const { user } = useAuth();
-  
+  const { user } = useAuth();
+
   const [languageOptions, setLanguageOptions] = useState([]);
   const { id } = useParams();
   const navigate = useNavigate()
-    const { data:formData } = useFetchById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id);
-    
+  const { data: formData } = useFetchById(getFilmEntryByEndpoint(filmType), id);
+
 
   const {
     register,
     handleSubmit,
     control,
-    formState: { errors },    
+    formState: { errors },
     reset,
   } = useForm({
     resolver: zodResolver(filmSchema),
@@ -165,30 +83,10 @@ const FilmDetailsSection = ({ setActiveSection, filmType }) => {
     // shouldFocusError: false,
   });
 
-
-
-  // const { data: formData, refetch } = useQuery({
-  //   queryKey: ["userForm", id],
-  //   queryFn: () => getRequestById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id),
-  //   enabled: !!id,  // Only run query if id exists
-  //   // staleTime: 1000 * 60 * 5, // 5 minutes - consider this data fresh for 5 mins
-  //   // initialData: staticForms, // sets mock data
-  //   // initialData: () => queryClient.getQueryData(["userForm", id]), // optional
-  //   refetchOnMount: true,
-  //   staleTime: 0,
-  // });
-
-  // Call refetch manually on mount
-  // useEffect(() => {
-  //   if (id) {
-  //     refetch();
-  //   }
-  // }, [id, refetch]);
-
   useEffect(() => {
     async function fetchLanguages() {
       try {
-        const response = await getRequest("get-languages");
+        const response = await getRequest(apiConfig.common.languages);
         const options = response.data.map((lang) => ({
           label: lang.name,
           value: String(lang.id),
@@ -216,7 +114,7 @@ const FilmDetailsSection = ({ setActiveSection, filmType }) => {
         formData?.data.language_id?.includes(opt.value.toString())
       ),
       englishSubtitle: formData?.data.english_subtitle == 1 ? "Yes" : "No",
-      colorFormat: formData?.data.color_bw == 1 ? "Color" : "Black and White",
+      colorFormat: formData?.data.color_bw == 1 ? "Color" : "Black & White",
       aspectRatio: formData?.data.aspect_ratio,
       runningTime: formData?.data.running_time,
       format:
@@ -242,7 +140,6 @@ const FilmDetailsSection = ({ setActiveSection, filmType }) => {
 
   const onSubmit = async (data) => {
     // Call API to submit form data
-    console.log("Form submitted:", data);
     let url = "";
     const formData = new FormData();
     formData.append("film_title_roman", data.titleRoman);
@@ -269,20 +166,20 @@ const FilmDetailsSection = ({ setActiveSection, filmType }) => {
             : 4
     );
     formData.append("film_synopsis", data.synopsis);
-    formData.append("step", "1");
+    formData.append("step", getFilmSectionStep(filmType, "details"));
     formData.append("film_type", filmType);
     formData.append("client_id", user?.id);
     if (id) {
       formData.append("id", id);
-      filmType == 'feature' ? url = "film/feature-update" : url = "film/non-feature-update";
+      url = getFilmUpdateEndpoint(filmType);
     } else {
-      filmType == 'feature' ? url = "film/feature-create" : url = "film/non-feature-create";
+      url = getFilmCreateEndpoint(filmType);
     }
 
     const response = await postRequest(url, formData);
     if (response.statusCode == 200) {
-      if(!id) navigate(`/${filmType}/${response.data.id}`)
-      setActiveSection(2);
+      if (!id) navigate(`/${filmType}/${response.data.id}`)
+      setActiveSection(getFilmNextSection(filmType, "details"));
 
     }
   };

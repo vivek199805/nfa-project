@@ -1,13 +1,15 @@
 import { useParams } from "react-router-dom";
-import StepIndicator from "../component/StepIndicator";
+import StepIndicator from "../features/components/shared/StepIndicator";
 import { useEffect, useState } from "react";
-import Navbar from "../component/layouts/navbar";
+import Navbar from "../features/components/layout/Navbar";
 import BestFilmSection from "../component/best-filmCritic-component/best-film-critic-component";
 import CriticSection from "../component/best-filmCritic-component/critic-component";
 import PublisherNewspaperSection from "../component/best-filmCritic-component/publisher-component";
 import ViewSection from "../component/best-filmCritic-component/view-component";
 import DeclarationSection from "../component/best-filmCritic-component/declaration-component";
 import { useFetchById } from "../hooks/useFetchById";
+import { getResumeStep } from "../common/entry-step";
+import { filmCriticEndpoints } from "../common/award-workflow";
 
 const steps = [
   "Best Film Critic",
@@ -19,13 +21,11 @@ const steps = [
 const BestFilmCriticPage = () => {
   const [activeSection, setActiveSection] = useState(1);
   const { id } = useParams();
-  const { data: formData } = useFetchById("best-film-critic-entry-by", id);
+  const { data: formData } = useFetchById(filmCriticEndpoints.entryBy, id);
 
   useEffect(() => {
-    console.log("Form cards data:", formData);
     if (id && formData?.data?.active_step !== undefined) {
-      const step = +formData.data.active_step;
-      setActiveSection(step < steps.length ? step + 1 : steps.length);
+      setActiveSection(getResumeStep(formData.data.active_step, steps.length));
     }
   }, [id, formData]);
 

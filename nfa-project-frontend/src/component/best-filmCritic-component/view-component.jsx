@@ -3,13 +3,27 @@ import "../../styles/accordion.css";
 import { ChevronDown, Pencil } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useFetchById } from "../../hooks/useFetchById";
-import { postRequest } from "../../common/services/requestService";
-import { showSuccessToast } from "../../common/services/toastService";
+import { postRequest } from "../../services/requestService";
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../services/toastService";
+import { startRazorpayPayment } from "../../services/paymentService";
+import { useAuth } from "../../hooks/use-auth";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "../../lib/queryClient";
+import {
+  filmCriticEndpoints,
+  filmCriticWorkflow,
+} from "../../common/award-workflow";
 
 const ViewSection = ({ setActiveSection }) => {
   const [activeIndex, setActiveIndex] = useState(null);
+  const [isPaying, setIsPaying] = useState(false);
   const { id } = useParams();
-  const  navigate = useNavigate();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const steps = [
     "Best Film Critic",
@@ -17,7 +31,7 @@ const ViewSection = ({ setActiveSection }) => {
     "Publisher of the Newspaper Journel",
   ];
 
-  const { data: formData } = useFetchById("best-film-critic-entry-by", id);
+  const { data: formData } = useFetchById(filmCriticEndpoints.entryBy, id);
 
   const toggle = (index) => {
     setActiveIndex(activeIndex === index ? null : index);
@@ -28,20 +42,42 @@ const ViewSection = ({ setActiveSection }) => {
   }, [formData]);
 
   const onPayment = async () => {
-    // payment logic here
-    const formData = new FormData();
-    formData.append("form_type", "BEST_FILM_CRITIC");
-    formData.append("id", id);
-    const response = await postRequest("generate-hash", formData);
-    if (response.statusCode == 200) {
-      showSuccessToast(response.message);
+    if (String(formData?.data?.payment_status) === "2" || isPaying) {
+      return;
+    }
+
+    try {
+      setIsPaying(true);
+      const result = await startRazorpayPayment({
+        entryId: id,
+        formType: filmCriticWorkflow.paymentFormType,
+        customer: {
+          name: user?.name,
+          email: user?.email,
+          contact: user?.phone,
+        },
+        description: filmCriticWorkflow.paymentDescription,
+      });
+
+      showSuccessToast(result?.verificationResponse?.message || "Payment completed successfully");
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.entry.byId(filmCriticEndpoints.entryBy, id),
+        }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.entries }),
+      ]);
+    } catch (error) {
+      showErrorToast(error.message || "Payment could not be completed");
+    } finally {
+      setIsPaying(false);
     }
   };
+  
   const onFinish = async () => {
     // payment logic here
     const formData = new FormData();
     formData.append("id", id);
-    const response = await postRequest("best-film-critic-final-submit", formData);
+    const response = await postRequest(filmCriticEndpoints.finalSubmit, formData);
     if (response.statusCode == 200) {
       showSuccessToast(response.message);
       navigate("/dashboard");
@@ -79,8 +115,13 @@ const ViewSection = ({ setActiveSection }) => {
           type="button"
           className="btn btn-danger"
           onClick={() => onPayment()}
+          disabled={isPaying || String(formData?.data?.payment_status) === "2"}
         >
-          Pay with Build Desk
+          {String(formData?.data?.payment_status) === "2"
+            ? "Payment Completed"
+            : isPaying
+              ? "Processing Payment..."
+              : "Pay with Build Desk"}
         </button>
       </div>
 
@@ -88,7 +129,7 @@ const ViewSection = ({ setActiveSection }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => setActiveSection(4)}
+          onClick={() => setActiveSection(filmCriticWorkflow.previewPreviousSection)}
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev
@@ -189,9 +230,8 @@ const CriticView = ({ data }) => {
             {data.critic_aadhaar_card ? (
               <>
                 <a
-                  href={`${import.meta.env.VITE_API_URL}/${
-                    data.critic_aadhaar_card
-                  }`}
+                  href={`${import.meta.env.VITE_API_URL}/${data.critic_aadhaar_card
+                    }`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn btn-sm btn-outline-primary ms-2"

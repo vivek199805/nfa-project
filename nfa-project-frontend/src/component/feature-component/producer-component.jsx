@@ -5,15 +5,20 @@ import { useInputRestriction } from "../../hooks/useInputRestriction";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import {
-  postRequest,
-} from "../../common/services/requestService";
+import { postRequest } from "../../services/requestService";
 import { useParams } from "react-router-dom";
 import {
   showErrorToast,
   showSuccessToast,
-} from "../../common/services/toastService";
+} from "../../services/toastService";
 import Swal from "sweetalert2";
+import {
+  getFilmNextSection,
+  getFilmPreviousSection,
+  getFilmSectionStep,
+  getFilmUpdateEndpoint,
+} from "../../common/film-workflow";
+import { apiConfig } from "../../services/apiEndpoints";
 // import { useQuery } from "@tanstack/react-query";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
@@ -96,7 +101,7 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
 
   const getProducer = useCallback(async () => {
     try {
-      const response = await postRequest("film/producer-list", { id, film_type: filmType });
+      const response = await postRequest(apiConfig.filmChild.producer.list, { id, film_type: filmType });
       if (response.statusCode === 200) {
         setProducers(response.data);
       } else {
@@ -143,7 +148,7 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
     }
 
     try {
-      const response = await postRequest("film/store-producer", formData);
+      const response = await postRequest(apiConfig.filmChild.producer.store, formData);
       if (response.statusCode === 200) {
         showSuccessToast(response.message);
         await getProducer();
@@ -200,7 +205,7 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
         formData.append("producerId", index);
         formData.append("nfa_feature_id", id);
         try {
-          const response = await postRequest("film/delete-producer", formData);
+          const response = await postRequest(apiConfig.filmChild.producer.delete, formData);
           if (response.statusCode === 200) {
             showSuccessToast(response.message);
             await getProducer();
@@ -217,16 +222,16 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
   };
 
   const onNext = async () => {
-    let url = filmType == 'feature' ? "film/feature-update" : "film/non-feature-update";
+    let url = getFilmUpdateEndpoint(filmType);
     const isValid = await trigger(); // validate the form
     if ((isValid || !showForm) && producers.length > 0) {
       const formData = new FormData();
-      formData.append("step", "4");
+      formData.append("step", getFilmSectionStep(filmType, "producer"));
       formData.append("id", id);
       formData.append("film_type", filmType);
       const response = await postRequest(url, formData);
       if (response.statusCode == 200) {
-        setActiveSection(5);
+        setActiveSection(getFilmNextSection(filmType, "producer"));
       }
 
     } else {
@@ -244,6 +249,7 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
             producer
           </p>
           <button
+            type="button"
             className="add-producer-btn"
             onClick={() => {
               reset();
@@ -310,6 +316,7 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
                     </td>
                     <td>
                       <button
+                        type="button"
                         className="action-btn delete-btn"
                         title="Delete"
                         onClick={() => handleDelete(producer?._id)}
@@ -317,6 +324,7 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
                         <Trash2 size={16} />
                       </button>
                       <button
+                        type="button"
                         className="action-btn edit-btn"
                         title="Edit"
                         onClick={() => handleEdit(producer?._id)}
@@ -491,16 +499,16 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
                       }
                     />
 
-                  {typeof field.value === "string" && field.value && (
-                    <a
-                      href={`${import.meta.env.VITE_API_URL}/${field.value.trim()}`} // Adjust path based on backend storage
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-sm btn-outline-primary mt-2"
-                    >
-                      View Uploaded File
-                    </a>
-                  )}
+                    {typeof field.value === "string" && field.value && (
+                      <a
+                        href={`${import.meta.env.VITE_API_URL}/${field.value.trim()}`} // Adjust path based on backend storage
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-sm btn-outline-primary mt-2"
+                      >
+                        View Uploaded File
+                      </a>
+                    )}
                   </>
                 )}
               />
@@ -525,7 +533,7 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => setActiveSection(3)}
+          onClick={() => setActiveSection(getFilmPreviousSection(filmType, "producer"))}
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev

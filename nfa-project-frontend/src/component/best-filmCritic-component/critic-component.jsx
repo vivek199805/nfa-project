@@ -4,8 +4,14 @@ import { z } from "zod";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useFetchById } from "../../hooks/useFetchById";
-import { postRequest } from "../../common/services/requestService";
+import { postRequest } from "../../services/requestService";
 import { useInputRestriction } from "../../hooks/useInputRestriction";
+import {
+  filmCriticEndpoints,
+  getAwardNextSection,
+  getAwardPreviousSection,
+  getAwardSectionStep,
+} from "../../common/award-workflow";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
@@ -43,7 +49,7 @@ const filmSchema = z.object({
 const CriticSection = ({ setActiveSection }) => {
   const { id } = useParams();
   const numberRestriction = useInputRestriction("number");
-  const { data: formData } = useFetchById("best-film-critic-entry-by", id);
+  const { data: formData } = useFetchById(filmCriticEndpoints.entryBy, id);
 
   const {
     register,
@@ -76,7 +82,6 @@ const CriticSection = ({ setActiveSection }) => {
 
   const onSubmit = async (data) => {
     // Call API to submit form data
-    console.log("Form submitted:", data);
     const formData = new FormData();
     formData.append("critic_name", data.critic_name);
     formData.append("critic_address", data.critic_address);
@@ -91,12 +96,12 @@ const CriticSection = ({ setActiveSection }) => {
     } else {
       formData.append("critic_aadhaar_card",data.critic_aadhaar_card.split("/").pop()); // Extract filename if it's a string
     }
-    formData.append("step", 2);
+    formData.append("step", getAwardSectionStep("detail"));
     formData.append("id", id);
 
-    const response = await postRequest('update-entry', formData);
+    const response = await postRequest(filmCriticEndpoints.update, formData);
     if (response.statusCode == 200) {
-      setActiveSection(3);
+      setActiveSection(getAwardNextSection("detail"));
     }
   };
 
@@ -263,7 +268,9 @@ const CriticSection = ({ setActiveSection }) => {
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() => setActiveSection(1)}
+              onClick={() =>
+                setActiveSection(getAwardPreviousSection("detail"))
+              }
             >
               <i className="bi bi-arrow-left me-2"></i>
               Back to Prev

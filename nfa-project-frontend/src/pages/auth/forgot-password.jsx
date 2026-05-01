@@ -1,14 +1,13 @@
-// Previous implementation retained in git history; this file now uses enterprise service/query architecture.
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useNavigate } from "react-router-dom";
-import CustomOtp from "../../component/CustomOtp";
+import CustomOtp from "../../features/components/shared/CustomOtp";
 import { useState } from "react";
 import {
   showErrorToast,
   showSuccessToast,
-} from "../../common/services/toastService";
+} from "../../services/toastService";
 import { useMutation } from "@tanstack/react-query";
 import { authService } from "../../services/authService";
 
@@ -87,12 +86,12 @@ const ForgotPasswordPage = () => {
     <div className="form-container auth-form-container auth-pane-left p-4 p-md-5">
       <div className="auth-form-inner mx-auto">
         <div className="top-logo top-logo-auth d-flex align-items-center gap-3 mb-4">
-          <a href="#">
+          <div>
             <img src="/images/nfa-logo.png" alt="NFA" />
-          </a>
-          <a href="#">
+          </div>
+          <div>
             <img src="/images/mib.png" alt="MIB" />
-          </a>
+          </div>
         </div>
 
         {!showOtp && (
@@ -119,11 +118,13 @@ const ForgotPasswordPage = () => {
                     errors.email ? "is-invalid" : ""
                   }`}
                   placeholder="Enter your email"
+                  aria-invalid={Boolean(errors.email)}
+                  aria-describedby={errors.email ? "email-error" : undefined}
                   {...register("email")}
                 />
               </div>
               {errors.email && (
-                <div className="invalid-feedback auth-error">
+                <div id="email-error" className="invalid-feedback auth-error">
                   {errors.email.message}
                 </div>
               )}

@@ -13,7 +13,7 @@ const getAllSongByFeatureId = async (req, res) => {
     }, "songs");
 
     if (!feature) {
-      return res.status(200).json({ message: "Records not found", statusCode: 201 });
+      return res.status(200).json({ message: "Records not found", statusCode: 203 });
     }
 
     res.status(200).json({
@@ -35,13 +35,13 @@ const addSongToFeature = async (req, res) => {
       client_id: getUserId(req),
     });
     if (!feature) {
-      return res.status(200).json({ message: "Feature form not found", statusCode: 201 });
+      return res.status(200).json({ message: "Feature form not found", statusCode: 203 });
     }
     if (songId) {
       // ✅ Update existing Song
       const existingSong = feature.songs.id(songId);
       if (!existingSong) {
-        return res.status(200).json({ message: "Song not found", statusCode: 201 });
+        return res.status(200).json({ message: "Song not found", statusCode: 203 });
       }
 
       Object.entries(req.body).forEach(([key, value]) => {
@@ -99,7 +99,7 @@ const deleteSongById = async (req, res) => {
       });
     }
 
-    song.remove(); // Remove from embedded array
+    feature.songs.pull(songId); // Remove from embedded array
 
     await feature.save(); // Save the updated document
 

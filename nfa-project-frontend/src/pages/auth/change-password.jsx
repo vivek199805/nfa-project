@@ -1,13 +1,10 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  showErrorToast,
-  showSuccessToast,
-} from "../../common/services/toastService";
+import { showErrorToast, showSuccessToast, } from "../../services/toastService";
 import "../../styles/change-password.css";
 import { Link } from "react-router-dom";
-import { PasswordField } from "../../component/passwordInput";
+import { PasswordField } from "../../features/components/shared/PasswordInput";
 import { useMutation } from "@tanstack/react-query";
 import { authService } from "../../services/authService";
 
@@ -70,20 +67,23 @@ export default function ChangePasswordPage() {
       <div className="form-container p-5">
         <div className="col-md-8 mx-auto">
           <div className="top-logo d-flex justify-content-between mb-3">
-            <a href="#">
+            <div>
               <img src="/images/nfa-logo.png" alt="NFA" />
-            </a>
-            <a href="#">
+            </div>
+            <div>
               <img src="/images/mib.png" alt="MIB" />
-            </a>
+            </div>
           </div>
           <h3 className="mb-4 text-center">Change Password</h3>
 
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="mb-3">
-              <label className="form-label">Current Password</label>
+              <label className="form-label" htmlFor="currentPassword">
+                Current Password
+              </label>
               <PasswordField
                 control={control}
+                id="currentPassword"
                 name="currentPassword"
                 placeholder="Enter Current password"
                 showValidationBox={true}
@@ -92,9 +92,12 @@ export default function ChangePasswordPage() {
             </div>
 
             <div className="mb-3">
-              <label className="form-label">New Password</label>
+              <label className="form-label" htmlFor="newPassword">
+                New Password
+              </label>
               <PasswordField
                 control={control}
+                id="newPassword"
                 name="newPassword"
                 placeholder="Enter new password"
                 showValidationBox={true}
@@ -103,9 +106,12 @@ export default function ChangePasswordPage() {
             </div>
 
             <div className="mb-3">
-              <label className="form-label">Confirm Password</label>
+              <label className="form-label" htmlFor="confirmPassword">
+                Confirm Password
+              </label>
               <PasswordField
                 control={control}
+                id="confirmPassword"
                 name="confirmPassword"
                 placeholder="Enter confirm password"
                 showValidationBox={true}

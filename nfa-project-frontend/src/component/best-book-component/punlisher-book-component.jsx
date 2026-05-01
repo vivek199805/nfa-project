@@ -8,13 +8,20 @@ import { useCallback, useEffect, useState } from "react";
 import {
   getRequestById,
   postRequest,
-} from "../../common/services/requestService";
+} from "../../services/requestService";
 import {
   showErrorToast,
   showSuccessToast,
-} from "../../common/services/toastService";
+} from "../../services/toastService";
 import { useParams } from "react-router-dom";
 import Swal from "sweetalert2";
+import {
+  bestBookEndpoints,
+  getAwardNextSection,
+  getAwardPreviousSection,
+  getAwardSectionStep,
+} from "../../common/award-workflow";
+import { apiConfig } from "../../services/apiEndpoints";
 
 const filmSchema = z.object({
   editor_name: z.string().trim().min(1, "This field is required"),
@@ -65,7 +72,7 @@ const PublisherBookSection = ({ setActiveSection }) => {
 
   const getPublisher = useCallback(async () => {
     try {
-      const response = await postRequest("list-editor", {
+      const response = await postRequest(apiConfig.awardChild.editor.list, {
         best_book_cinema_id: id,
       });
       if (response.statusCode === 200) {
@@ -102,9 +109,9 @@ const PublisherBookSection = ({ setActiveSection }) => {
       // updated[editingIndex] = data;
       // setProducers(updated);
       formData.append("id", editingIndex);
-      url = "update-editor";
+      url = apiConfig.awardChild.editor.update;
     } else {
-      url = "store-editor";
+      url = apiConfig.awardChild.editor.store;
     }
 
     try {
@@ -150,7 +157,7 @@ const PublisherBookSection = ({ setActiveSection }) => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const response = await getRequestById("delete-editor", index);
+          const response = await getRequestById(apiConfig.awardChild.editor.delete, index);
           if (response.statusCode === 200) {
             showSuccessToast(response.message);
             await getPublisher();
@@ -170,11 +177,11 @@ const PublisherBookSection = ({ setActiveSection }) => {
     const isValid = await trigger(); // validate the form
     if ((isValid || !showForm) && publishers.length > 0) {
       const formData = new FormData();
-      formData.append("step", "3");
+      formData.append("step", getAwardSectionStep("publisher"));
       formData.append("id", id);
-      const response = await postRequest("best-book-cinema-update", formData);
+      const response = await postRequest(bestBookEndpoints.update, formData);
       if (response.statusCode == 200) {
-        setActiveSection(4);
+        setActiveSection(getAwardNextSection("publisher"));
       }
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
@@ -192,6 +199,7 @@ const PublisherBookSection = ({ setActiveSection }) => {
             Add at least 1 publisher detail and up to 5 publisher details.
           </p>
           <button
+            type="button"
             className="add-producer-btn"
             onClick={() => {
               reset({
@@ -235,6 +243,7 @@ const PublisherBookSection = ({ setActiveSection }) => {
                     <td>{publisher.editor_citizenship}</td>
                     <td>
                       <button
+                        type="button"
                         className="action-btn delete-btn"
                         title="Delete"
                         onClick={() => handleDelete(publisher?._id)}
@@ -242,6 +251,7 @@ const PublisherBookSection = ({ setActiveSection }) => {
                         <Trash2 size={16} />
                       </button>
                       <button
+                        type="button"
                         className="action-btn edit-btn"
                         title="Edit"
                         onClick={() => handleEdit(publisher?._id)}
@@ -269,9 +279,8 @@ const PublisherBookSection = ({ setActiveSection }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.editor_name ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.editor_name ? "is-invalid" : ""
+                  }`}
                 placeholder=""
                 {...register("editor_name")}
               />
@@ -288,9 +297,8 @@ const PublisherBookSection = ({ setActiveSection }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.editor_email ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.editor_email ? "is-invalid" : ""
+                  }`}
                 placeholder=""
                 {...register("editor_email")}
               />
@@ -308,9 +316,8 @@ const PublisherBookSection = ({ setActiveSection }) => {
               <input
                 type="text"
                 {...numberRestriction}
-                className={`form-control ${
-                  errors.editor_landline ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.editor_landline ? "is-invalid" : ""
+                  }`}
                 placeholder=""
                 {...register("editor_landline")}
                 maxLength={10}
@@ -329,9 +336,8 @@ const PublisherBookSection = ({ setActiveSection }) => {
               <input
                 type="text"
                 {...numberRestriction}
-                className={`form-control ${
-                  errors.editor_mobile ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.editor_mobile ? "is-invalid" : ""
+                  }`}
                 placeholder=""
                 {...register("editor_mobile")}
                 maxLength={10}
@@ -349,9 +355,8 @@ const PublisherBookSection = ({ setActiveSection }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.editor_address ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.editor_address ? "is-invalid" : ""
+                  }`}
                 placeholder=""
                 {...register("editor_address")}
               />
@@ -368,9 +373,8 @@ const PublisherBookSection = ({ setActiveSection }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.editor_citizenship ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.editor_citizenship ? "is-invalid" : ""
+                  }`}
                 placeholder=" "
                 {...register("editor_citizenship")}
               />
@@ -393,7 +397,9 @@ const PublisherBookSection = ({ setActiveSection }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => setActiveSection(2)}
+          onClick={() =>
+            setActiveSection(getAwardPreviousSection("publisher"))
+          }
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev

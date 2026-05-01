@@ -1,16 +1,24 @@
 import { useEffect, useState } from "react";
 import "../../styles/accordion.css";
 import { ChevronDown, Pencil } from "lucide-react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useFetchById } from "../../hooks/useFetchById";
-import { postRequest } from "../../common/services/requestService";
-import { showSuccessToast } from "../../common/services/toastService";
+import { postRequest } from "../../services/requestService";
+import { showErrorToast, showSuccessToast } from "../../services/toastService";
+import { startRazorpayPayment } from "../../services/paymentService";
+import { useAuth } from "../../hooks/use-auth";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "../../lib/queryClient";
+import { bestBookEndpoints, bestBookWorkflow } from "../../common/award-workflow";
 
 const PreviewPaymentSection = ({ setActiveSection }) => {
   const [activeIndex, setActiveIndex] = useState(null);
+  const [isPaying, setIsPaying] = useState(false);
   const { id } = useParams();
-  const { data: formData } = useFetchById("best-book-cinema-entry-by", id);
+  const { data: formData } = useFetchById(bestBookEndpoints.entryBy, id);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const steps = [
     "Author",
@@ -27,23 +35,42 @@ const PreviewPaymentSection = ({ setActiveSection }) => {
   }, [formData]);
 
   const onPayment = async () => {
-    // payment logic here
-    const formData = new FormData();
-    formData.append("form_type", "BEST_BOOK");
-    formData.append("id", id);
-    const response = await postRequest("generate-hash", formData);
-    if (response.statusCode == 200) {
-      showSuccessToast(response.message);
+    if (String(formData?.data?.payment_status) === "2" || isPaying) {
+      return;
+    }
+
+    try {
+      setIsPaying(true);
+      const result = await startRazorpayPayment({
+        entryId: id,
+        formType: bestBookWorkflow.paymentFormType,
+        customer: {
+          name: user?.name,
+          email: user?.email,
+          contact: user?.phone,
+        },
+        description: bestBookWorkflow.paymentDescription,
+      });
+
+      showSuccessToast(result?.verificationResponse?.message || "Payment completed successfully");
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.entry.byId(bestBookEndpoints.entryBy, id),
+        }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.entries }),
+      ]);
+    } catch (error) {
+      showErrorToast(error.message || "Payment could not be completed");
+    } finally {
+      setIsPaying(false);
     }
   };
+
   const onFinish = async () => {
     // payment logic here
     const formData = new FormData();
     formData.append("id", id);
-    const response = await postRequest(
-      "best-book-cinema-final-submit",
-      formData
-    );
+    const response = await postRequest(bestBookEndpoints.finalSubmit, formData);
     if (response.statusCode == 200) {
       showSuccessToast(response.message);
       navigate("/dashboard");
@@ -81,8 +108,13 @@ const PreviewPaymentSection = ({ setActiveSection }) => {
           type="button"
           className="btn btn-danger"
           onClick={() => onPayment()}
+          disabled={isPaying || String(formData?.data?.payment_status) === "2"}
         >
-          Pay with Build Desk
+          {String(formData?.data?.payment_status) === "2"
+            ? "Payment Completed"
+            : isPaying
+              ? "Processing Payment..."
+              : "Pay with Build Desk"}
         </button>
       </div>
 
@@ -90,7 +122,7 @@ const PreviewPaymentSection = ({ setActiveSection }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => setActiveSection(4)}
+          onClick={() => setActiveSection(bestBookWorkflow.previewPreviousSection)}
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev

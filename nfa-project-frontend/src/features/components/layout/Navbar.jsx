@@ -1,0 +1,42 @@
+
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../hooks/use-auth";
+
+export default function Navbar() {
+  const { logoutMutation } = useAuth();
+  const navigate = useNavigate();
+
+  return (
+    <>
+      <div className="form-container app-navbar">
+        <div className="mx-auto app-navbar-inner">
+          <div className="top-logo d-flex justify-content-between">
+            <div>
+              <img src="/images/nfa-logo.png" alt="NFA Logo" />
+            </div>
+            <div>
+              <img src="/images/mib.png" alt="MIB Logo" />
+            </div>
+          </div>
+
+          <div className="mt-2 d-flex justify-content-end app-navbar-actions">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => navigate("/dashboard")}
+            >
+              DASHBOARD
+            </button>
+            <button
+              type="button"
+              className="btn btn-danger"
+              onClick={() => logoutMutation.mutate()}
+            >
+              LOG OUT
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

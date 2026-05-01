@@ -1,15 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-// Previous implementation retained for compatibility:
-/*
-import { createContext, use, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { postRequest } from "../common/services/requestService";
-...
-*/
-
-import { createContext, use, useEffect, useMemo } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { showErrorToast, showSuccessToast } from "../common/services/toastService";
+import { showErrorToast, showSuccessToast } from "../services/toastService";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../services/authService";
 import { useDispatch, useSelector } from "react-redux";
@@ -21,13 +13,13 @@ export const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const authState = useSelector((state) => state.auth);
+  const { token, user } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    if (authState?.token) {
-      authStorage.set({ token: authState.token, data: authState.user, user: authState.user });
+    if (token) {
+      authStorage.set({ token, data: user, user });
     }
-  }, [authState]);
+  }, [token, user]);
 
   const loginMutation = useMutation({
     mutationFn: authService.login,
@@ -78,19 +70,19 @@ export function AuthProvider({ children }) {
 
   const value = useMemo(
     () => ({
-      user: authState?.user,
+      user,
       loginMutation,
       logoutMutation,
       registerMutation,
     }),
-    [authState?.user, loginMutation, logoutMutation, registerMutation],
+    [user, loginMutation, logoutMutation, registerMutation],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const context = use(AuthContext);
+  const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }

@@ -1,31 +1,32 @@
 import axios from "axios";
-import { showErrorToast } from "../common/services/toastService";
+import { showErrorToast } from "./toastService";
 import { clearCredentials } from "../features/auth/authSlice";
 import { setGlobalLoader } from "../features/ui/uiSlice";
 import { navigateTo } from "../common/navigate";
-
-const excludedRoutes = [
-  "login",
-  "register",
-  "forgot-password",
-  "reset-password",
-  "verify-email",
-];
+import { isPublicApiEndpoint } from "./apiEndpoints";
 
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
 
 let reduxStore;
+let requestInterceptorId;
+let responseInterceptorId;
 
 export function attachApiInterceptors(store) {
   reduxStore = store;
 
-  apiClient.interceptors.request.use(
+  if (requestInterceptorId !== undefined) {
+    apiClient.interceptors.request.eject(requestInterceptorId);
+  }
+
+  if (responseInterceptorId !== undefined) {
+    apiClient.interceptors.response.eject(responseInterceptorId);
+  }
+
+  requestInterceptorId = apiClient.interceptors.request.use(
     (config) => {
-      const isExcluded = excludedRoutes.some((route) =>
-        config.url?.endsWith(route),
-      );
+      const isExcluded = isPublicApiEndpoint(config.url);
 
       if (!isExcluded) {
         reduxStore?.dispatch(setGlobalLoader(true));
@@ -47,7 +48,7 @@ export function attachApiInterceptors(store) {
     },
   );
 
-  apiClient.interceptors.response.use(
+  responseInterceptorId = apiClient.interceptors.response.use(
     (response) => {
       reduxStore?.dispatch(setGlobalLoader(false));
       return response;

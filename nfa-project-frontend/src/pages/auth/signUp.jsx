@@ -2,36 +2,30 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useAuth } from "../../hooks/use-auth";
-import { PasswordField } from "../../component/passwordInput";
+import { PasswordField } from "../../features/components/shared/PasswordInput";
 import { Link } from "react-router-dom";
 
-// Schema with clear required field messages
 const registerSchema = z
   .object({
     firstName: z.string().min(1, "First name is required"),
     lastName: z.string().min(1, "Last name is required"),
     email: z.string().email("Invalid email address"),
-
     phone: z
       .string()
       .regex(
         /^[6-9]\d{9}$/,
         "Phone number must be 10 digits and start with 6, 7, 8, or 9",
       ),
-
     address: z.string().min(1, "Address is required"),
-
     pinCode: z
       .string()
       .regex(
         /^[1-9][0-9]{5}$/,
         "Pincode must be a 6-digit number and not start with 0",
       ),
-
     aadharNumber: z
       .string()
       .regex(/^[0-9]{12}$/, "Aadhar number must be a 12-digit numeric value"),
-
     password: z
       .string()
       .min(8, "Must be at least 8 characters")
@@ -48,17 +42,25 @@ const registerSchema = z
       .refine((val) => /[!@#$%^&*(),.?":{}|<>]/.test(val), {
         message: "Must contain at least 1 special character",
       }),
-
     confirmPassword: z
       .string()
-      .min(6, "Confirm password must be at least 6 characters"),
-
+      .min(8, "Confirm password must be at least 8 characters"),
     category: z.string().min(1, "Category is required"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
   });
+
+const fields = [
+  { label: "First Name", name: "firstName", autoComplete: "given-name" },
+  { label: "Last Name", name: "lastName", autoComplete: "family-name" },
+  { label: "Email", name: "email", type: "email", autoComplete: "email" },
+  { label: "Phone", name: "phone", type: "tel", autoComplete: "tel" },
+  { label: "Address", name: "address", autoComplete: "street-address" },
+  { label: "Pin Code", name: "pinCode", autoComplete: "postal-code" },
+  { label: "Aadhar Number", name: "aadharNumber" },
+];
 
 const SignupPage = () => {
   const { registerMutation } = useAuth();
@@ -83,11 +85,13 @@ const SignupPage = () => {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = registerForm;
 
+  const emailValue = watch("email");
+
   const onSubmit = (data) => {
-    console.log("Login data", data);
     registerMutation.mutate(data);
   };
 
@@ -95,12 +99,12 @@ const SignupPage = () => {
     <div className="form-container auth-form-container auth-pane-left signup-form-container p-4 p-md-5">
       <div className="auth-form-inner mx-auto">
         <div className="top-logo top-logo-auth d-flex align-items-center gap-3 mb-4">
-          <a href="#">
+          <div>
             <img src="/images/nfa-logo.png" alt="NFA" />
-          </a>
-          <a href="#">
+          </div>
+          <div>
             <img src="/images/mib.png" alt="MIB" />
-          </a>
+          </div>
         </div>
 
         <form
@@ -112,16 +116,7 @@ const SignupPage = () => {
             <p className="mb-0">Fill in your details to register.</p>
           </div>
 
-          {/* Form Fields */}
-          {[
-            { label: "First Name", name: "firstName" },
-            { label: "Last Name", name: "lastName" },
-            { label: "Email", name: "email", type: "email" },
-            { label: "Phone", name: "phone" },
-            { label: "Address", name: "address" },
-            { label: "Pin Code", name: "pinCode" },
-            { label: "Aadhar Number", name: "aadharNumber" },
-          ].map((field) => (
+          {fields.map((field) => (
             <div className="mb-3" key={field.name}>
               <label className="form-label auth-label" htmlFor={field.name}>
                 {field.label}
@@ -130,20 +125,27 @@ const SignupPage = () => {
                 id={field.name}
                 type={field.type || "text"}
                 placeholder={field.label}
+                autoComplete={field.autoComplete || "off"}
                 className={`form-control auth-input ${
                   errors[field.name] ? "is-invalid" : ""
                 }`}
+                aria-invalid={Boolean(errors[field.name])}
+                aria-describedby={
+                  errors[field.name] ? `${field.name}-error` : undefined
+                }
                 {...register(field.name)}
               />
               {errors[field.name] && (
-                <div className="invalid-feedback auth-error">
+                <div
+                  id={`${field.name}-error`}
+                  className="invalid-feedback auth-error"
+                >
                   {errors[field.name].message}
                 </div>
               )}
             </div>
           ))}
 
-          {/* Category Dropdown */}
           <div className="mb-3">
             <label className="form-label auth-label" htmlFor="category">
               Category
@@ -153,6 +155,8 @@ const SignupPage = () => {
               className={`form-select auth-input ${
                 errors.category ? "is-invalid" : ""
               }`}
+              aria-invalid={Boolean(errors.category)}
+              aria-describedby={errors.category ? "category-error" : undefined}
               {...register("category")}
             >
               <option value="">Select Category</option>
@@ -160,70 +164,46 @@ const SignupPage = () => {
               <option value="2">Publisher</option>
             </select>
             {errors.category && (
-              <div className="invalid-feedback auth-error">
+              <div id="category-error" className="invalid-feedback auth-error">
                 {errors.category.message}
               </div>
             )}
           </div>
 
-          {/* Password */}
-          {/* <div className="mb-3">
-            <input
-              type="password"
-              placeholder="Password"
-              className={`form-control ${errors.password ? "is-invalid" : ""}`}
-              {...register("password")}
-            />
-            {errors.password && (
-              <div className="invalid-feedback">{errors.password.message}</div>
-            )}
-          </div> */}
-
-          {/* <PasswordInput
-            name="password"
-            register={register}
-            error={errors.password}
-            placeholder="Password"
-          /> */}
           <div className="mb-3">
             <label className="form-label auth-label" htmlFor="password">
               Password
             </label>
             <PasswordField
               control={registerForm.control}
+              id="password"
               name="password"
-              username="johndoe" // to validate against
+              username={emailValue}
               showValidationBox={true}
               validationMode="modal"
             />
           </div>
 
-          {/* Confirm Password */}
-          {/* <PasswordInput
-            name="confirmPassword"
-            register={register}
-            error={errors.confirmPassword}
-            placeholder="confirm Password"
-          /> */}
           <div className="mb-4">
             <label className="form-label auth-label" htmlFor="confirmPassword">
               Confirm Password
             </label>
             <PasswordField
               control={registerForm.control}
+              id="confirmPassword"
               name="confirmPassword"
               placeholder="Enter Confirm Password"
-              username="johndoe" // to validate against
+              username={emailValue}
               showValidationBox={false}
             />
           </div>
 
-          {/* Submit */}
           <button
             type="submit"
             className="btn btn-common-form auth-submit-btn w-100"
+            disabled={registerMutation.isPending}
           >
-            Register
+            {registerMutation.isPending ? "Registering..." : "Register"}
           </button>
 
           <div className="link text-center mt-2">

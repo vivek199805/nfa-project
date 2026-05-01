@@ -1,18 +1,5 @@
 import mongoose from "mongoose";
 
-const documentSchema = new mongoose.Schema(
-  {
-    context_id: Number,
-    form_type: Number,
-    document_type: Number,
-    website_type: Number,
-    file: String,
-    name: String,
-    created_by: { type: mongoose.Schema.Types.Mixed, default: null },
-  },
-  { timestamps: true }
-);
-
 const bestFilmCriticSchema = new mongoose.Schema(
   {
     step: { type: Number, default: 1 },
@@ -62,9 +49,6 @@ const bestFilmCriticSchema = new mongoose.Schema(
     declaration_two: { type: Boolean, default: false },
     declaration_three: { type: Boolean, default: false },
     declaration_four: { type: Boolean, default: false },
-
-    // editors: [editorSchema],
-    // documents: [documentSchema],
     documents: [{ type: mongoose.Schema.Types.ObjectId, ref: "Document" }],
 
     payment_response: { type: mongoose.Schema.Types.Mixed, default: null },

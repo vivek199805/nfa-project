@@ -5,9 +5,16 @@ import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import {
   postRequest,
-} from "../../common/services/requestService";
+} from "../../services/requestService";
 import { useFetchById } from "../../hooks/useFetchById";
-import { showErrorToast } from "../../common/services/toastService";
+import { showErrorToast } from "../../services/toastService";
+import {
+  getFilmEntryByEndpoint,
+  getFilmNextSection,
+  getFilmPreviousSection,
+  getFilmSectionStep,
+  getFilmUpdateEndpoint,
+} from "../../common/film-workflow";
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
@@ -45,7 +52,7 @@ const filmSchema = z.object({
 
 const ScreenPlaySection = ({ setActiveSection, filmType }) => {
   const { id } = useParams();
-    const { data: formData } = useFetchById("film/feature-entry-by", id);
+    const { data: formData } = useFetchById(getFilmEntryByEndpoint(filmType), id);
 
 
   const {
@@ -112,12 +119,12 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
     formData.append("choreographer", data.choreographer);
     formData.append("stunt_choreographer", data.stuntChoreographer);
     formData.append("music_director", data.musicDirector);
-    formData.append("step", "9");
+    formData.append("step", getFilmSectionStep(filmType, "screenplay"));
     formData.append("id", id);
     formData.append("film_type", filmType);
-    const response = await postRequest("film/feature-update", formData);
+    const response = await postRequest(getFilmUpdateEndpoint(filmType), formData);
     if (response.statusCode == 200) {
-      setActiveSection(10);
+      setActiveSection(getFilmNextSection(filmType, "screenplay"));
     }else {
       showErrorToast(response?.message || "Failed to submit form");
     }
@@ -437,7 +444,7 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => setActiveSection(8)}
+            onClick={() => setActiveSection(getFilmPreviousSection(filmType, "screenplay"))}
           >
             <i className="bi bi-arrow-left me-2"></i>
             Back to Prev

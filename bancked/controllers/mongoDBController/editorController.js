@@ -1,8 +1,18 @@
 import BestBookCinema from "../../models/mongodbModels/BestBookCinema.js";
 import BestFilmCritic from "../../models/mongodbModels/BestFilmCritic.js";
 import Editor from "../../models/mongodbModels/editor.js";
+import EditorSchemaHelper from "../../helpers/editorSchemaHelper.js";
 
 const storeEditor = async (req, res) => {
+  const { isValid, errors } = EditorSchemaHelper.validateStore(req.body);
+  if (!isValid) {
+    return res.status(422).json({
+      message: "Validation failed",
+      errors,
+      statusCode: 422,
+    });
+  }
+
   try {
     const payload = {
       ...req.body,
@@ -57,30 +67,33 @@ const storeEditor = async (req, res) => {
 
     if (!editor) {
       return res.status(200).json({
-        message: "Producer not created.!!",
-        statusCode: 201,
+        message: "Editor not created.!!",
+        statusCode: 203,
       });
     }
 
     return res.status(200).json({
-      message: "Producer created successfully.!!",
+      message: "Editor created successfully.!!",
       statusCode: 200,
       data: editor,
     });
   } catch (error) {
     res.status(500).json({
-      error: "Failed to fetch producers",
+      error: "Failed to create editor",
       message: error.message,
     });
   }
 };
 
 const updateEditor = async (req, res) => {
-  //   const { isValid, errors } = EditorSchema.validateUpdate(req.body);
-
-  //   if (!isValid) {
-  //     return responseHelper(res, "validatorerrors", { errors });
-  //   }
+  const { isValid, errors } = EditorSchemaHelper.validateUpdate(req.body);
+  if (!isValid) {
+    return res.status(422).json({
+      message: "Validation failed",
+      errors,
+      statusCode: 422,
+    });
+  }
 
   try {
     const payload = {
@@ -96,8 +109,8 @@ const updateEditor = async (req, res) => {
 
     if (!editor) {
       return res.status(200).json({
-        message: "Producer not found.!!",
-        statusCode: 201,
+        message: "Editor not found.!!",
+        statusCode: 203,
       });
     }
 
@@ -156,10 +169,14 @@ const updateEditor = async (req, res) => {
 };
 
 const listEditor = async (req, res) => {
-  //   const { isValid, errors } = EditorSchema.validateList(req.body);
-  //   if (!isValid) {
-  //     return responseHelper(res, "validatorerrors", { errors });
-  //   }
+  const { isValid, errors } = EditorSchemaHelper.validateList(req.body);
+  if (!isValid) {
+    return res.status(422).json({
+      message: "Validation failed",
+      errors,
+      statusCode: 422,
+    });
+  }
 
   try {
     const payload = {
@@ -198,7 +215,7 @@ const listEditor = async (req, res) => {
       if (!checkBestFilmCritic) {
         return res.status(200).json({
           message: "Please provide valid details.!!",
-          statusCode: 201,
+          statusCode: 203,
         });
       }
 
@@ -211,7 +228,7 @@ const listEditor = async (req, res) => {
     if (Object.keys(whereTo).length === 0) {
       return res.status(200).json({
         message: "No valid identifier provided.",
-        statusCode: 201,
+        statusCode: 203,
       });
     }
 
@@ -230,7 +247,7 @@ const listEditor = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
-      error: "Failed to fetch producers",
+      error: "Failed to list editors",
       message: error.message,
     });
   }
@@ -249,7 +266,7 @@ const getEditor = async (req, res) => {
     if (!editor) {
       return res.status(200).json({
         message: "No result found.!!",
-        statusCode: 201,
+        statusCode: 203,
       });
     }
     return res.status(200).json({

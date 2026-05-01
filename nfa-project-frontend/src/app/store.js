@@ -1,7 +1,3 @@
-// Previous implementation retained for reference:
-// import featureFormReducer from "../store/featureFormSlice";
-// import loaderCompatReducer from "../store/loaderSlice";
-
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "../features/auth/authSlice";
 import uiReducer from "../features/ui/uiSlice";

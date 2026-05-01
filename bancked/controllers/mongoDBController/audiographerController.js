@@ -12,7 +12,7 @@ const getAllAudiographerByFeatureId = async (req, res) => {
         }, "audiographer");
 
         if (!feature) {
-            return res.status(200).json({ message: "Records not found", statusCode: 201 });
+            return res.status(200).json({ message: "Records not found", statusCode: 203 });
         }
 
         res.status(200).json({
@@ -34,13 +34,13 @@ const addAudiographerToFeature = async (req, res) => {
             client_id: getUserId(req),
         });
         if (!feature) {
-            return res.status(200).json({ message: "Feature form not found", statusCode: 201 });
+            return res.status(200).json({ message: "Feature form not found", statusCode: 203 });
         }
         if (audiographerId) {
             // ✅ Update existing audiographer
             const existingAudiographer = feature.audiographer.id(audiographerId);
             if (!existingAudiographer) {
-                return res.status(200).json({ message: "audiographer not found", statusCode: 201 });
+                return res.status(200).json({ message: "audiographer not found", statusCode: 203 });
             }
 
             Object.entries(req.body).forEach(([key, value]) => {
@@ -98,7 +98,7 @@ const deleteAudiographerById = async (req, res) => {
             });
         }
 
-        audiographer.remove(); // Remove from embedded array
+        feature.audiographer.pull(audiographerId); // Remove from embedded array
 
         await feature.save(); // Save the updated document
 

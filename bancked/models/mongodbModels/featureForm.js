@@ -9,9 +9,9 @@ import documentSchema from '../mongodbModels/document.js';
 
 const featureFormSchema = new mongoose.Schema(
   {
-    step: { type: String, default: '1' },
+    step: { type: Number, default: 1 },
     film_type: { type: String, default: null },
-    active_step: { type: String, default: '1' },
+    active_step: { type: Number, default: 1 },
     payment_status: { type: String, default: null },
     status: { type: String, default: '1' },
 

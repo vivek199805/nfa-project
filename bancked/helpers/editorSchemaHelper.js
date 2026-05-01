@@ -5,17 +5,59 @@ const isNumeric = (val) =>
 
 const isObjectId = (val) => /^[0-9a-fA-F]{24}$/.test(val);
 
-const best_book_cinema_id = z.object({
-  best_book_cinema_id: z.union([z.string(), z.number()]).refine((val) => {
-    if (typeof val === "number") return true;
-    if (typeof val === "string") {
-      return isNumeric(val) || isObjectId(val);
-    }
-    return false;
-  }, {
-    message: "best_book_cinema_id is required and must be a number or string representing a number.",
-  }),
+const linkedEntrySchema = z.object({
+  best_book_cinema_id: z
+    .union([z.string(), z.number()])
+    .optional()
+    .refine((val) => {
+      if (val === undefined || val === null || val === "") return true;
+      if (typeof val === "number") return true;
+      if (typeof val === "string") {
+        return isNumeric(val) || isObjectId(val);
+      }
+      return false;
+    }, {
+      message: "best_book_cinema_id must be a number or valid MongoDB ObjectId.",
+    }),
+  best_film_critic_id: z
+    .union([z.string(), z.number()])
+    .optional()
+    .refine((val) => {
+      if (val === undefined || val === null || val === "") return true;
+      if (typeof val === "number") return true;
+      if (typeof val === "string") {
+        return isNumeric(val) || isObjectId(val);
+      }
+      return false;
+    }, {
+      message: "best_film_critic_id must be a number or valid MongoDB ObjectId.",
+    }),
 });
+
+const appendLinkedEntryRequirement = (result, payload) => {
+  if (
+    !result.success &&
+    (payload.best_book_cinema_id || payload.best_film_critic_id)
+  ) {
+    return result;
+  }
+
+  if (!payload.best_book_cinema_id && !payload.best_film_critic_id) {
+    return {
+      success: false,
+      error: {
+        issues: [
+          {
+            path: ["best_book_cinema_id"],
+            message: "Either best_book_cinema_id or best_film_critic_id is required.",
+          },
+        ],
+      },
+    };
+  }
+
+  return result;
+};
 
 const IDSchema = z.object({
   id: z.union([z.string(), z.number()]).refine((val) => {
@@ -54,8 +96,8 @@ const editorSchema = z.object({
 const validateStore = (payload, files) => {
   let schema = editorSchema;
 
-  schema.merge(best_book_cinema_id);
-  const result = schema.safeParse(payload);
+  schema = schema.merge(linkedEntrySchema);
+  const result = appendLinkedEntryRequirement(schema.safeParse(payload), payload);
 
   return {
     isValid: result.success,
@@ -67,9 +109,9 @@ const validateStore = (payload, files) => {
 
 const validateUpdate = (payload, files) => {
   let schema = editorSchema;
-  schema = schema.merge(best_book_cinema_id).merge(IDSchema);
+  schema = schema.merge(linkedEntrySchema).merge(IDSchema);
 
-  const result = schema.safeParse(payload);  
+  const result = appendLinkedEntryRequirement(schema.safeParse(payload), payload);
   return {
     isValid: result.success,
     errors: result.success
@@ -79,8 +121,8 @@ const validateUpdate = (payload, files) => {
 };
 
 const validateList = (payload) => {
-  const schema = best_book_cinema_id;
-  const result = schema.safeParse(payload);
+  const schema = linkedEntrySchema;
+  const result = appendLinkedEntryRequirement(schema.safeParse(payload), payload);
   return {
     isValid: result.success,
     errors: result.success

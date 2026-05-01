@@ -2,6 +2,8 @@ import { z } from "zod";
 import { stepsBestBook } from "../services/common.js";
 import dayjs from "dayjs";
 
+const isObjectId = (val) => /^[0-9a-fA-F]{24}$/.test(val);
+
 // Shared schema parts
 const baseStepSchema = z.object({
   step: z.string().refine((val) => !isNaN(val), {
@@ -10,8 +12,8 @@ const baseStepSchema = z.object({
 });
 
 const lastIdSchema = z.object({
-  id: z.string().refine((val) => val && !isNaN(val), {
-    message: "Last ID is required and must be a number.",
+  id: z.string().refine((val) => val && (!isNaN(val) || isObjectId(val)), {
+    message: "Last ID is required and must be a number or valid MongoDB ObjectId.",
   }),
 });
 
@@ -70,6 +72,7 @@ const declarationSchema = lastIdSchema.extend({
   declaration_one: toRequiredTrue,
   declaration_two: toRequiredTrue,
   declaration_three: toRequiredTrue,
+  declaration_four: toRequiredTrue,
 });
 
 const bookSchema = z.object({
@@ -98,11 +101,11 @@ const validateStepInput = (payload, files) => {
   let schema = baseStepSchema;
 
   // Dynamic step-based schema
-  if (step && step != String(stepsBestBook().BEST_BOOK_ON_CINEMA)) {
+  if (step === String(stepsBestBook().BEST_BOOK_ON_CINEMA)) {
     schema = schema.merge(bookSchema);
   }
 
-  if (step && step != String(stepsBestBook().PUBLISHER_EDITOR)) {
+  if (step === String(stepsBestBook().PUBLISHER_EDITOR)) {
     schema = schema.merge(editorSchema);
   }
 

@@ -5,8 +5,14 @@ import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import {
   postRequest,
-} from "../../common/services/requestService";
+} from "../../services/requestService";
 import { useFetchById } from "../../hooks/useFetchById";
+import {
+  bestBookEndpoints,
+  getAwardNextSection,
+  getAwardPreviousSection,
+  getAwardSectionStep,
+} from "../../common/award-workflow";
 
 const declarationSchema = z.object({
   declarations: z.tuple([
@@ -30,7 +36,7 @@ const defaultValues = {
 
 const BookDeclarationSection = ({ setActiveSection }) => {
   const { id } = useParams();
-  const { data: formData } = useFetchById("best-book-cinema-entry-by", id);
+  const { data: formData } = useFetchById(bestBookEndpoints.entryBy, id);
   
   const {
     control,
@@ -67,11 +73,11 @@ const BookDeclarationSection = ({ setActiveSection }) => {
     declarationKeysInOrder.forEach((item, index) => {
     formData.append(item, data.declarations[index] ? "true" : "false");
     });
-    formData.append("step", 4);
+    formData.append("step", getAwardSectionStep("declaration"));
     formData.append("id", id);
-      const response = await postRequest("best-book-cinema-update", formData);
+      const response = await postRequest(bestBookEndpoints.update, formData);
     if (response.statusCode == 200) {
-      setActiveSection(5);
+      setActiveSection(getAwardNextSection("declaration"));
     }
   };
 
@@ -112,7 +118,9 @@ const BookDeclarationSection = ({ setActiveSection }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => setActiveSection(3)}
+          onClick={() =>
+            setActiveSection(getAwardPreviousSection("declaration"))
+          }
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev

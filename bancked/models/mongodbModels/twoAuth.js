@@ -1,5 +1,5 @@
 // models/Otp.js
- import mongoose from "mongoose";
+import mongoose from "mongoose";
 
 const twoAuthSchema = new mongoose.Schema({
   userId: {
@@ -9,6 +9,8 @@ const twoAuthSchema = new mongoose.Schema({
   email: {
     type: String,
     required: false, // optional if using phone
+    lowercase: true,
+    trim: true,
   },
   phone: {
     type: String,
@@ -23,13 +25,15 @@ const twoAuthSchema = new mongoose.Schema({
     default: 0
   },
   otpExpiry: {
-    type: Number,
+    type: Date,
     required: false,
   },
 }, {
   timestamps: true, // adds createdAt and updatedAt fields
 });
 
- const Twoauth = new mongoose.model("Twoauth", twoAuthSchema);
+twoAuthSchema.index({ otpExpiry: 1 }, { expireAfterSeconds: 0 });
 
- export default Twoauth;
+const Twoauth = new mongoose.model("Twoauth", twoAuthSchema);
+
+export default Twoauth;

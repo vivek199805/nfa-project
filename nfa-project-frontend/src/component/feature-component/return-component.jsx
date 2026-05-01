@@ -5,7 +5,14 @@ import { useInputRestriction } from "../../hooks/useInputRestriction";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useFetchById } from "../../hooks/useFetchById";
-import { postRequest } from "../../common/services/requestService";
+import { postRequest } from "../../services/requestService";
+import {
+  getFilmEntryByEndpoint,
+  getFilmNextSection,
+  getFilmPreviousSection,
+  getFilmSectionStep,
+  getFilmUpdateEndpoint,
+} from "../../common/film-workflow";
 const filmSchema = z.object({
   name: z.string().trim().min(1, "This field is required"),
   phone: z
@@ -28,7 +35,7 @@ const ReturnSection = ({ setActiveSection, filmType }) => {
   const numberRestriction = useInputRestriction("number");
   const { id } = useParams();
 
-  const { data: formData } = useFetchById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id);
+  const { data: formData } = useFetchById(getFilmEntryByEndpoint(filmType), id);
 
   const {
     register,
@@ -57,9 +64,8 @@ const ReturnSection = ({ setActiveSection, filmType }) => {
   }, [formData, reset]);
 
   const onSubmit = async (data) => {
-    console.log("Form submitted:", data);
     // Call API to submit form data
-    let url = filmType == 'feature' ? "film/feature-update" : "film/non-feature-update";
+    let url = getFilmUpdateEndpoint(filmType);
     const formData = new FormData();
     formData.append("return_name", data.name);
     formData.append("return_mobile", data.phone);
@@ -67,13 +73,13 @@ const ReturnSection = ({ setActiveSection, filmType }) => {
     formData.append("return_website", data.website);
     formData.append("return_address", data.address);
     formData.append("return_pincode", data.pinCode);
-    formData.append("step", filmType == 'feature' ? '10' : '7');
+    formData.append("step", getFilmSectionStep(filmType, "return"));
     formData.append("id", id);
     formData.append("film_type", filmType);
 
     const response = await postRequest(url, formData);
     if (response.statusCode == 200) {
-      filmType == 'feature' ? setActiveSection(11) : setActiveSection(8);
+      setActiveSection(getFilmNextSection(filmType, "return"));
     }
   };
 
@@ -179,7 +185,9 @@ const ReturnSection = ({ setActiveSection, filmType }) => {
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => filmType == 'feature' ? setActiveSection(9) : setActiveSection(6)}
+            onClick={() =>
+              setActiveSection(getFilmPreviousSection(filmType, "return"))
+            }
           >
             <i className="bi bi-arrow-left me-2"></i>
             Back to Prev

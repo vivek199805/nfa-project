@@ -9,16 +9,23 @@ import {
   getRequest,
   getRequestById,
   postRequest,
-} from "../../common/services/requestService";
+} from "../../services/requestService";
 import {
   showErrorToast,
   showSuccessToast,
-} from "../../common/services/toastService";
+} from "../../services/toastService";
 import { useParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import dayjs from "dayjs";
 import Select from "react-dropdown-select";
-import CustomDatePicker from "../../common/CustomDatePicker";
+import CustomDatePicker from "../../features/components/form/CustomDatePicker";
+import {
+  bestBookEndpoints,
+  getAwardNextSection,
+  getAwardPreviousSection,
+  getAwardSectionStep,
+} from "../../common/award-workflow";
+import { apiConfig } from "../../services/apiEndpoints";
 
 const filmSchema = z.object({
   book_title_original: z.string().trim().min(1, "This field is required"),
@@ -63,7 +70,7 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
   useEffect(() => {
     async function fetchLanguages() {
       try {
-        const response = await getRequest("get-languages");
+        const response = await getRequest(apiConfig.common.languages);
         const options = response.data.map((lang) => ({
           label: lang.name,
           value: String(lang.id),
@@ -79,7 +86,7 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
 
   const getBookList = useCallback(async () => {
     try {
-      const response = await postRequest("list-book", {
+      const response = await postRequest(apiConfig.awardChild.book.list, {
         best_book_cinema_id: id,
       });
       if (response.statusCode === 200) {
@@ -104,7 +111,7 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
     let url;
 
     const formData = new FormData();
-    formData.append("indian_national",data.indianNationality === "Yes" ? 1 : 0);
+    formData.append("indian_national", data.indianNationality === "Yes" ? 1 : 0);
     formData.append("book_title_original", data.book_title_original);
     formData.append("book_title_english", data.book_title_english);
     formData.append("english_translation_book", data.english_translation_book);
@@ -117,9 +124,9 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
 
     if (editingIndex !== null) {
       formData.append("id", editingIndex);
-      url = "update-book";
+      url = apiConfig.awardChild.book.update;
     } else {
-      url = "store-book";
+      url = apiConfig.awardChild.book.store;
     }
 
     try {
@@ -141,7 +148,7 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
 
   const handleEdit = (index) => {
     const data = bookList.find((item) => item._id === index);
-      
+
     reset({
       book_title_original: data.book_title_original,
       book_title_english: data.book_title_english,
@@ -174,7 +181,7 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
         // setBookList(updated);
         // if (bookList.length === 1) setShowForm(true);
         try {
-          const response = await getRequestById("delete-book", index);
+          const response = await getRequestById(apiConfig.awardChild.book.delete, index);
           if (response.statusCode === 200) {
             showSuccessToast(response.message);
             await getBookList();
@@ -194,11 +201,11 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
     const isValid = await trigger(); // validate the form
     if ((isValid || !showForm) && bookList.length > 0) {
       const formData = new FormData();
-      formData.append("step", 2);
+      formData.append("step", getAwardSectionStep("detail"));
       formData.append("id", id);
-      const response = await postRequest("best-book-cinema-update", formData);
+      const response = await postRequest(bestBookEndpoints.update, formData);
       if (response.statusCode == 200) {
-        setActiveSection(3);
+        setActiveSection(getAwardNextSection("detail"));
       }
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
@@ -216,6 +223,7 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
             Add at least 1 book detail and up to 5 book details.
           </p>
           <button
+            type="button"
             className="add-producer-btn"
             onClick={() => {
               reset({
@@ -261,6 +269,7 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
                     <td>{book.book_price}</td>
                     <td>
                       <button
+                        type="button"
                         className="action-btn delete-btn"
                         title="Delete"
                         onClick={() => handleDelete(book?._id)}
@@ -268,6 +277,7 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
                         <Trash2 size={16} />
                       </button>
                       <button
+                        type="button"
                         className="action-btn edit-btn"
                         title="Edit"
                         onClick={() => handleEdit(book?._id)}
@@ -296,9 +306,8 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.book_title_original ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.book_title_original ? "is-invalid" : ""
+                  }`}
                 placeholder=""
                 {...register("book_title_original")}
               />
@@ -316,9 +325,8 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.book_title_english ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.book_title_english ? "is-invalid" : ""
+                  }`}
                 placeholder=""
                 {...register("book_title_english")}
               />
@@ -336,9 +344,8 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.english_translation_book ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.english_translation_book ? "is-invalid" : ""
+                  }`}
                 placeholder=""
                 {...register("english_translation_book")}
                 maxLength={10}
@@ -404,9 +411,8 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.author_name ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.author_name ? "is-invalid" : ""
+                  }`}
                 placeholder=""
                 {...register("author_name")}
               />
@@ -424,9 +430,8 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
               <input
                 type="text"
                 {...numberRestriction}
-                className={`form-control ${
-                  errors.page_count ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.page_count ? "is-invalid" : ""
+                  }`}
                 placeholder=""
                 {...register("page_count")}
                 maxLength={10}
@@ -470,9 +475,8 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
               <input
                 type="text"
                 {...numberRestriction}
-                className={`form-control ${
-                  errors.book_price ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.book_price ? "is-invalid" : ""
+                  }`}
                 placeholder=" "
                 {...register("book_price")}
               />
@@ -495,7 +499,7 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => setActiveSection(1)}
+          onClick={() => setActiveSection(getAwardPreviousSection("detail"))}
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev

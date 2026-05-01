@@ -1,5 +1,5 @@
 
-import { useRouteError, isRouteErrorResponse } from "react-router-dom";
+import { Link, useRouteError, isRouteErrorResponse } from "react-router-dom";
 
 const ErrorPage = () => {
   const error = useRouteError();
@@ -16,9 +16,9 @@ const ErrorPage = () => {
     <div className="container text-center mt-5">
       <h1 className="display-3 text-danger">{title}</h1>
       <p className="lead">{message}</p>
-      <a href="/" className="btn btn-primary mt-4">
+      <Link to="/" className="btn btn-primary mt-4">
         Go to Login
-      </a>
+      </Link>
     </div>
   );
 };

@@ -3,11 +3,40 @@ import { Document } from "../../models/mongodbModels/document.js";
 import Editor from "../../models/mongodbModels/editor.js";
 import common from "../../services/common.js";
 import Common from "../../services/common.js";
+import BestFilmCriticHelper from "../../helpers/bestFilmCriticHelper.js";
 
 const getUserId = (req) => req.user?._id || req.user?.id;
 
+function syncDocumentRef(data, documentId) {
+  if (!documentId) return;
+
+  if (!Array.isArray(data.documents)) {
+    data.documents = [];
+  }
+
+  const exists = data.documents?.some(
+    (id) => String(id) === String(documentId)
+  );
+
+  if (!exists) {
+    data.documents.push(documentId);
+  }
+}
+
 // Create Feature Submission
 const createFilmCritic = async (req, res) => {
+  const { isValid, errors } = BestFilmCriticHelper.validateStepInput(
+    req.body,
+    req.files
+  );
+  if (!isValid) {
+    return res.status(422).json({
+      message: "Validation failed",
+      errors,
+      statusCode: 422,
+    });
+  }
+
   try {
     const user = req.user.toObject();
     const client_id = user._id || user.id;
@@ -41,7 +70,7 @@ const createFilmCritic = async (req, res) => {
       .status(200)
       .json({ message: "Submit successful", statusCode: 200, data: finalData });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ message: error.message, statusCode: 500 });
   }
 };
 
@@ -53,14 +82,32 @@ const updateEntryById = async (req, res) => {
     if (missingFields.length > 0) {
       return res.status(200).json({
         statusCode: 203,
-        message: `${missingFields.join(" and ")} ${missingFields.length > 1 ? "are" : "is"
-          } required`,
+        message: `${missingFields.join(" and ")} ${missingFields.length > 1 ? "are" : "is"} required`,
       });
     }
     const payload = {
       ...req.body,
       files: req.files,
     };
+    const step = String(req.body.step ?? "");
+
+    if (
+      step === String(Common.stepsBestFilmCritic().CRITIC_DETAILS) ||
+      step === String(Common.stepsBestFilmCritic().CRITIC) ||
+      step === String(Common.stepsBestFilmCritic().DECLARATION)
+    ) {
+      const { isValid, errors } = BestFilmCriticHelper.validateStepInput(
+        req.body,
+        req.files
+      );
+      if (!isValid) {
+        return res.status(422).json({
+          message: "Validation failed",
+          errors,
+          statusCode: 422,
+        });
+      }
+    }
 
     const { id: _id } = req.body;
     // Find the document by ID
@@ -118,10 +165,14 @@ const updateEntryById = async (req, res) => {
 };
 
 const finalSubmit = async (req, res) => {
-  // const { isValid, errors } = BestFilmCriticHelper.finalSubmitStep(req.body);
-  // if (!isValid) {
-  //   return responseHelper(res, "validatorerrors", { errors });
-  // }
+  const { isValid, errors } = BestFilmCriticHelper.finalSubmitStep(req.body);
+  if (!isValid) {
+    return res.status(422).json({
+      message: "Validation failed",
+      errors,
+      statusCode: 422,
+    });
+  }
 
   try {
     const payload = {
@@ -167,6 +218,7 @@ const finalSubmit = async (req, res) => {
     return res.status(500).json({
       status: "exception",
       message: error.message || "Internal Server Error",
+      statusCode: 500,
     });
   }
 };
@@ -199,6 +251,7 @@ const handleBestFilmCriticStep = async (data, payload) => {
           return { status: false, message: "Image not uploaded.!!" };
         }
         data.critic_aadhaar_card = fileUpload?.data?.file ?? null;
+        syncDocumentRef(data, fileUpload?.data?._id);
       } else {
         data.critic_aadhaar_card = null;
       }
@@ -235,9 +288,10 @@ const handleCriticStep = async (data, payload) => {
         });
 
         if (!fileUpload.status) {
-          return fileUpload
+          return { status: false, message: fileUpload.message || "Image not uploaded.!!" };
         }
         data.critic_aadhaar_card = fileUpload?.data?.file ?? null;
+        syncDocumentRef(data, fileUpload?.data?._id);
       } else {
         data.critic_aadhaar_card = null;
       }
@@ -297,6 +351,7 @@ export const bestFilmCriticById = async (req, res) => {
       return res.status(404).json({
         status: "exception",
         message: "Something went wrong!!",
+        statusCode: 404,
       });
     }
 
@@ -312,12 +367,14 @@ export const bestFilmCriticById = async (req, res) => {
     return res.status(200).json({
       status: "success",
       message: "Success.!!",
+      statusCode: 200,
       data,
     });
   } catch (error) {
     return res.status(500).json({
       status: "exception",
       message: error.message || "Internal Server Error",
+      statusCode: 500,
     });
   }
 };

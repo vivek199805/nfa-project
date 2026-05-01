@@ -1,15 +1,14 @@
-// Previous implementation retained in git history; this file now uses enterprise service/query architecture.
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useAuth } from "../../hooks/use-auth";
-import PasswordInput from "../../component/passwordInput";
+import PasswordInput from "../../features/components/shared/PasswordInput";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import {
   showErrorToast,
   showSuccessToast,
-} from "../../common/services/toastService";
+} from "../../services/toastService";
 import { useMutation } from "@tanstack/react-query";
 import { authService } from "../../services/authService";
 
@@ -55,6 +54,7 @@ const LoginPage = () => {
     handleSubmit,
     formState: { errors },
     getValues,
+    trigger,
   } = loginForm;
 
   const onSubmit = (data) => {
@@ -65,7 +65,13 @@ const LoginPage = () => {
     loginMutation.mutate(payload);
   };
 
-  const handleVerifyEmail = () => {
+  const handleVerifyEmail = async () => {
+    const isUsernameValid = await trigger("username");
+    if (!isUsernameValid) {
+      setIsVerify(false);
+      return;
+    }
+
     const currentValues = getValues();
     verifyEmailMutation.mutate({
       email: currentValues?.username,
@@ -77,21 +83,23 @@ const LoginPage = () => {
     <div className="form-container auth-form-container auth-pane-left p-4 p-md-5">
       <div className="auth-form-inner mx-auto">
         <div className="top-logo top-logo-auth d-flex align-items-center gap-3 mb-4">
-          <a href="#">
+          <div>
             <img src="/images/nfa-logo.png" alt="NFA" />
-          </a>
-          <a href="#">
+          </div>
+          <div>
             <img src="/images/mib.png" alt="MIB" />
-          </a>
+          </div>
         </div>
 
         <div className="loginfo">
-          <i
-            className="bi bi-info-circle"
+          <button
+            type="button"
+            className="bi bi-info-circle border-0 bg-transparent p-0"
             data-bs-toggle="offcanvas"
-            href="#offcanvasExample"
-            role="button"
-          ></i>
+            data-bs-target="#offcanvasExample"
+            aria-label="Open information panel"
+            aria-controls="offcanvasExample"
+          />
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="w-100 auth-form">
@@ -111,12 +119,14 @@ const LoginPage = () => {
                 errors.username ? "is-invalid" : ""
               }`}
               placeholder="Username"
+              aria-invalid={Boolean(errors.username)}
+              aria-describedby={errors.username ? "username-error" : undefined}
               {...register("username", {
                 onBlur: () => handleVerifyEmail(),
               })}
             />
             {errors.username && (
-              <div className="invalid-feedback auth-error">
+              <div id="username-error" className="invalid-feedback auth-error">
                 {errors.username.message}
               </div>
             )}
@@ -127,11 +137,18 @@ const LoginPage = () => {
               Password
             </label>
             <PasswordInput
+              id="password"
               name="password"
               register={register}
               error={errors.password}
               placeholder="*******"
+              describedBy={errors.password ? "password-error" : undefined}
             />
+            {errors.password && (
+              <div id="password-error" className="visually-hidden">
+                {errors.password.message}
+              </div>
+            )}
           </div>
 
           <div className="form-group text-end mb-3">
@@ -141,7 +158,11 @@ const LoginPage = () => {
           <button
             type="submit"
             className="btn btn-common-form auth-submit-btn w-100"
-            disabled={!isVerify || loginMutation.isPending}
+            disabled={
+              !isVerify ||
+              loginMutation.isPending ||
+              verifyEmailMutation.isPending
+            }
           >
             {loginMutation.isPending ? "Logging in..." : "Login"}
           </button>

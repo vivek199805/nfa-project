@@ -6,6 +6,9 @@ import { Document } from "../models/mongodbModels/document.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+export const getDocumentStorageRoot = () =>
+  path.resolve(process.env.UPLOAD_ROOT || path.join(__dirname, "..", "storage/documents"));
+
 export const stepsFeature = () => ({
   GENERAL: 1,
   CENSOR: 2,
@@ -29,6 +32,7 @@ export const stepsNonFeature = () => ({
   DIRECTOR: 5,
   OTHER: 6,
   RETURN_ADDRESS: 7,
+  VIEW: 8,
   DECLARATION: 9,
   FINAL_SUBMIT: 10,
 });
@@ -82,30 +86,73 @@ function isValidFile(filename) {
   return allowedExtensions.includes(ext);
 }
 
+const allowedMimeTypes = new Set([
+  "image/jpeg",
+  "image/png",
+  "application/pdf",
+]);
+
+function sanitizeFileName(filename) {
+  return filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+}
+
 const imageUpload = async (data) => {
   const websiteTypeValue = websiteType[data.websiteType] || null;
   const formTypeValue = formType[data.formType] || null;
 
   try {
     const image = data.image;
-    const originalName = image.originalname;
-    const fileName = path.parse(originalName).name;
-    const extension = path.extname(originalName);
-    const modifiedName = `${fileName}_${Date.now()}${extension}`;
-    const directory = path.join(__dirname, "..", "public/documents", data.websiteType);
-
-    if (!fs.existsSync(directory)) {
-      fs.mkdirSync(directory, { recursive: true });
+    if (!image?.buffer || !image?.originalname) {
+      return {
+        status: false,
+        message: "File is required",
+      };
     }
-    const filePath = path.join(directory, modifiedName);
-    fs.writeFileSync(filePath, image.buffer);
 
-    const documentType = documentTypeMap[data.image_key.toUpperCase()] || null;
+    if (!websiteTypeValue) {
+      return {
+        status: false,
+        message: "Invalid website type",
+      };
+    }
+
+    if (!formTypeValue) {
+      return {
+        status: false,
+        message: "Invalid form type",
+      };
+    }
+
+    const documentType = documentTypeMap[data.image_key?.toUpperCase()] || null;
 
     if (!documentType) {
        return {
         status: false,
         message: "Invalid document type",
+      };
+    }
+
+    const originalName = path.basename(image.originalname);
+    const extension = path.extname(originalName).toLowerCase();
+
+    if (!isValidFile(originalName) || !allowedMimeTypes.has(image.mimetype)) {
+      return {
+        status: false,
+        message: "Only JPG, PNG, and PDF files are allowed!",
+      };
+    }
+
+    const fileName = sanitizeFileName(path.parse(originalName).name);
+    const modifiedName = `${fileName}_${Date.now()}${extension}`;
+    const baseDirectory = getDocumentStorageRoot();
+    const directory = path.join(baseDirectory, data.websiteType);
+    const resolvedDirectory = path.resolve(directory);
+    const resolvedBaseDirectory = path.resolve(baseDirectory);
+
+    if (!resolvedDirectory.startsWith(resolvedBaseDirectory + path.sep)) {
+      return {
+        status: false,
+        message: "Invalid upload directory",
       };
     }
 
@@ -125,51 +172,26 @@ const imageUpload = async (data) => {
       website_type: websiteTypeValue,
     };
 
-    const { file } = fileDetails; // assuming fileDetails has `fileName`
-
-    if (!isValidFile(file)) {
-      return {
-        status: false,
-        message: "Only JPG, PNG, and PDF files are allowed!",
-      };
+    if (!fs.existsSync(resolvedDirectory)) {
+      fs.mkdirSync(resolvedDirectory, { recursive: true });
     }
+    const filePath = path.join(resolvedDirectory, modifiedName);
+    fs.writeFileSync(filePath, image.buffer);
 
-    // const existingDoc = await Document.findOne(filter);
-    // if (existingDoc) {
-    //   Object.assign(existingDoc, fileDetails);
-    //   await existingDoc.save();
-    //   return {
-    //     status: true,
-    //     data: existingDoc,
-    //     message: "File updated successfully!!",
-    //   };
-    // } else {
-    //   const newDoc = new Document(fileDetails);
-    //   await newDoc.save();
-    //   return {
-    //     status: true,
-    //     data: newDoc,
-    //     message: "File created successfully!!",
-    //   };
-    // }
-
-    // Upsert (update if exists, else insert)
     const updatedDoc = await Document.findOneAndUpdate(filter, fileDetails, {
-      new: true, // return updated doc
-      upsert: true, // create if not exists
-      rawResult: true, // return full MongoDB response
+      new: true,
+      upsert: true,
     });
 
-    const wasNew = !!updatedDoc.lastErrorObject.upserted;
     return {
       status: true,
-      data: updatedDoc?.value,
-      message: wasNew ? "File created successfully!!" : "File updated successfully!!",
+      data: updatedDoc,
+      message: "File uploaded successfully!!",
     };
   } catch (error) {
     return {
       status: false,
-      message: "Error while uploading file",
+      message: error?.message || "Error while uploading file",
     };
   }
 }
@@ -178,6 +200,7 @@ export default {
   stepsFeature,
   stepsNonFeature,
   imageUpload,
+  getDocumentStorageRoot,
   stepsBestFilmCritic,
   stepsBestBook,
 };

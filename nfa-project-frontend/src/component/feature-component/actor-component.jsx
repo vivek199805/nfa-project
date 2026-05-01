@@ -1,19 +1,24 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import {useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import {
-  postRequest,
-} from "../../common/services/requestService";
+import { postRequest } from "../../services/requestService";
 import {
   showErrorToast,
   showSuccessToast,
-} from "../../common/services/toastService";
+} from "../../services/toastService";
 // import { useQuery } from "@tanstack/react-query";
 import Swal from "sweetalert2";
+import {
+  getFilmNextSection,
+  getFilmPreviousSection,
+  getFilmSectionStep,
+  getFilmUpdateEndpoint,
+} from "../../common/film-workflow";
+import { apiConfig } from "../../services/apiEndpoints";
 
 const filmSchema = z.object({
   // category: z
@@ -66,7 +71,7 @@ const ActorSection = ({ setActiveSection, filmType }) => {
 
   const getActorList = useCallback(async () => {
     try {
-      const response = await postRequest("film/actor-list", { id });
+      const response = await postRequest(apiConfig.filmChild.actor.list, { id });
       if (response.statusCode === 200) {
         setActorData(response.data);
       } else {
@@ -114,7 +119,7 @@ const ActorSection = ({ setActiveSection, filmType }) => {
     }
 
     try {
-      const response = await postRequest("film/store-actor", formData);
+      const response = await postRequest(apiConfig.filmChild.actor.store, formData);
       if (response.statusCode === 200) {
         showSuccessToast(response.message);
         await getActorList();
@@ -163,7 +168,7 @@ const ActorSection = ({ setActiveSection, filmType }) => {
         formData.append("actorId", index);
         formData.append("nfa_feature_id", id);
         try {
-          const response = await postRequest("film/delete-actor", formData);
+          const response = await postRequest(apiConfig.filmChild.actor.delete, formData);
           if (response.statusCode === 200) {
             showSuccessToast(response.message);
             await getActorList();
@@ -183,13 +188,13 @@ const ActorSection = ({ setActiveSection, filmType }) => {
     const isValid = await trigger(); // validate the form
     if ((isValid || !showForm) && actorData.length > 0) {
       const formData = new FormData();
-      formData.append("step", "6");
+      formData.append("step", getFilmSectionStep(filmType, "actor"));
       formData.append("id", id);
       formData.append("film_type", filmType);
-      const response = await postRequest("film/feature-update", formData);
+      const response = await postRequest(getFilmUpdateEndpoint(filmType), formData);
       if (response.statusCode == 200) {
-        setActiveSection(7);
-      }else{
+        setActiveSection(getFilmNextSection(filmType, "actor"));
+      } else {
         showErrorToast(response.message);
       }
     } else {
@@ -203,6 +208,7 @@ const ActorSection = ({ setActiveSection, filmType }) => {
       <div className="producer-container">
         <div className="header-section d-flex justify-content-end align-items-center">
           <button
+            type="button"
             className="add-producer-btn"
             onClick={() => {
               reset({
@@ -212,7 +218,7 @@ const ActorSection = ({ setActiveSection, filmType }) => {
                 isVoiceDubbed: false,
               });
               setEditingIndex(null);
-             setShowForm((prev) => !prev);
+              setShowForm((prev) => !prev);
             }}
           >
             ADD ACTOR
@@ -249,6 +255,7 @@ const ActorSection = ({ setActiveSection, filmType }) => {
                       <td>{actor.if_voice_dubbed == true ? "Yes" : "No"}</td>
                       <td>
                         <button
+                          type="button"
                           className="action-btn delete-btn"
                           title="Delete"
                           onClick={() => handleDelete(actor._id)}
@@ -256,6 +263,7 @@ const ActorSection = ({ setActiveSection, filmType }) => {
                           <Trash2 size={16} />
                         </button>
                         <button
+                          type="button"
                           className="action-btn edit-btn"
                           title="Edit"
                           onClick={() => handleEdit(actor._id)}
@@ -282,9 +290,8 @@ const ActorSection = ({ setActiveSection, filmType }) => {
                 Category<span className="text-danger">*</span>
               </label>
               <select
-                className={`form-control ${
-                  errors.category ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.category ? "is-invalid" : ""
+                  }`}
                 {...register("category")}
                 defaultValue=""
               >
@@ -308,9 +315,8 @@ const ActorSection = ({ setActiveSection, filmType }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.actorName ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.actorName ? "is-invalid" : ""
+                  }`}
                 placeholder="Actor Name"
                 {...register("actorName")}
                 maxLength={10}
@@ -328,9 +334,8 @@ const ActorSection = ({ setActiveSection, filmType }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.screenName ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.screenName ? "is-invalid" : ""
+                  }`}
                 placeholder="Screen Name"
                 {...register("screenName")}
               />
@@ -373,7 +378,7 @@ const ActorSection = ({ setActiveSection, filmType }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => setActiveSection(5)}
+          onClick={() => setActiveSection(getFilmPreviousSection(filmType, "actor"))}
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev

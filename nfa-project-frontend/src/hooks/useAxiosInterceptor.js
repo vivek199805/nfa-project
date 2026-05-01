@@ -1,5 +1,3 @@
-// Previous implementation retained in git history; this file now uses enterprise service/query architecture.
-// hooks/useAxiosInterceptor.js
 import { useEffect } from "react";
 import { apiClient } from "../services/apiClient";
 import { useAuth } from "./use-auth";
