@@ -3,12 +3,19 @@ import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useSelector } from "react-redux";
 import { z } from "zod";
-import { postRequest } from "../../common/services/requestService";
+import { postRequest } from "../../services/requestService";
 import { useParams } from "react-router-dom";
 import { formatDate } from "../../common/common-function";
 import { useFetchById } from "../../hooks/useFetchById";
-import CustomDatePicker from "../../common/CustomDatePicker";
+import CustomDatePicker from "../../features/components/form/CustomDatePicker";
 import dayjs from "dayjs";
+import {
+  getFilmEntryByEndpoint,
+  getFilmNextSection,
+  getFilmPreviousSection,
+  getFilmSectionStep,
+  getFilmUpdateEndpoint,
+} from "../../common/film-workflow";
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
@@ -50,7 +57,7 @@ const CensorSection = ({ setActiveSection, filmType }) => {
   // const dispatch = useDispatch();
   const storedFilmData = useSelector((state) => state.featureFilm.data);
   const { id } = useParams();
-  const { data: formData } = useFetchById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id);
+  const { data: formData } = useFetchById(getFilmEntryByEndpoint(filmType), id);
 
   const {
     register,
@@ -88,13 +95,13 @@ const CensorSection = ({ setActiveSection, filmType }) => {
     formData.append("censor_certificate_nom", data.certificateNumber);
     formData.append("censor_certificate_date", data.certificateDate);
     formData.append("censor_certificate_file", data.certificateFile);
-    formData.append('step', '2');
+    formData.append('step', getFilmSectionStep(filmType, "censor"));
     formData.append('id', id);
     formData.append("film_type", filmType);
-    filmType == 'feature' ? url = "film/feature-update" : url = "film/non-feature-update";
+    url = getFilmUpdateEndpoint(filmType);
     const response = await postRequest(url, formData);
     if (response.statusCode == 200) {
-      setActiveSection(3);
+      setActiveSection(getFilmNextSection(filmType, "censor"));
     }
   };
 
@@ -195,7 +202,7 @@ const CensorSection = ({ setActiveSection, filmType }) => {
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() => setActiveSection(1)}
+              onClick={() => setActiveSection(getFilmPreviousSection(filmType, "censor"))}
             >
               <i className="bi bi-arrow-left me-2"></i>
               Back to Prev

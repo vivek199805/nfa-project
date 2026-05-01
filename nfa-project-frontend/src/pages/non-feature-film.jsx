@@ -7,14 +7,14 @@ import FilmDetailsSection from "../component/feature-component/film-details-comp
 import PaymentSection from "../component/feature-component/PaymentSection-component";
 import ProducerDetailsSection from "../component/feature-component/producer-component";
 import ReturnSection from "../component/feature-component/return-component";
-import StepIndicator from "../component/StepIndicator";
+import StepIndicator from "../features/components/shared/StepIndicator";
 import { useEffect, useState } from "react";
-// import { useQuery } from "@tanstack/react-query";
-// import { getRequestById } from "../common/services/requestService";
 import OtherSection from "../component/non-feature-component/other-component";
 import ViewSection from "../component/non-feature-component/view-section";
-import Navbar from "../component/layouts/navbar";
+import Navbar from "../features/components/layout/Navbar";
 import { useFetchById } from "../hooks/useFetchById";
+import { getResumeStep } from "../common/entry-step";
+import { getFilmEntryByEndpoint } from "../common/film-workflow";
 
 const steps = [
   "General",
@@ -32,19 +32,11 @@ const steps = [
 const NonFeatureFilmPage = () => {
   const [activeSection, setActiveSection] = useState(1);
   const { id } = useParams();
-  const { data: formData, } = useFetchById("film/non-feature-entry-by", id);
-
-  // const { data: formData } = useQuery({
-  //   queryKey: ["film/feature-entry-by", id],
-  //   queryFn: () => getRequestById("film/non-feature-entry-by", id),
-  //   refetchOnMount: true,
-  //   staleTime: 0,
-  // });
+  const { data: formData, } = useFetchById(getFilmEntryByEndpoint("non-feature"), id);
 
   useEffect(() => {
     if (id && formData?.data?.active_step != null) {
-      const step = +formData.data.active_step;
-      setActiveSection(step < steps.length ? step + 1 : steps.length);
+      setActiveSection(getResumeStep(formData.data.active_step, steps.length));
     }
   }, [id, formData]);
 

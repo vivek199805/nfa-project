@@ -6,10 +6,17 @@ import { Pencil, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
   postRequest,
-} from "../../common/services/requestService";
-import { showErrorToast, showSuccessToast } from "../../common/services/toastService";
+} from "../../services/requestService";
+import { showErrorToast, showSuccessToast } from "../../services/toastService";
 import { useParams } from "react-router-dom";
 import Swal from "sweetalert2";
+import {
+  getFilmNextSection,
+  getFilmPreviousSection,
+  getFilmSectionStep,
+  getFilmUpdateEndpoint,
+} from "../../common/film-workflow";
+import { apiConfig } from "../../services/apiEndpoints";
 
 const filmSchema = z.object({
   soundRecordist: z.string().trim().optional(),
@@ -42,7 +49,7 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
 
   const getAudiographerList = useCallback(async () => {
     try {
-      const response = await postRequest("film/audiographer-list", { id });
+      const response = await postRequest(apiConfig.filmChild.audiographer.list, { id });
       if (response.statusCode === 200) {
         setAudioGrapherData(response.data);
       } else {
@@ -73,7 +80,7 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
     }
 
     try {
-      const response = await postRequest("film/store-audiographer", formData);
+      const response = await postRequest(apiConfig.filmChild.audiographer.store, formData);
       if (response.statusCode === 200) {
         showSuccessToast(response.message);
         await getAudiographerList();
@@ -123,7 +130,7 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
         formData.append("nfa_feature_id", id);
         try {
           const response = await postRequest(
-            "film/delete-audiographer",
+            apiConfig.filmChild.audiographer.delete,
             formData
           );
           if (response.statusCode === 200) {
@@ -145,16 +152,16 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
     const isValid = await trigger(); // validate the form
     if ((isValid || !showForm) && audioGrapherData.length > 0) {
       const formData = new FormData();
-      formData.append("step", "8");
+      formData.append("step", getFilmSectionStep(filmType, "audiographer"));
       formData.append("id", id);
       formData.append("film_type", filmType);
-      const response = await postRequest("film/feature-update", formData);
+      const response = await postRequest(getFilmUpdateEndpoint(filmType), formData);
       if (response.statusCode == 200) {
-        setActiveSection(9);
+        setActiveSection(getFilmNextSection(filmType, "audiographer"));
       }
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
-      audioGrapherData.length === 0 ?   showErrorToast("Atleast one audiographer is required") :
+      audioGrapherData.length === 0 ? showErrorToast("Atleast one audiographer is required") :
         showErrorToast("Please fill all required fields");
     }
   };
@@ -173,6 +180,7 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
                   <th>Lyricist</th>
                   <th>
                     <button
+                      type="button"
                       className="add-producer-btn"
                       onClick={() => {
                         reset();
@@ -195,6 +203,7 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
                       <td>{audiographer.re_recordist_filnal}</td>
                       <td>
                         <button
+                          type="button"
                           className="action-btn delete-btn"
                           title="Delete"
                           onClick={() => handleDelete(audiographer._id)}
@@ -202,6 +211,7 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
                           <Trash2 size={16} />
                         </button>
                         <button
+                          type="button"
                           className="action-btn edit-btn"
                           title="Edit"
                           onClick={() => handleEdit(audiographer._id)}
@@ -227,9 +237,8 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
               <label className="form-label">Production Sound Recordist</label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.soundRecordist ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.soundRecordist ? "is-invalid" : ""
+                  }`}
                 placeholder="Enter Production Sound Recordist"
                 {...register("soundRecordist")}
                 maxLength={10}
@@ -247,9 +256,8 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
               </label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.soundDesigner ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.soundDesigner ? "is-invalid" : ""
+                  }`}
                 placeholder=" Enter Sound Designer"
                 {...register("soundDesigner")}
               />
@@ -264,9 +272,8 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
               <label className="form-label">Re - Recordist Track</label>
               <input
                 type="text"
-                className={`form-control ${
-                  errors.reRecordist ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.reRecordist ? "is-invalid" : ""
+                  }`}
                 placeholder=" Enter Re - Recordist Track"
                 {...register("reRecordist")}
               />
@@ -291,7 +298,7 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => setActiveSection(7)}
+          onClick={() => setActiveSection(getFilmPreviousSection(filmType, "audiographer"))}
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev

@@ -3,6 +3,7 @@ import { NavLink, useLocation, useParams } from "react-router-dom";
 import { generatePDF } from "../../common/common-function";
 import "../../styles/FilmSubmissionView.css";
 import { useFetchById } from "../../hooks/useFetchById";
+import { resolveViewWorkflowFromPath } from "../../common/entry-workflow";
 
 const FieldRow = ({ label, value }) => (
   <div className="submission-field">
@@ -109,20 +110,6 @@ const DynamicCardListSection = ({
   </section>
 );
 
-const resolveEndpointFromPath = (pathname = "") => {
-  if (pathname.includes("/best-book/view/")) return "best-book-cinema-entry-by";
-  if (pathname.includes("/film-critic/view/")) return "best-film-critic-entry-by";
-  if (pathname.includes("/non-feature/view/")) return "film/non-feature-entry-by";
-  return "film/feature-entry-by";
-};
-
-const resolveViewTypeFromPath = (pathname = "") => {
-  if (pathname.includes("/best-book/view/")) return "best-book";
-  if (pathname.includes("/film-critic/view/")) return "film-critic";
-  if (pathname.includes("/non-feature/view/")) return "non-feature";
-  return "feature";
-};
-
 const pickValue = (obj, keys) => {
   for (const key of keys) {
     const value = obj?.[key];
@@ -152,8 +139,9 @@ const FilmSubmissionView = ({ data = {} }) => {
   const { id } = useParams();
   const { pathname } = useLocation();
 
-  const endpoint = resolveEndpointFromPath(pathname);
-  const viewType = resolveViewTypeFromPath(pathname);
+  const viewWorkflow = resolveViewWorkflowFromPath(pathname);
+  const endpoint = viewWorkflow.entryBy;
+  const viewType = viewWorkflow.viewType;
   const { data: fetchedResponse, isLoading } = useFetchById(endpoint, id);
 
   const sourceData = useMemo(() => {
@@ -409,6 +397,7 @@ const FilmSubmissionView = ({ data = {} }) => {
             Dashboard
           </NavLink>
           <button
+            type="button"
             className="btn btn-success"
             onClick={() => handleHardCopy("PRINT", true)}
           >

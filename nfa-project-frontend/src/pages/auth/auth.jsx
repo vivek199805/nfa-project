@@ -30,7 +30,7 @@ const AuthPage = () => {
             <SwiperSlide key={index}>
               <img
                 src={slide.image}
-                alt={`slide-${index}`}
+                alt=""
                 className="carousel-img"
               />
             </SwiperSlide>

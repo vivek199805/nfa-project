@@ -1,11 +1,4 @@
-// Previous implementation retained for compatibility:
-// import api from "./axiosService";
-// export const getRequest = async (url, config = {}) => { ... }
-// export const getRequestById = async (url, id, config = {}) => { ... }
-// export const postRequest = async (url, data = {}, config = {}) => { ... }
-// export const updateFormById = async (url, id, payload, config = {}) => { ... }
-
-import { http } from "../../services/apiClient";
+import { http } from "./apiClient";
 
 const normalizeError = (error) => {
   if (error instanceof Error) {

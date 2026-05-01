@@ -1,20 +1,28 @@
+import React, { Suspense, lazy } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import AuthPage from "./pages/auth/auth";
-import AppLayout from "./component/layouts/layout";
-import LoginPage from "./pages/auth/login";
-import SignupPage from "./pages/auth/signUp";
-import ForgotPasswordPage from "./pages/auth/forgot-password";
-import DashboardPage from "./pages/dashboard";
-import FeatureFilmPage from "./pages/feature-film";
-import NonFeatureFilmPage from "./pages/non-feature-film";
-import ChangePasswordPage from "./pages/auth/change-password";
-import ResetPasswordPage from "./pages/auth/reset-password";
-import NotFoundPage from "./pages/not-found-page";
-import ErrorPage from "./pages/error-page";
-import Loader from "./component/loader-component";
-import FilmSubmissionView from "./component/feature-component/FilmSubmissionView";
-import BestBookPage from "./pages/best-book";
-import BestFilmCriticPage from "./pages/best-filmCritic";
+import AppLayout from "./features/components/layout/AppLayout";
+import Loader from "./features/components/shared/Loader";
+
+/**
+ * lazy() enables code splitting by dynamically importing components only when needed.
+ * This reduces the initial bundle size and improves app performance by loading
+ * route components on-demand. Each component is wrapped with Suspense and Loader
+ * to show a loading state during the import.
+ */
+const AuthPage = lazy(() => import("./pages/auth/auth"));
+const LoginPage = lazy(() => import("./pages/auth/login"));
+const SignupPage = lazy(() => import("./pages/auth/signUp"));
+const ForgotPasswordPage = lazy(() => import("./pages/auth/forgot-password"));
+const DashboardPage = lazy(() => import("./pages/dashboard"));
+const FeatureFilmPage = lazy(() => import("./pages/feature-film"));
+const NonFeatureFilmPage = lazy(() => import("./pages/non-feature-film"));
+const ChangePasswordPage = lazy(() => import("./pages/auth/change-password"));
+const ResetPasswordPage = lazy(() => import("./pages/auth/reset-password"));
+const NotFoundPage = lazy(() => import("./pages/not-found-page"));
+const ErrorPage = lazy(() => import("./pages/error-page"));
+const FilmSubmissionView = lazy(() => import("./component/feature-component/FilmSubmissionView"));
+const BestBookPage = lazy(() => import("./pages/best-book"));
+const BestFilmCriticPage = lazy(() => import("./pages/best-filmCritic"));
 
 /**
  * Configures the application's routing using React Router's createBrowserRouter.
@@ -91,11 +99,18 @@ export function App() {
   return (
     <>
       <Loader />
-      <RouterProvider router={router} />
+      {/**
+       * Suspense is a React component that allows you to handle asynchronous operations gracefully.
+       * It wraps components that may suspend (i.e., lazy-loaded components) and displays a fallback UI
+       * (in this case, <Loader />) while those components are being loaded.
+       * When all suspended components finish loading, Suspense automatically renders the actual components.
+       * This improves UX by showing a loading indicator instead of a blank screen during code splitting.
+       */}
+      <Suspense fallback={<Loader />}>
+        <RouterProvider router={router} />
+      </Suspense>
     </>
   );
 }
 
 export default App;
-
-

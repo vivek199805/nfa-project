@@ -1,7 +1,7 @@
 // ModalComponent.jsx
 
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../hooks/use-auth";
+import { useAuth } from "../../../hooks/use-auth";
 
 const FeatureModalComponent = ({
   title = "Producer / Production Company",

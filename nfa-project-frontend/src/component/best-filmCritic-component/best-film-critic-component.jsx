@@ -3,12 +3,18 @@ import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import Select from "react-dropdown-select";
 import { useEffect, useState } from "react";
-import { getRequest, postRequest } from "../../common/services/requestService";
+import { getRequest, postRequest } from "../../services/requestService";
 import { useNavigate, useParams } from "react-router-dom";
 import { useFetchById } from "../../hooks/useFetchById";
 import dayjs from "dayjs";
-import CustomDatePicker from "../../common/CustomDatePicker";
+import CustomDatePicker from "../../features/components/form/CustomDatePicker";
 import { formatDate } from "../../common/common-function";
+import {
+  filmCriticEndpoints,
+  getAwardNextSection,
+  getAwardSectionStep,
+} from "../../common/award-workflow";
+import { apiConfig } from "../../services/apiEndpoints";
 
 const filmSchema = z.object({
   writer_name: z.string().min(1, "This field is required"),
@@ -30,7 +36,7 @@ const BestFilmSection = ({ setActiveSection }) => {
   const [languageOptions, setLanguageOptions] = useState([]);
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: formData } = useFetchById('best-film-critic-entry-by',id);
+  const { data: formData } = useFetchById(filmCriticEndpoints.entryBy, id);
 
   const {
     register,
@@ -48,7 +54,7 @@ const BestFilmSection = ({ setActiveSection }) => {
   useEffect(() => {
     async function fetchLanguages() {
       try {
-        const response = await getRequest("get-languages");
+        const response = await getRequest(apiConfig.common.languages);
         const options = response.data.map((lang) => ({
           label: lang.name,
           value: String(lang.id),
@@ -87,18 +93,18 @@ const BestFilmSection = ({ setActiveSection }) => {
     formData.append("publication_date", data.publication_date);
     formData.append("publication_name", data.publication_name);
     formData.append("rni", data.rni == "Yes" ? 1 : 0);
-    formData.append("step", 1);
+    formData.append("step", getAwardSectionStep("first"));
     if (id) {
       formData.append("id", id);
-      url = "update-entry"
+      url = filmCriticEndpoints.update
     } else {
-      url = "create-entry"
+      url = filmCriticEndpoints.create
     }
 
     const response = await postRequest(url, formData);
     if (response.statusCode == 200) {
       if (!id) navigate(`/film-critic/${response.data.id}`);
-      setActiveSection(2);
+      setActiveSection(getAwardNextSection("first"));
     }
   };
 

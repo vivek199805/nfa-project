@@ -2,11 +2,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useEffect, useState } from "react";
-import { postRequest } from "../../common/services/requestService";
+import { postRequest } from "../../services/requestService";
 import { useNavigate, useParams } from "react-router-dom";
 import { useFetchById } from "../../hooks/useFetchById";
 import { countWords } from "../../common/common-function";
 import { useInputRestriction } from "../../hooks/useInputRestriction";
+import {
+  bestBookEndpoints,
+  getAwardNextSection,
+  getAwardSectionStep,
+} from "../../common/award-workflow";
 
 const filmSchema = z.object({
   author_name: z.string().min(1, "This field is required"),
@@ -40,7 +45,7 @@ const AuthorSection = ({ setActiveSection }) => {
   const numberRestriction = useInputRestriction("number");
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: formData } = useFetchById("best-book-cinema-entry-by", id);
+  const { data: formData } = useFetchById(bestBookEndpoints.entryBy, id);
 
   const {
     register,
@@ -82,18 +87,18 @@ const AuthorSection = ({ setActiveSection }) => {
     );
     formData.append("author_address", data.author_address);
     formData.append("author_profile", data.author_profile);
-    formData.append("step", 1);
+    formData.append("step", getAwardSectionStep("first"));
     if (id) {
       formData.append("id", id);
-      url = "best-book-cinema-update"
+      url = bestBookEndpoints.update
     } else {
-      url = "best-book-cinema-entry"
+      url = bestBookEndpoints.create
     }
 
     const response = await postRequest(url, formData);
     if (response.statusCode == 200) {
       if (!id) navigate(`/best-book/${response.data.id}`);
-      setActiveSection(2);
+      setActiveSection(getAwardNextSection("first"));
     }
   };
 

@@ -5,8 +5,15 @@ import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import {
   postRequest,
-} from "../../common/services/requestService";
+} from "../../services/requestService";
 import { useFetchById } from "../../hooks/useFetchById";
+import {
+  getFilmEntryByEndpoint,
+  getFilmNextSection,
+  getFilmPreviousSection,
+  getFilmSectionStep,
+  getFilmUpdateEndpoint,
+} from "../../common/film-workflow";
 
 const declarationSchema = z.object({
   declarations: z.tuple([
@@ -46,7 +53,7 @@ const defaultValues = {
 
 const DeclarationSection = ({ setActiveSection, filmType }) => {
   const { id } = useParams();
-    const { data: formData } = useFetchById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id);
+    const { data: formData } = useFetchById(getFilmEntryByEndpoint(filmType), id);
   
   const {
     control,
@@ -81,7 +88,7 @@ const DeclarationSection = ({ setActiveSection, filmType }) => {
   }, [formData, reset]);
 
   const onSubmit = async (data) => {
-    let url = filmType == 'feature' ? "film/feature-update" : "film/non-feature-update";
+    let url = getFilmUpdateEndpoint(filmType);
     const declarationKeysInOrder = [
       "declaration_one",
       "declaration_two",
@@ -100,14 +107,13 @@ const DeclarationSection = ({ setActiveSection, filmType }) => {
     declarationKeysInOrder.forEach((item, index) => {
     formData.append(item, data.declarations[index] ? "true" : "false");
     });
-    formData.append("step", filmType == 'feature' ? '11': '9');
+    formData.append("step", getFilmSectionStep(filmType, "declaration"));
     formData.append("id", id);
     formData.append("film_type", filmType);
 
     const response = await postRequest(url, formData);
     if (response.statusCode == 200) {
-      setActiveSection(12);
-      filmType == 'feature' ? setActiveSection(12) : setActiveSection(10);
+      setActiveSection(getFilmNextSection(filmType, "declaration"));
     }
   };
 
@@ -148,7 +154,9 @@ const DeclarationSection = ({ setActiveSection, filmType }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => filmType == 'feature' ? setActiveSection(10) : setActiveSection(8)}
+          onClick={() =>
+            setActiveSection(getFilmPreviousSection(filmType, "declaration"))
+          }
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev

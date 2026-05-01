@@ -1,13 +1,15 @@
 import { useParams } from "react-router-dom";
-import StepIndicator from "../component/StepIndicator";
+import StepIndicator from "../features/components/shared/StepIndicator";
 import { useEffect, useState } from "react";
-import Navbar from "../component/layouts/navbar";
+import Navbar from "../features/components/layout/Navbar";
 import AuthorSection from "../component/best-book-component/author-component";
 import BestBookCinemaSection from "../component/best-book-component/book-cinema-component";
 import PublisherBookSection from "../component/best-book-component/punlisher-book-component";
 import BookDeclarationSection from "../component/best-book-component/declaration-component";
 import PreviewPaymentSection from "../component/best-book-component/preview-payment";
 import { useFetchById } from "../hooks/useFetchById";
+import { getResumeStep } from "../common/entry-step";
+import { bestBookEndpoints } from "../common/award-workflow";
 
 const steps = [
   "Author",
@@ -19,12 +21,11 @@ const steps = [
 const BestBookPage = () => {
   const [activeSection, setActiveSection] = useState(1);
   const { id } = useParams();
-  const { data: formData } = useFetchById("best-book-cinema-entry-by", id);
+  const { data: formData } = useFetchById(bestBookEndpoints.entryBy, id);
 
   useEffect(() => {
     if (id && formData?.data?.active_step !== undefined) {
-      const step = +formData.data.active_step;
-      setActiveSection(step < steps.length ? step + 1 : steps.length);
+      setActiveSection(getResumeStep(formData.data.active_step, steps.length));
     }
   }, [id, formData]);
 

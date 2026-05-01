@@ -5,11 +5,18 @@ import { useInputRestriction } from "../../hooks/useInputRestriction";
 import "../../styles/ProducerTable.css";
 import { Pencil, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { postRequest } from "../../common/services/requestService";
-import { showErrorToast, showSuccessToast } from "../../common/services/toastService";
+import { postRequest } from "../../services/requestService";
+import { showErrorToast, showSuccessToast } from "../../services/toastService";
 import { useParams } from "react-router-dom";
 // import { useQuery } from "@tanstack/react-query";
 import Swal from "sweetalert2";
+import {
+  getFilmNextSection,
+  getFilmPreviousSection,
+  getFilmSectionStep,
+  getFilmUpdateEndpoint,
+} from "../../common/film-workflow";
+import { apiConfig } from "../../services/apiEndpoints";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
@@ -93,7 +100,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
 
   const getDirector = useCallback(async () => {
     try {
-      const response = await postRequest("film/director-list", { id, film_type: filmType });
+      const response = await postRequest(apiConfig.filmChild.director.list, { id, film_type: filmType });
       if (response.statusCode === 200) {
         setDirectors(response.data);
       } else {
@@ -156,7 +163,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
     }
 
     try {
-      const response = await postRequest("film/store-director", formData);
+      const response = await postRequest(apiConfig.filmChild.director.store, formData);
       if (response.statusCode === 200) {
         showSuccessToast(response.message);
         await getDirector();
@@ -207,7 +214,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
         formData.append("producerId", index);
         formData.append("nfa_feature_id", id);
         try {
-          const response = await postRequest("film/delete-director", formData);
+          const response = await postRequest(apiConfig.filmChild.director.delete, formData);
           if (response.statusCode === 200) {
             showSuccessToast(response.message);
             await getDirector();
@@ -225,15 +232,15 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
 
   const onNext = async () => {
     const isValid = await trigger(); // validate the form
-    let url = filmType == 'feature' ? "film/feature-update" : "film/non-feature-update";
+    let url = getFilmUpdateEndpoint(filmType);
     if ((isValid || !showForm) && directors.length > 0) {
       const formData = new FormData();
-      formData.append("step", "5");
+      formData.append("step", getFilmSectionStep(filmType, "director"));
       formData.append("id", id);
       formData.append("film_type", filmType);
       const response = await postRequest(url, formData);
       if (response.statusCode == 200) {
-        setActiveSection(6);
+        setActiveSection(getFilmNextSection(filmType, "director"));
       }
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" }); // scroll to errors
@@ -250,6 +257,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
             Director
           </p>
           <button
+            type="button"
             className="add-producer-btn"
             onClick={() => {
               reset();
@@ -299,7 +307,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
                       {director.director_self_attested_doc ? (
                         <>
                           <a
-                          href= {`${import.meta.env.VITE_API_URL}/${director.director_self_attested_doc}`}
+                            href={`${import.meta.env.VITE_API_URL}/${director.director_self_attested_doc}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="btn btn-sm btn-outline-primary ms-2"
@@ -313,6 +321,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
                     </td>
                     <td>
                       <button
+                        type="button"
                         className="action-btn delete-btn"
                         title="Delete"
                         onClick={() => handleDelete(director?._id)}
@@ -320,6 +329,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
                         <Trash2 size={16} />
                       </button>
                       <button
+                        type="button"
                         className="action-btn edit-btn"
                         title="Edit"
                         onClick={() => handleEdit(director?._id)}
@@ -476,7 +486,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
                     />
                     {typeof field.value === "string" && field.value !== "" && (
                       <a
-                        href= {`${import.meta.env.VITE_API_URL}/${field.value}`}
+                        href={`${import.meta.env.VITE_API_URL}/${field.value}`}
                         target="_blank"
                         rel="noreferrer"
                         className="mt-2 d-block"
@@ -507,7 +517,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => setActiveSection(4)}
+          onClick={() => setActiveSection(getFilmPreviousSection(filmType, "director"))}
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev

@@ -3,7 +3,14 @@ import { useEffect, useRef, useState } from "react";
 import { Controller } from "react-hook-form";
 import { createPortal } from "react-dom";
 
-const PasswordInput = ({ register, error, placeholder = "Password", name }) => {
+const PasswordInput = ({
+  register,
+  error,
+  placeholder = "Password",
+  name,
+  id,
+  describedBy,
+}) => {
   const [showPassword, setShowPassword] = useState(false);
 
   const togglePassword = () => setShowPassword((prev) => !prev);
@@ -11,21 +18,29 @@ const PasswordInput = ({ register, error, placeholder = "Password", name }) => {
   return (
     <div className="input-group mb-3">
       <span className="input-group-text">
-        <i className="bi bi-unlock"></i>
+        <i className="bi bi-unlock" aria-hidden="true"></i>
       </span>
       <input
+        id={id}
         type={showPassword ? "text" : "password"}
         className={`form-control ${error ? "is-invalid" : ""}`}
         placeholder={placeholder}
+        aria-invalid={Boolean(error)}
+        aria-describedby={describedBy}
         {...register(name)}
       />
-      <span
+      <button
+        type="button"
         className="input-group-text"
         onClick={togglePassword}
         style={{ cursor: "pointer" }}
+        aria-label={showPassword ? "Hide password" : "Show password"}
       >
-        <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`}></i>
-      </span>
+        <i
+          className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`}
+          aria-hidden="true"
+        ></i>
+      </button>
       {error && <div className="invalid-feedback">{error.message}</div>}
     </div>
   );
@@ -49,6 +64,8 @@ export const PasswordField = ({
   showValidationBox = false,
   username = "",
   validationMode = "popover",
+  id,
+  describedBy,
 }) => {
   const [showErrorBox, setShowErrorBox] = useState(false);
   const hideTimeout = useRef(null);
@@ -103,13 +120,16 @@ export const PasswordField = ({
             <>
               <div className="input-group mb-3">
                 <span className="input-group-text">
-                  <i className="bi bi-unlock"></i>
+                  <i className="bi bi-unlock" aria-hidden="true"></i>
                 </span>
                 <input
                   {...field}
+                  id={id}
                   type={showPassword ? "text" : "password"}
                   placeholder={placeholder}
                   className={`form-control ${fieldState.error ? "is-invalid" : ""}`}
+                  aria-invalid={Boolean(fieldState.error)}
+                  aria-describedby={describedBy}
                   onFocus={(e) => {
                     clearTimeout(hideTimeout.current);
                     if (showValidationBox) setShowErrorBox(true);
@@ -123,15 +143,18 @@ export const PasswordField = ({
                     }, 200);
                   }}
                 />
-                <span
+                <button
+                  type="button"
                   className="input-group-text"
                   onClick={togglePassword}
                   style={{ cursor: "pointer" }}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   <i
                     className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`}
+                    aria-hidden="true"
                   ></i>
-                </span>
+                </button>
                 {fieldState.error && (
                   <div className="invalid-feedback">
                     {fieldState.error.message}

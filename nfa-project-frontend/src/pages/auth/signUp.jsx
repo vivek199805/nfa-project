@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useAuth } from "../../hooks/use-auth";
-import { PasswordField } from "../../component/passwordInput";
+import { PasswordField } from "../../features/components/shared/PasswordInput";
 import { Link } from "react-router-dom";
 
 const registerSchema = z
@@ -99,12 +99,12 @@ const SignupPage = () => {
     <div className="form-container auth-form-container auth-pane-left signup-form-container p-4 p-md-5">
       <div className="auth-form-inner mx-auto">
         <div className="top-logo top-logo-auth d-flex align-items-center gap-3 mb-4">
-          <a href="#">
+          <div>
             <img src="/images/nfa-logo.png" alt="NFA" />
-          </a>
-          <a href="#">
+          </div>
+          <div>
             <img src="/images/mib.png" alt="MIB" />
-          </a>
+          </div>
         </div>
 
         <form
@@ -130,10 +130,16 @@ const SignupPage = () => {
                   errors[field.name] ? "is-invalid" : ""
                 }`}
                 aria-invalid={Boolean(errors[field.name])}
+                aria-describedby={
+                  errors[field.name] ? `${field.name}-error` : undefined
+                }
                 {...register(field.name)}
               />
               {errors[field.name] && (
-                <div className="invalid-feedback auth-error">
+                <div
+                  id={`${field.name}-error`}
+                  className="invalid-feedback auth-error"
+                >
                   {errors[field.name].message}
                 </div>
               )}
@@ -150,6 +156,7 @@ const SignupPage = () => {
                 errors.category ? "is-invalid" : ""
               }`}
               aria-invalid={Boolean(errors.category)}
+              aria-describedby={errors.category ? "category-error" : undefined}
               {...register("category")}
             >
               <option value="">Select Category</option>
@@ -157,7 +164,7 @@ const SignupPage = () => {
               <option value="2">Publisher</option>
             </select>
             {errors.category && (
-              <div className="invalid-feedback auth-error">
+              <div id="category-error" className="invalid-feedback auth-error">
                 {errors.category.message}
               </div>
             )}
@@ -169,6 +176,7 @@ const SignupPage = () => {
             </label>
             <PasswordField
               control={registerForm.control}
+              id="password"
               name="password"
               username={emailValue}
               showValidationBox={true}
@@ -182,6 +190,7 @@ const SignupPage = () => {
             </label>
             <PasswordField
               control={registerForm.control}
+              id="confirmPassword"
               name="confirmPassword"
               placeholder="Enter Confirm Password"
               username={emailValue}
@@ -192,8 +201,9 @@ const SignupPage = () => {
           <button
             type="submit"
             className="btn btn-common-form auth-submit-btn w-100"
+            disabled={registerMutation.isPending}
           >
-            Register
+            {registerMutation.isPending ? "Registering..." : "Register"}
           </button>
 
           <div className="link text-center mt-2">

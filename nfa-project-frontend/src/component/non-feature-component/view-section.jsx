@@ -3,6 +3,11 @@ import "../../styles/accordion.css";
 import { ChevronDown, Pencil } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useFetchById } from "../../hooks/useFetchById";
+import {
+  getFilmEntryByEndpoint,
+  getFilmNextSection,
+  getFilmPreviousSection,
+} from "../../common/film-workflow";
 
 const ViewSection = ({ setActiveSection }) => {
   const [activeIndex, setActiveIndex] = useState(null);
@@ -18,7 +23,7 @@ const ViewSection = ({ setActiveSection }) => {
     "Return",
   ];
 
-  const { data: formData } = useFetchById("film/non-feature-entry-by", id);
+  const { data: formData } = useFetchById(getFilmEntryByEndpoint("non-feature"), id);
 
   const toggle = (index) => {
     setActiveIndex(activeIndex === index ? null : index);
@@ -66,7 +71,7 @@ const ViewSection = ({ setActiveSection }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => setActiveSection(7)}
+          onClick={() => setActiveSection(getFilmPreviousSection("non-feature", "view"))}
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev
@@ -75,7 +80,7 @@ const ViewSection = ({ setActiveSection }) => {
         <button
           type="submit"
           className="btn btn-primary"
-          onClick={() => setActiveSection(9)}
+          onClick={() => setActiveSection(getFilmNextSection("non-feature", "view"))}
         >
           Next <i className="bi bi-arrow-right ms-2"></i>
         </button>

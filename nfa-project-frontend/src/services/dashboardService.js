@@ -1,5 +1,6 @@
 import { http } from "./apiClient";
+import { apiConfig } from "./apiEndpoints";
 
 export const dashboardService = {
-  getUserEntries: () => http.get("/entry-list"),
+  getUserEntries: () => http.get(apiConfig.dashboard.entryList),
 };

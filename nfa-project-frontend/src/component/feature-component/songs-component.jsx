@@ -7,12 +7,19 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   postRequest,
-} from "../../common/services/requestService";
+} from "../../services/requestService";
 import {
   showErrorToast,
   showSuccessToast,
-} from "../../common/services/toastService";
+} from "../../services/toastService";
 import Swal from "sweetalert2";
+import {
+  getFilmNextSection,
+  getFilmPreviousSection,
+  getFilmSectionStep,
+  getFilmUpdateEndpoint,
+} from "../../common/film-workflow";
+import { apiConfig } from "../../services/apiEndpoints";
 
 const filmSchema = z.object({
   songTitle: z.string().trim().min(1, "This field is required"),
@@ -51,7 +58,7 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
 
   const getSongList = useCallback(async () => {
     try {
-      const response = await postRequest("film/song-list", { id });
+      const response = await postRequest(apiConfig.filmChild.song.list, { id });
       if (response.statusCode === 200) {
         setSongsData(response.data);
       } else {
@@ -85,7 +92,7 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
     }
 
     try {
-      const response = await postRequest("film/store-song", formData);
+      const response = await postRequest(apiConfig.filmChild.song.store, formData);
       if (response.statusCode === 200) {
         showSuccessToast(response.message);
         await getSongList();
@@ -142,7 +149,7 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
         formData.append("songId", index);
         formData.append("nfa_feature_id", id);
         try {
-          const response = await postRequest("film/delete-song", formData);
+          const response = await postRequest(apiConfig.filmChild.song.delete, formData);
           if (response.statusCode === 200) {
             showSuccessToast(response.message);
             await getSongList();
@@ -162,12 +169,12 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
     const isValid = await trigger(); // validate the form
     if ((isValid || !showForm) && songsData.length > 0) {
       const formData = new FormData();
-      formData.append("step", "7");
+      formData.append("step", getFilmSectionStep(filmType, "songs"));
       formData.append("id", id);
       formData.append("film_type", filmType);
-      const response = await postRequest("film/feature-update", formData);
+      const response = await postRequest(getFilmUpdateEndpoint(filmType), formData);
       if (response.statusCode == 200) {
-        setActiveSection(8);
+        setActiveSection(getFilmNextSection(filmType, "songs"));
       } else {
         showErrorToast(response.message);
       }
@@ -194,6 +201,7 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
                   <th>Playback Singer Female</th>
                   <th>
                     <button
+                      type="button"
                       className="add-producer-btn"
                       onClick={() => {
                         reset();
@@ -220,6 +228,7 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
 
                       <td>
                         <button
+                          type="button"
                           className="action-btn delete-btn"
                           title="Delete"
                           onClick={() => handleDelete(song._id)}
@@ -227,6 +236,7 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
                           <Trash2 size={16} />
                         </button>
                         <button
+                          type="button"
                           className="action-btn edit-btn"
                           title="Edit"
                           onClick={() => handleEdit(song._id)}
@@ -369,7 +379,7 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => setActiveSection(6)}
+          onClick={() => setActiveSection(getFilmPreviousSection(filmType, "songs"))}
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev

@@ -1,4 +1,3 @@
-// Previous implementation retained in git history; this file now uses enterprise service/query architecture.
 import { useParams } from "react-router-dom";
 import ActorSection from "../component/feature-component/actor-component";
 import AudiographerSection from "../component/feature-component/audiographer";
@@ -12,10 +11,12 @@ import ProducerDetailsSection from "../component/feature-component/producer-comp
 import ReturnSection from "../component/feature-component/return-component";
 import ScreenPlaySection from "../component/feature-component/screenplay-component";
 import SongsFormSection from "../component/feature-component/songs-component";
-import StepIndicator from "../component/StepIndicator";
+import StepIndicator from "../features/components/shared/StepIndicator";
 import { useEffect, useState } from "react";
-import Navbar from "../component/layouts/navbar";
+import Navbar from "../features/components/layout/Navbar";
 import { useFetchById } from "../hooks/useFetchById";
+import { getResumeStep } from "../common/entry-step";
+import { getFilmEntryByEndpoint } from "../common/film-workflow";
 
 const steps = [
   "Film Details",
@@ -36,21 +37,11 @@ const FeatureFilmPage = () => {
   const [activeSection, setActiveSection] = useState(1);
   const { id } = useParams();
 
-  // const { data: formData } = useQuery({
-  //   queryKey: ["film/feature-entry-by", id],
-  //   queryFn: () => getRequestById("film/feature-entry-by", id),
-  //   enabled: !!id,
-  //   // initialData: staticForms, // sets mock data
-  //   refetchOnMount: true,
-  //   staleTime: 0,
-  // });
-
-  const { data: formData } = useFetchById("film/feature-entry-by", id);
+  const { data: formData } = useFetchById(getFilmEntryByEndpoint("feature"), id);
 
   useEffect(() => {
     if (id && formData?.data?.active_step !== undefined) {
-      const step = +formData.data.active_step;
-      setActiveSection(step < steps.length ? step + 1 : steps.length);
+      setActiveSection(getResumeStep(formData.data.active_step, steps.length));
     }
   }, [id, formData]);
 

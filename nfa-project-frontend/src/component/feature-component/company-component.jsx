@@ -3,8 +3,15 @@ import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useParams } from "react-router-dom";
 import { z } from "zod";
-import { postRequest } from "../../common/services/requestService";
+import { postRequest } from "../../services/requestService";
 import { useFetchById } from "../../hooks/useFetchById";
+import {
+  getFilmEntryByEndpoint,
+  getFilmNextSection,
+  getFilmPreviousSection,
+  getFilmSectionStep,
+  getFilmUpdateEndpoint,
+} from "../../common/film-workflow";
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 
@@ -42,7 +49,7 @@ const companySchema = z.object({
 const CompanyRegistrationSection = ({ setActiveSection, filmType }) => {
   const { id } = useParams();
 
-  const { data: formData } = useFetchById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id);
+  const { data: formData } = useFetchById(getFilmEntryByEndpoint(filmType), id);
 
   const {
     register,
@@ -57,15 +64,6 @@ const CompanyRegistrationSection = ({ setActiveSection, filmType }) => {
     mode: "onTouched",
     // shouldFocusError: false,
   });
-
-  // const { data: formData, } = useQuery({
-  //   queryKey: ["userForm", id],
-  //   queryFn: () => getRequestById(filmType === "feature" ? "film/feature-entry-by" : "film/non-feature-entry-by", id),
-  //   enabled: !!id, // Only run query if id exists
-  //   refetchOnMount: true,
-  //   staleTime: 0,
-  // });
-
   useEffect(() => {
     if (formData) {
       reset({
@@ -77,17 +75,17 @@ const CompanyRegistrationSection = ({ setActiveSection, filmType }) => {
 
   const onSubmit = async (data) => {
     // Call API to submit form data
-    let url = filmType == 'feature' ? "film/feature-update" : "film/non-feature-update";
+    let url = getFilmUpdateEndpoint(filmType);
     const formData = new FormData();
     formData.append("company_reg_details", data.CompanyRegistration);
     formData.append("company_reg_doc", data.CompanyRegistrationFile);
-    formData.append('step', '3');
+    formData.append('step', getFilmSectionStep(filmType, "company"));
     formData.append('id', id);
     formData.append("film_type", filmType);
 
     const response = await postRequest(url, formData);
     if (response.statusCode == 200) {
-      setActiveSection(4);
+      setActiveSection(getFilmNextSection(filmType, "company"));
     }
   };
 
@@ -155,7 +153,7 @@ const CompanyRegistrationSection = ({ setActiveSection, filmType }) => {
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => setActiveSection(2)}
+            onClick={() => setActiveSection(getFilmPreviousSection(filmType, "company"))}
           >
             <i className="bi bi-arrow-left me-2"></i>
             Back to Prev

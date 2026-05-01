@@ -5,8 +5,14 @@ import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import {
   postRequest,
-} from "../../common/services/requestService";
+} from "../../services/requestService";
 import { useFetchById } from "../../hooks/useFetchById";
+import {
+  filmCriticEndpoints,
+  getAwardNextSection,
+  getAwardPreviousSection,
+  getAwardSectionStep,
+} from "../../common/award-workflow";
 
 const declarationSchema = z.object({
   declarations: z.tuple([
@@ -30,7 +36,7 @@ const defaultValues = {
 
 const DeclarationSection = ({ setActiveSection }) => {
   const { id } = useParams();
-  const { data: formData } = useFetchById("best-film-critic-entry-by", id);  
+  const { data: formData } = useFetchById(filmCriticEndpoints.entryBy, id);  
   const {
     control,
     handleSubmit,
@@ -66,12 +72,12 @@ const DeclarationSection = ({ setActiveSection }) => {
     declarationKeysInOrder.forEach((item, index) => {
     formData.append(item, data.declarations[index] ? "true" : "false");
     });
-    formData.append("step", 4);
+    formData.append("step", getAwardSectionStep("declaration"));
     formData.append("id", id);
 
-    const response = await postRequest('update-entry', formData);
+    const response = await postRequest(filmCriticEndpoints.update, formData);
     if (response.statusCode == 200) {
-      setActiveSection(5);
+      setActiveSection(getAwardNextSection("declaration"));
     }
   };
 
@@ -112,7 +118,9 @@ const DeclarationSection = ({ setActiveSection }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => setActiveSection(3)}
+          onClick={() =>
+            setActiveSection(getAwardPreviousSection("declaration"))
+          }
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev

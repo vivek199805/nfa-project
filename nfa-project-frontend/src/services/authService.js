@@ -1,12 +1,13 @@
 import { http } from "./apiClient";
+import { apiConfig } from "./apiEndpoints";
 
 export const authService = {
-  login: (payload) => http.post("user/login", payload),
-  register: (payload) => http.post("user/register", payload),
-  verifyEmail: (payload) => http.post("user/verify-email", payload),
-  forgotPassword: (payload) => http.post("user/forgot-password", payload),
-  verifyOtp: (payload) => http.post("user/verify-otp", payload),
-  resendOtp: (payload) => http.post("user/resend-otp", payload),
-  resetPassword: (payload) => http.post("user/reset-password", payload),
-  changePassword: (payload) => http.post("user/change-password", payload),
+  login: (payload) => http.post(apiConfig.auth.login, payload),
+  register: (payload) => http.post(apiConfig.auth.register, payload),
+  verifyEmail: (payload) => http.post(apiConfig.auth.verifyEmail, payload),
+  forgotPassword: (payload) => http.post(apiConfig.auth.forgotPassword, payload),
+  verifyOtp: (payload) => http.post(apiConfig.auth.verifyOtp, payload),
+  resendOtp: (payload) => http.post(apiConfig.auth.resendOtp, payload),
+  resetPassword: (payload) => http.post(apiConfig.auth.resetPassword, payload),
+  changePassword: (payload) => http.post(apiConfig.auth.changePassword, payload),
 };

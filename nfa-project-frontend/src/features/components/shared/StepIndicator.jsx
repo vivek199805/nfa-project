@@ -1,6 +1,6 @@
 
 import { Check } from "lucide-react";
-import "./../styles/FeatureFilmForm.css";
+import "../../../styles/FeatureFilmForm.css";
 
 const steps = [
   "Film Details", "Censor", "Company Registration", "Producer(s) Details", "Director(s) Details",
@@ -10,11 +10,16 @@ const steps = [
 const StepIndicator = ({ currentStep, onStepClick, stepIndicator }) => {
   return (
     <div className="step-indicator-wrap">
-      <div className="step-indicator">
+      <div className="step-indicator" aria-label="Submission progress">
         {(stepIndicator ? stepIndicator : steps).map((step, index) => {
           const stepNumber = index + 1;
           const isCompleted = stepNumber < currentStep;
           const isActive = stepNumber === currentStep;
+          const stepStatus = isCompleted
+            ? "completed"
+            : isActive
+              ? "current"
+              : "upcoming";
 
           return (
             <button
@@ -25,10 +30,12 @@ const StepIndicator = ({ currentStep, onStepClick, stepIndicator }) => {
               }`}
               onClick={() => stepNumber <= currentStep && onStepClick?.(stepNumber)}
               disabled={stepNumber > currentStep}
+              aria-current={isActive ? "step" : undefined}
+              aria-label={`Step ${stepNumber}: ${step} (${stepStatus})`}
             >
               <div className="step-circle">
                 {isCompleted ? (
-                  <Check size={16} strokeWidth={3} color="white" />
+                  <Check size={16} strokeWidth={3} color="white" aria-hidden="true" />
                 ) : (
                   stepNumber
                 )}

@@ -1,4 +1,5 @@
 import { postRequest } from "./requestService";
+import { apiConfig } from "./apiEndpoints";
 
 const RAZORPAY_SCRIPT_ID = import.meta.env.VITE_RAZORPAY_SCRIPT_ID;
 const RAZORPAY_SCRIPT_SRC = import.meta.env.VITE_RAZORPAY_SCRIPT_SRC;
@@ -82,10 +83,11 @@ export const createRazorpayOrder = async ({ entryId, formType }) => {
     form_type: formType,
   });
 
-  return postRequest("payment/order", formData);
+  return postRequest(apiConfig.payment.order, formData);
 };
 
-export const verifyRazorpayPayment = async (payload) => postRequest("payment/verify", payload);
+export const verifyRazorpayPayment = async (payload) =>
+  postRequest(apiConfig.payment.verify, payload);
 
 /**
  * Initiates a Razorpay checkout flow for an application payment.

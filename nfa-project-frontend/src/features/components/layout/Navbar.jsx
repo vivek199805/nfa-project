@@ -1,6 +1,6 @@
 
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../hooks/use-auth";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../hooks/use-auth";
 
 export default function Navbar() {
   const { logoutMutation } = useAuth();
@@ -11,12 +11,12 @@ export default function Navbar() {
       <div className="form-container app-navbar">
         <div className="mx-auto app-navbar-inner">
           <div className="top-logo d-flex justify-content-between">
-            <a href="#">
+            <div>
               <img src="/images/nfa-logo.png" alt="NFA Logo" />
-            </a>
-            <a href="#">
+            </div>
+            <div>
               <img src="/images/mib.png" alt="MIB Logo" />
-            </a>
+            </div>
           </div>
 
           <div className="mt-2 d-flex justify-content-end app-navbar-actions">

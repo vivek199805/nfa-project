@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom";
-import { AuthProvider } from "../../hooks/use-auth";
-import NavigateSetter from "../NavigateSetter";
+import { AuthProvider } from "../../../hooks/use-auth";
+import NavigateSetter from "../shared/NavigateSetter";
 
 const AppLayout = () => {
   const { pathname } = useLocation();

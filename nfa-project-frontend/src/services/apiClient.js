@@ -1,16 +1,9 @@
 import axios from "axios";
-import { showErrorToast } from "../common/services/toastService";
+import { showErrorToast } from "./toastService";
 import { clearCredentials } from "../features/auth/authSlice";
 import { setGlobalLoader } from "../features/ui/uiSlice";
 import { navigateTo } from "../common/navigate";
-
-const excludedRoutes = [
-  "login",
-  "register",
-  "forgot-password",
-  "reset-password",
-  "verify-email",
-];
+import { isPublicApiEndpoint } from "./apiEndpoints";
 
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -33,9 +26,7 @@ export function attachApiInterceptors(store) {
 
   requestInterceptorId = apiClient.interceptors.request.use(
     (config) => {
-      const isExcluded = excludedRoutes.some((route) =>
-        config.url?.endsWith(route),
-      );
+      const isExcluded = isPublicApiEndpoint(config.url);
 
       if (!isExcluded) {
         reduxStore?.dispatch(setGlobalLoader(true));

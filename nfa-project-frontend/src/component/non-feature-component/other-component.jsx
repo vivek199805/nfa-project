@@ -3,8 +3,15 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { postRequest } from "../../common/services/requestService";
+import { postRequest } from "../../services/requestService";
 import { useFetchById } from "../../hooks/useFetchById";
+import {
+  getFilmEntryByEndpoint,
+  getFilmNextSection,
+  getFilmPreviousSection,
+  getFilmSectionStep,
+  getFilmUpdateEndpoint,
+} from "../../common/film-workflow";
 
 const filmSchema = z.object({
   cinemetographer: z.string().optional(),
@@ -20,7 +27,7 @@ const filmSchema = z.object({
 
 const OtherSection = ({ setActiveSection, filmType }) => {
   const { id } = useParams();
-    const { data: formData } = useFetchById("film/non-feature-entry-by", id);
+    const { data: formData } = useFetchById(getFilmEntryByEndpoint(filmType), id);
 
   const {
     register,
@@ -63,13 +70,13 @@ const OtherSection = ({ setActiveSection, filmType }) => {
     formData.append("choreographer", data.choreographer);
     formData.append("voice_over_artist", data.voice_over_artist);
     formData.append("sound_recordist", data.sound_recordist);
-    formData.append("step", "6");
+    formData.append("step", getFilmSectionStep(filmType, "other"));
     formData.append("id", id);
     formData.append("film_type", filmType);
 
-    const response = await postRequest("film/non-feature-update", formData);
+    const response = await postRequest(getFilmUpdateEndpoint(filmType), formData);
     if (response.statusCode == 200) {
-      setActiveSection(7);
+      setActiveSection(getFilmNextSection(filmType, "other"));
     }
   };
 
@@ -233,7 +240,7 @@ const OtherSection = ({ setActiveSection, filmType }) => {
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => setActiveSection(5)}
+            onClick={() => setActiveSection(getFilmPreviousSection(filmType, "other"))}
           >
             <i className="bi bi-arrow-left me-2"></i>
             Back to Prev
