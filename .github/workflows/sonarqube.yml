@@ -1,0 +1,56 @@
+name: SonarQube Analysis
+
+on:
+  push:
+    branches:
+      - vivek
+      - staging
+  pull_request:
+    branches:
+      - staging
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: write
+
+jobs:
+  sonarqube:
+    name: SonarQube Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend dependencies
+        working-directory: nfa-project-frontend
+        run: npm ci
+
+      - name: Run frontend tests with coverage
+        working-directory: nfa-project-frontend
+        run: npm test --if-present -- --coverage
+        continue-on-error: true
+
+      - name: Install backend dependencies
+        working-directory: bancked
+        run: npm ci
+
+      - name: Run backend tests with coverage
+        working-directory: bancked
+        run: npm test --if-present -- --coverage
+        continue-on-error: true
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
