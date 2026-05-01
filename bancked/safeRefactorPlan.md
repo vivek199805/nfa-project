@@ -54,36 +54,35 @@ Architecture observations:
 - Ran `npm.cmd test --if-present` to confirm current test-script status.
 - Created this backend `safeRefactorPlan.md`.
 - Completed Phase 1 lint-warning cleanup without changing backend business logic.
+- Completed Phase 2 by adding a backend Node test harness and focused pure helper tests.
+- Completed Phase 3 route readability pass across active Mongo route files without changing route behavior.
 
 ## Pending Tasks
 
-- Add a real backend test script and focused Node/Vitest/Jest test harness if a backend test dependency is intentionally introduced.
 - Add focused tests around:
-  - auth validation and password reset flows
-  - Zod helper validation
-  - workflow step progression
+  - additional auth validation and password reset branches
+  - additional Zod helper validation
   - upload validation and document metadata behavior
-  - payment order/verification helpers
+  - payment order/verification controller/service branches
 - Review controller files for repeated response/error handling patterns before extracting shared helpers.
-- Review route formatting and middleware spacing without changing route names or middleware order.
 - Review environment variable documentation and production safety checks.
 
 ## Current Phase
 
-Current phase: Phase 1, Lint Warning Cleanup.
+Current phase: Phase 3, Route and Controller Readability Pass.
 
 Status: Completed.
 
-Phase 1 scope:
+Phase 3 scope:
 
-- Remove lint warnings only.
+- Normalize active route files only.
 - No business logic changes.
 - No route/controller/model/helper behavior changes.
 - No runtime artifact edits.
 
 ## Next Step
 
-Begin Phase 2: add a focused backend test harness around pure helpers/validation before making higher-risk controller, auth, payment, upload, or workflow-step changes.
+Begin Phase 4: upload and document safety pass. Start with tests around file validation and document metadata helpers before changing upload behavior.
 
 ## Phase-By-Phase Refactor Plan
 
@@ -154,7 +153,23 @@ Required verification after phase:
 - Node syntax check
 - Unit test command
 
-Status: Pending.
+Status: Completed.
+
+Phase 2 results:
+
+- Added a backend `test` script using Node.js built-in `node --test`.
+- Added focused tests for auth/client validation helper behavior.
+- Added focused tests for payment validation helper behavior.
+- Added focused tests for workflow step and persisted form/website constants.
+- Added focused tests for OTP generation shape and supported length validation.
+- Avoided new dependencies and avoided MongoDB/network-bound tests in this phase.
+- Preserved all runtime business logic.
+
+Verification:
+
+- `npm.cmd run lint`: passed with 0 warnings and 0 errors.
+- Node syntax check across backend source `.js` files: passed.
+- `npm.cmd test`: passed after rerun outside the sandbox due Node test runner worker spawn restrictions.
 
 ### Phase 3: Route and Controller Readability Pass
 
@@ -174,7 +189,22 @@ Required verification after phase:
 - Relevant unit tests if Phase 2 introduces them
 - Manual route/contract trace for touched endpoints
 
-Status: Pending.
+Status: Completed for route readability.
+
+Phase 3 results:
+
+- Normalized import ordering and quote style in active Mongo route files.
+- Removed stale commented-out route snippets from `auth.js` and `apiRoutes.js`.
+- Replaced banner-style comments with concise route group labels.
+- Added consistent spacing around route middleware and handler arguments.
+- Preserved all endpoint paths, HTTP methods, middleware order, upload middleware usage, auth middleware usage, and controller handlers.
+- Did not change controller logic, request parsing, response shape, validation, uploads, or persistence.
+
+Verification:
+
+- `npm.cmd run lint`: passed with 0 warnings and 0 errors.
+- Node syntax check across backend source `.js` files: passed.
+- `npm.cmd test`: passed after rerun outside the sandbox due Node test runner worker spawn restrictions.
 
 ### Phase 4: Upload and Document Safety Pass
 
@@ -260,11 +290,48 @@ Status: Pending.
   - Changed unused catch binding to bindingless `catch`.
 - Ran lint, syntax checks, and test discovery after changes.
 
+### Phase 2
+
+- Updated `package.json`.
+  - Added `test` script: `node --test`.
+- Added `helpers/clientSchemaHelper.test.js`.
+  - Covers valid registration shape, password confirmation mismatch, invalid login email, and change-password reuse rejection.
+- Added `helpers/paymentSchemaHelper.test.js`.
+  - Covers numeric string IDs, Mongo ObjectId IDs, invalid form type rejection, and Razorpay confirmation validation.
+- Added `services/common.test.js`.
+  - Covers feature/non-feature workflow step constants, award final submit values, and persisted form/website type values.
+- Added `utils/generate-otp.test.js`.
+  - Covers default OTP length, custom OTP length, and unsupported length errors.
+- Ran lint, syntax checks, and the new test suite.
+
+### Phase 3
+
+- Updated `routes/mongoDBRoutes/auth.js`.
+  - Normalized imports, route quote style, and middleware spacing.
+  - Removed stale commented-out inactive routes.
+- Updated `routes/mongoDBRoutes/filmSubmission.js`.
+  - Normalized imports, route quote style, and middleware spacing.
+  - Grouped routes into feature, contributor, non-feature, and final-submit sections.
+- Updated `routes/mongoDBRoutes/apiRoutes.js`.
+  - Normalized imports, route quote style, and middleware spacing.
+  - Grouped routes into critic, best book, book, editor, document, and payment sections.
+  - Removed stale commented-out inactive editor route.
+- Updated `routes/mongoDBRoutes/entryList.js`.
+  - Normalized imports and route middleware spacing.
+- Updated `routes/mongoDBRoutes/languages.js`.
+  - Normalized imports and route middleware spacing.
+- Listed route declarations with `rg -n "router\.(get|post|delete)" routes/mongoDBRoutes` to manually confirm endpoint coverage.
+- Ran lint, syntax checks, and the test suite after changes.
+
 ## Compile/Build Errors Found
 
 No compile-time or syntax errors were found during Phase 0.
 
 No compile-time or syntax errors were found during Phase 1.
+
+No compile-time or syntax errors were found during Phase 2.
+
+No compile-time or syntax errors were found during Phase 3.
 
 Node syntax check command:
 
@@ -334,6 +401,42 @@ Status:
 Passed with 0 warnings and 0 errors.
 ```
 
+Phase 2 command:
+
+```powershell
+npm.cmd run lint
+```
+
+Phase 2 result:
+
+```text
+eslint .
+```
+
+Status:
+
+```text
+Passed with 0 warnings and 0 errors.
+```
+
+Phase 3 command:
+
+```powershell
+npm.cmd run lint
+```
+
+Phase 3 result:
+
+```text
+eslint .
+```
+
+Status:
+
+```text
+Passed with 0 warnings and 0 errors.
+```
+
 ## Fixes Applied
 
 Phase 0 fixes applied:
@@ -346,6 +449,19 @@ Phase 1 fixes applied:
 - Restored compatible helper arity for best book and film critic declaration-step handlers after static analysis detected two-argument calls.
 - Kept all business behavior and response contracts unchanged.
 - Verified that lint no longer reports warnings.
+
+Phase 2 fixes applied:
+
+- Added tests only; no backend business logic fixes were required.
+- The first sandboxed test run failed with `Error: spawn EPERM` because Node's test runner tried to spawn worker processes.
+- Reran `npm.cmd test` outside the sandbox; all tests passed.
+
+Phase 3 fixes applied:
+
+- Applied route readability-only formatting/grouping changes.
+- No compile errors or lint issues were introduced.
+- The sandboxed test run again failed with `Error: spawn EPERM` because Node's test runner tried to spawn worker processes.
+- Reran `npm.cmd test` outside the sandbox; all tests passed.
 
 ## Unit Test Results
 
@@ -363,9 +479,8 @@ No configured test script was present. Command exited successfully without runni
 
 Current backend test status:
 
-- No backend unit test suite is currently configured in `package.json`.
-- No test failures were found because no tests were run.
-- Adding a focused backend test harness is pending.
+- Backend unit tests are now configured through `npm.cmd test`.
+- Current suite has 4 test files and 15 tests.
 
 Phase 1 test command:
 
@@ -379,10 +494,52 @@ Phase 1 result:
 No configured test script was present. Command exited successfully without running tests.
 ```
 
+Phase 2 test command:
+
+```powershell
+npm.cmd test
+```
+
+Initial sandbox result:
+
+```text
+Error: spawn EPERM
+```
+
+Final result after rerun outside the sandbox:
+
+```text
+tests 15
+pass 15
+fail 0
+duration_ms 828.8591
+```
+
+Phase 3 test command:
+
+```powershell
+npm.cmd test
+```
+
+Initial sandbox result:
+
+```text
+Error: spawn EPERM
+```
+
+Final result after rerun outside the sandbox:
+
+```text
+tests 15
+pass 15
+fail 0
+duration_ms 618.4583
+```
+
 ## Any Unresolved Issues
 
 - ESLint warnings from Phase 0 have been resolved.
-- No backend unit test script exists.
+- Backend unit test script now exists.
 - Runtime behavior was not smoke-tested against MongoDB in this phase.
 - Uploaded files under `public/documents/` and `storage/documents/` remain runtime artifacts and were not inspected as source.
 - Future refactors must continue preserving:
@@ -397,9 +554,11 @@ No configured test script was present. Command exited successfully without runni
 
 - Phase 0 review completed.
 - Phase 1 lint-warning cleanup completed.
+- Phase 2 helper and validation test harness completed.
+- Phase 3 route readability pass completed.
 - Backend plan file created.
 - No business logic changed.
 - Lint passed with 0 warnings and 0 errors.
 - Node syntax checks passed.
-- Unit test command discovery completed; no test suite configured.
+- Unit tests passed: 15 tests across 4 files.
 - Current phase is error-free for compile/syntax checks.
