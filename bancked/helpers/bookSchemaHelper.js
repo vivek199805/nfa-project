@@ -1,10 +1,6 @@
 import { z } from "zod";
 import dayjs from "dayjs";
-
-const isNumeric = (val) =>
-  !isNaN(Number(val)) && Number(val).toString() === val.toString();
-
-const isObjectId = (val) => /^[0-9a-fA-F]{24}$/.test(val);
+import { isNumeric, isObjectId, parseZodResult } from "./validationCommon.js";
 
 const best_book_cinema_id = z.object({
   best_book_cinema_id: z.union([z.string(), z.number()]).refine((val) => {
@@ -80,12 +76,7 @@ const validateStore = (payload) => {
   schema = schema.merge(best_book_cinema_id);
   const result = schema.safeParse(payload);
 
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce((acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }), {}),
-  };
+  return parseZodResult(result);
 };
 
 const validateUpdate = (payload) => {
@@ -93,12 +84,7 @@ const validateUpdate = (payload) => {
   schema = schema.merge(best_book_cinema_id).merge(IDSchema);
 
   const result = schema.safeParse(payload);  
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce((acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }), {}),
-  };
+  return parseZodResult(result);
 };
 
 const validateList = (payload) => {
@@ -114,12 +100,7 @@ const validateList = (payload) => {
   //             )
   //         ),
   // };
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce((acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }), {}),
-  };
+  return parseZodResult(result);
 };
 
 export default {

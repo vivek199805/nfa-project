@@ -10,10 +10,14 @@ const allowedMimeTypes = new Set([
 ]);
 const maxFileSize = Number(process.env.MAX_UPLOAD_FILE_SIZE || 10 * 1024 * 1024);
 
-const fileFilter = (_req, file, cb) => {
+export const isAllowedUploadFile = (file) => {
   const extension = path.extname(file.originalname || "").toLowerCase();
 
-  if (!allowedExtensions.has(extension) || !allowedMimeTypes.has(file.mimetype)) {
+  return allowedExtensions.has(extension) && allowedMimeTypes.has(file.mimetype);
+};
+
+export const fileFilter = (_req, file, cb) => {
+  if (!isAllowedUploadFile(file)) {
     const error = new Error("Only JPG, PNG, and PDF files are allowed");
     error.status = 422;
     return cb(error);

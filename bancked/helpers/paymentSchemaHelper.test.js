@@ -38,6 +38,30 @@ test("validatePaymentData rejects unknown form types", () => {
   );
 });
 
+test("validatePaymentData accepts optional amount and three-letter currency", () => {
+  const result = validatePaymentData({
+    id: "12345",
+    form_type: "BEST_BOOK",
+    amount: 2500,
+    currency: "INR",
+  });
+
+  assert.equal(result.isValid, true);
+  assert.equal(result.data.amount, 2500);
+  assert.equal(result.data.currency, "INR");
+});
+
+test("validatePaymentData rejects invalid currency length", () => {
+  const result = validatePaymentData({
+    id: "12345",
+    form_type: "BEST_BOOK",
+    currency: "RUPEES",
+  });
+
+  assert.equal(result.isValid, false);
+  assert.equal(result.errors.currency, "String must contain at most 3 character(s)");
+});
+
 test("validatePaymentConfirmationData requires Razorpay identifiers", () => {
   const result = validatePaymentConfirmationData({
     razorpay_order_id: "",

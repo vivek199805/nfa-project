@@ -6,6 +6,7 @@ import Payment from "../../models/mongodbModels/Payment.js";
 import { formType } from "../../services/common.js";
 import BestBookCinema from "../../models/mongodbModels/BestBookCinema.js";
 import { validatePaymentConfirmationData, validatePaymentData, } from "../../helpers/paymentSchemaHelper.js";
+import { sendStatusMessage, sendValidationError } from "./responseHelper.js";
 
 const RAZORPAY_GATEWAY = "RAZORPAY";
 const DEFAULT_CURRENCY = "INR";
@@ -126,22 +127,15 @@ async function findApplicationForPayment(payment) {
   });
 }
 
-const createOrder = async (req, res) => {
+export const createOrder = async (req, res) => {
   const { isValid, errors, data } = validatePaymentData(req.body);
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
 
   const razorpay = getRazorpayClient();
   if (!razorpay || !getRazorpayKeyId()) {
-    return res.status(500).json({
-      message: "Razorpay is not configured on the server",
-      statusCode: 500,
-    });
+    return sendStatusMessage(res, 500, "Razorpay is not configured on the server");
   }
 
   try {
@@ -156,37 +150,34 @@ const createOrder = async (req, res) => {
     );
 
     if (!formTypeValue) {
-      return res.status(422).json({
-        message: "Validation failed",
-        errors: { form_type: "Invalid form type" },
-        statusCode: 422,
-      });
+      return sendValidationError(res, { form_type: "Invalid form type" });
     }
 
     if (!applicationData) {
-      return res.status(200).json({
-        message: "You are not authorized to pay for this application. Please contact support.",
-        status: false,
-        statusCode: 203,
-      });
+      return sendStatusMessage(
+        res,
+        200,
+        "You are not authorized to pay for this application. Please contact support.",
+        203,
+        { status: false },
+      );
     }
 
     if (String(applicationData.payment_status) === "2") {
-      return res.status(200).json({
-        message: "Payment has already been completed for this application",
-        status: true,
-        statusCode: 200,
-      });
+      return sendStatusMessage(
+        res,
+        200,
+        "Payment has already been completed for this application",
+        200,
+        { status: true },
+      );
     }
 
     const amountInRupees = getConfiguredAmount(payload.form_type) || normalizeAmount(payload.amount);
     const amountInPaise = toPaiseAmount(amountInRupees);
 
     if (!amountInPaise) {
-      return res.status(500).json({
-        message: "Payment amount is not configured for this form",
-        statusCode: 500,
-      });
+      return sendStatusMessage(res, 500, "Payment amount is not configured for this form");
     }
 
     const receipt = buildReceipt(payload.form_type, applicationData._id);
@@ -266,37 +257,24 @@ const createOrder = async (req, res) => {
   }
 };
 
-const verifyPayment = async (req, res) => {
+export const verifyPayment = async (req, res) => {
   const { isValid, errors, data } = validatePaymentConfirmationData(req.body);
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
 
   if (!getRazorpaySecret()) {
-    return res.status(500).json({
-      message: "Razorpay secret is not configured on the server",
-      statusCode: 500,
-    });
+    return sendStatusMessage(res, 500, "Razorpay secret is not configured on the server");
   }
 
   const razorpay = getRazorpayClient();
   if (!razorpay) {
-    return res.status(500).json({
-      message: "Razorpay is not configured on the server",
-      statusCode: 500,
-    });
+    return sendStatusMessage(res, 500, "Razorpay is not configured on the server");
   }
 
   try {
     if (!verifyRazorpaySignature(data)) {
-      return res.status(403).json({
-        message: "Invalid Razorpay payment signature",
-        statusCode: 403,
-      });
+      return sendStatusMessage(res, 403, "Invalid Razorpay payment signature");
     }
 
     const payment = await Payment.findOne({
@@ -305,18 +283,12 @@ const verifyPayment = async (req, res) => {
     });
 
     if (!payment) {
-      return res.status(200).json({
-        message: "Payment record not found for the provided order",
-        statusCode: 203,
-      });
+      return sendStatusMessage(res, 200, "Payment record not found for the provided order", 203);
     }
 
     const applicationData = await findApplicationForPayment(payment);
     if (!applicationData) {
-      return res.status(200).json({
-        message: "Application record not found for payment",
-        statusCode: 203,
-      });
+      return sendStatusMessage(res, 200, "Application record not found for payment", 203);
     }
 
     if (payment.status === 2 && String(applicationData.payment_status) === "2") {

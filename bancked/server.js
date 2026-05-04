@@ -4,6 +4,7 @@ dotenv.config();
 
 import app from "./app.js";
 import { connectDB } from "./config/db.js";
+import { assertStartupEnvironment } from "./services/environment.js";
 import { runStartupMaintenance } from "./services/maintenance.js";
 
 const PORT = process.env.PORT || 3000;
@@ -12,6 +13,7 @@ const PORT = process.env.PORT || 3000;
 
 const startServer = async () => {
   try {
+    assertStartupEnvironment();
     await connectDB();
     await runStartupMaintenance();
 

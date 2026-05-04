@@ -1,9 +1,15 @@
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
+import { validateContributorPayload } from "../../helpers/contributorSchemaHelper.js";
+import { sendValidationError } from "./responseHelper.js";
 
 const getUserId = (req) => req.user?._id || req.user?.id;
 
-
 const getAllSongByFeatureId = async (req, res) => {
+  const { isValid, errors } = validateContributorPayload(req.body, {
+    requiredIds: ["id"],
+  });
+  if (!isValid) return sendValidationError(res, errors);
+
   const { id } = req.body;
 
   try {
@@ -17,7 +23,7 @@ const getAllSongByFeatureId = async (req, res) => {
     }
 
     res.status(200).json({
-      message: "data fetch successfully",
+      message: "Data fetched successfully",
       data: feature.songs,
       statusCode: 200,
     });
@@ -27,6 +33,12 @@ const getAllSongByFeatureId = async (req, res) => {
 };
 
 const addSongToFeature = async (req, res) => {
+  const { isValid, errors } = validateContributorPayload(req.body, {
+    requiredIds: ["nfa_feature_id"],
+    optionalIds: ["songId"],
+  });
+  if (!isValid) return sendValidationError(res, errors);
+
   const { nfa_feature_id: _id, songId } = req.body; // Song data from client
   try {
     // Find the feature form by ID
@@ -38,7 +50,7 @@ const addSongToFeature = async (req, res) => {
       return res.status(200).json({ message: "Feature form not found", statusCode: 203 });
     }
     if (songId) {
-      // ✅ Update existing Song
+      // Update existing song
       const existingSong = feature.songs.id(songId);
       if (!existingSong) {
         return res.status(200).json({ message: "Song not found", statusCode: 203 });
@@ -51,7 +63,7 @@ const addSongToFeature = async (req, res) => {
       });
 
     } else {
-      // ✅ Add new Song
+      // Add new song
       feature.songs.push(req.body);
     }
 
@@ -75,6 +87,11 @@ const addSongToFeature = async (req, res) => {
 };
 
 const deleteSongById = async (req, res) => {
+  const { isValid, errors } = validateContributorPayload(req.body, {
+    requiredIds: ["nfa_feature_id", "songId"],
+  });
+  if (!isValid) return sendValidationError(res, errors);
+
   const { nfa_feature_id, songId } = req.body;
 
   try {

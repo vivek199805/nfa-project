@@ -1,11 +1,17 @@
 import { Document } from "../../models/mongodbModels/document.js";
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
 import Common from "../../services/common.js"
+import { validateContributorPayload } from "../../helpers/contributorSchemaHelper.js";
+import { sendValidationError } from "./responseHelper.js";
 
 const getUserId = (req) => req.user?._id || req.user?.id;
 
-
 const getAllProducersByFeatureId = async (req, res) => {
+  const { isValid, errors } = validateContributorPayload(req.body, {
+    requiredIds: ["id"],
+  });
+  if (!isValid) return sendValidationError(res, errors);
+
   const { id, film_type } = req.body;
 
   try {
@@ -46,7 +52,7 @@ const getAllProducersByFeatureId = async (req, res) => {
     });
 
     res.status(200).json({
-      message: "data fetch successfully",
+      message: "Data fetched successfully",
       data: allProducerWithDocs,
       statusCode: 200,
     });
@@ -56,6 +62,12 @@ const getAllProducersByFeatureId = async (req, res) => {
 };
 
 const addProducerToFeature = async (req, res) => {
+  const { isValid, errors } = validateContributorPayload(req.body, {
+    requiredIds: ["nfa_feature_id"],
+    optionalIds: ["id"],
+  });
+  if (!isValid) return sendValidationError(res, errors);
+
   const { nfa_feature_id: _id, id: producerId } = req.body; // Producer data from client
   try {
     const payload = {
@@ -73,7 +85,7 @@ const addProducerToFeature = async (req, res) => {
     let updatedProducer;
     // 2. Update existing producer
     if (producerId) {
-      // ✅ Update existing producer
+      // Update existing producer
       const existingProducer = feature.producers.id(producerId);
       if (!existingProducer) {
         return res.status(200).json({ message: "Producer not found", statusCode: 203 });
@@ -111,7 +123,7 @@ const addProducerToFeature = async (req, res) => {
           return res.status(500).json({ message: "failed to upload producer document", statusCode: 500, });
         }
 
-        // // ✅ Add uploaded file to producer.documents
+        // Add uploaded file to producer.documents
         updatedProducer.documents.push(fileUpload.data);
 
         // Also store file name directly for UI usage if needed
@@ -140,6 +152,11 @@ const addProducerToFeature = async (req, res) => {
 };
 
 const deleteProducerById = async (req, res) => {
+  const { isValid, errors } = validateContributorPayload(req.body, {
+    requiredIds: ["nfa_feature_id", "producerId"],
+  });
+  if (!isValid) return sendValidationError(res, errors);
+
   const { nfa_feature_id: _id, producerId } = req.body;
 
   try {

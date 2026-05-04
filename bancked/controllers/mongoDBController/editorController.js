@@ -2,15 +2,12 @@ import BestBookCinema from "../../models/mongodbModels/BestBookCinema.js";
 import BestFilmCritic from "../../models/mongodbModels/BestFilmCritic.js";
 import Editor from "../../models/mongodbModels/editor.js";
 import EditorSchemaHelper from "../../helpers/editorSchemaHelper.js";
+import { sendValidationError } from "./responseHelper.js";
 
 const storeEditor = async (req, res) => {
   const { isValid, errors } = EditorSchemaHelper.validateStore(req.body);
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
 
   try {
@@ -88,11 +85,7 @@ const storeEditor = async (req, res) => {
 const updateEditor = async (req, res) => {
   const { isValid, errors } = EditorSchemaHelper.validateUpdate(req.body);
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
 
   try {
@@ -171,11 +164,7 @@ const updateEditor = async (req, res) => {
 const listEditor = async (req, res) => {
   const { isValid, errors } = EditorSchemaHelper.validateList(req.body);
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
 
   try {

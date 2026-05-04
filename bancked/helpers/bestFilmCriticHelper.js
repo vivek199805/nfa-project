@@ -1,8 +1,7 @@
 import { z } from "zod";
 import dayjs from "dayjs";
 import { stepsBestFilmCritic } from "../services/common.js";
-
-const isObjectId = (val) => /^[0-9a-fA-F]{24}$/.test(val);
+import { isObjectId, parseZodResult } from "./validationCommon.js";
 
 const baseStepSchema = z.object({
   step: z.string().refine((val) => !isNaN(val), {
@@ -116,29 +115,13 @@ const validateStepInput = (payload, files) => {
 
   const result = schema.safeParse(payload);
 
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce(
-          (acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }),
-          {}
-        ),
-  };
+  return parseZodResult(result);
 };
 
 const finalSubmitStep = (payload) => {
   const result = lastIdSchema.safeParse(payload);
 
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce(
-          (acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }),
-          {}
-        ),
-  };
+  return parseZodResult(result);
 };
 
 export default {

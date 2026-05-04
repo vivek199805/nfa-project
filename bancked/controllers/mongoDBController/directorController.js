@@ -1,11 +1,17 @@
 import { Document } from "../../models/mongodbModels/document.js";
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
 import Common from "../../services/common.js"
+import { validateContributorPayload } from "../../helpers/contributorSchemaHelper.js";
+import { sendValidationError } from "./responseHelper.js";
 
 const getUserId = (req) => req.user?._id || req.user?.id;
 
-
 const getAllDirectorsByFeatureId = async (req, res) => {
+  const { isValid, errors } = validateContributorPayload(req.body, {
+    requiredIds: ["id"],
+  });
+  if (!isValid) return sendValidationError(res, errors);
+
   const { id, film_type } = req.body;
 
   try {
@@ -45,16 +51,22 @@ const getAllDirectorsByFeatureId = async (req, res) => {
     });
 
     res.status(200).json({
-      message: "data fetch successfully",
+      message: "Data fetched successfully",
       data: allDirectorWithDocs,
       statusCode: 200,
     });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch Directors", message: error.message });
+    res.status(500).json({ error: "Failed to fetch directors", message: error.message });
   }
 };
 
 const addDirectorToFeature = async (req, res) => {
+  const { isValid, errors } = validateContributorPayload(req.body, {
+    requiredIds: ["nfa_feature_id"],
+    optionalIds: ["id"],
+  });
+  if (!isValid) return sendValidationError(res, errors);
+
   const { nfa_feature_id: _id, id: directorId } = req.body; // Director data from client
   try {
     const payload = {
@@ -71,7 +83,7 @@ const addDirectorToFeature = async (req, res) => {
     }
     let updatedDirector;
     if (directorId) {
-      // ✅ Update existing director
+      // Update existing director
       const existingDirector = feature.directors.id(directorId);
       if (!existingDirector) {
         return res.status(200).json({ message: "director not found", statusCode: 203 });
@@ -85,7 +97,7 @@ const addDirectorToFeature = async (req, res) => {
       updatedDirector = existingDirector;
 
     } else {
-      // ✅ Add new director
+      // Add new director
       const newDirector = feature.directors.create(req.body);
       feature.directors.push(newDirector);
       updatedDirector = newDirector;
@@ -108,7 +120,7 @@ const addDirectorToFeature = async (req, res) => {
           return res.status(500).json({ message: "failed to upload director document", statusCode: 500, });
         }
 
-        // // ✅ Add uploaded file to director.documents
+        // Add uploaded file to director.documents
         updatedDirector.documents.push(fileUpload.data);
 
         // Also store file name directly for UI usage if needed
@@ -134,6 +146,11 @@ const addDirectorToFeature = async (req, res) => {
   }
 };
 const deleteDirectorById = async (req, res) => {
+  const { isValid, errors } = validateContributorPayload(req.body, {
+    requiredIds: ["nfa_feature_id", "directorId"],
+  });
+  if (!isValid) return sendValidationError(res, errors);
+
   const { nfa_feature_id: _id, directorId } = req.body;
 
   try {

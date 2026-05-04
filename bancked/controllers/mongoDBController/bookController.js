@@ -1,6 +1,7 @@
 import BestBookCinema from "../../models/mongodbModels/BestBookCinema.js";
 import Book from "../../models/mongodbModels/book.js";
 import BookSchemaHelper from "../../helpers/bookSchemaHelper.js";
+import { sendValidationError } from "./responseHelper.js";
 
 const normalizeLanguageIds = (languageIds) => {
   if (typeof languageIds === "string") {
@@ -29,11 +30,7 @@ const normalizeLanguageIds = (languageIds) => {
 const storeBook = async (req, res) => {
   const { isValid, errors } = BookSchemaHelper.validateStore(req.body);
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
 
   try {
@@ -98,11 +95,7 @@ const storeBook = async (req, res) => {
 const updateBook = async (req, res) => {
   const { isValid, errors } = BookSchemaHelper.validateUpdate(req.body);
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
 
   try {
@@ -158,16 +151,6 @@ const updateBook = async (req, res) => {
       message: "Book updated successfully!",
       statusCode: 200,
     });
-    // if (!bookUpdate) {
-    //   return res.status(200).json({
-    //     message: "noresult.!!",
-    //     statusCode: 203,
-    //   });
-    // }
-    // return res.status(200).json({
-    //   message: "Updated successfully.!!",
-    //   statusCode: 200,
-    // });
   } catch (error) {
     return res.status(500).json({
       message: error.message,
@@ -178,11 +161,7 @@ const updateBook = async (req, res) => {
 const listBook = async (req, res) => {
   const { isValid, errors } = BookSchemaHelper.validateList(req.body);
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
 
   try {

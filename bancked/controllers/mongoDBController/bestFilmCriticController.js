@@ -4,6 +4,7 @@ import Editor from "../../models/mongodbModels/editor.js";
 import common from "../../services/common.js";
 import Common from "../../services/common.js";
 import BestFilmCriticHelper from "../../helpers/bestFilmCriticHelper.js";
+import { sendValidationError } from "./responseHelper.js";
 
 const getUserId = (req) => req.user?._id || req.user?.id;
 
@@ -30,11 +31,7 @@ const createFilmCritic = async (req, res) => {
     req.files
   );
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
 
   try {
@@ -101,11 +98,7 @@ const updateEntryById = async (req, res) => {
         req.files
       );
       if (!isValid) {
-        return res.status(422).json({
-          message: "Validation failed",
-          errors,
-          statusCode: 422,
-        });
+        return sendValidationError(res, errors);
       }
     }
 
@@ -167,11 +160,7 @@ const updateEntryById = async (req, res) => {
 const finalSubmit = async (req, res) => {
   const { isValid, errors } = BestFilmCriticHelper.finalSubmitStep(req.body);
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
 
   try {

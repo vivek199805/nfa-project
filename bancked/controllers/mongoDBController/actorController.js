@@ -1,9 +1,15 @@
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
+import { validateContributorPayload } from "../../helpers/contributorSchemaHelper.js";
+import { sendValidationError } from "./responseHelper.js";
 
 const getUserId = (req) => req.user?._id || req.user?.id;
 
-
 const getAllActorsByFeatureId = async (req, res) => {
+  const { isValid, errors } = validateContributorPayload(req.body, {
+    requiredIds: ["id"],
+  });
+  if (!isValid) return sendValidationError(res, errors);
+
   const { id } = req.body;
 
   try {
@@ -17,16 +23,22 @@ const getAllActorsByFeatureId = async (req, res) => {
     }
 
     res.status(200).json({
-      message: "data fetch successfully",
+      message: "Data fetched successfully",
       data: feature.actors,
       statusCode: 200,
     });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch Directors", message: error.message });
+    res.status(500).json({ error: "Failed to fetch actors", message: error.message });
   }
 };
 
 const addActorToFeature = async (req, res) => {
+  const { isValid, errors } = validateContributorPayload(req.body, {
+    requiredIds: ["nfa_feature_id"],
+    optionalIds: ["actorId"],
+  });
+  if (!isValid) return sendValidationError(res, errors);
+
   const { nfa_feature_id: _id, actorId } = req.body; // Actor data from client
   try {
     // Find the feature form by ID
@@ -38,7 +50,7 @@ const addActorToFeature = async (req, res) => {
       return res.status(200).json({ message: "Feature form not found", statusCode: 203 });
     }
     if (actorId) {
-      // ✅ Update existing actor
+      // Update existing actor
       const existingActor = feature.actors.id(actorId);
       if (!existingActor) {
         return res.status(200).json({ message: "actor not found", statusCode: 203 });
@@ -51,7 +63,7 @@ const addActorToFeature = async (req, res) => {
       });
 
     } else {
-      // ✅ Add new actor
+      // Add new actor
       feature.actors.push(req.body);
     }
 
@@ -75,6 +87,11 @@ const addActorToFeature = async (req, res) => {
 };
 
 const deleteActorById = async (req, res) => {
+  const { isValid, errors } = validateContributorPayload(req.body, {
+    requiredIds: ["nfa_feature_id", "actorId"],
+  });
+  if (!isValid) return sendValidationError(res, errors);
+
   const { nfa_feature_id, actorId } = req.body;
 
   try {

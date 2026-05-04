@@ -7,6 +7,7 @@ import generateOtp from "../../utils/generate-otp.js";
 import Twoauth from "../../models/mongodbModels/twoAuth.js";
 import ClientSchemaHelper from "../../helpers/clientSchemaHelper.js";
 import { Mail } from "../../mailer/mail.js";
+import { sendStatusMessage, sendValidationError } from "./responseHelper.js";
 dotenv.config();
 
 // import { redis } from "../../utils/redis.js";
@@ -15,11 +16,7 @@ const normalizeEmail = (email) => email?.trim().toLowerCase();
 const registerUser = async (req, res) => {
   const { isValid, errors } = ClientSchemaHelper.validateRegisterData(req.body);
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
   try {
     const {
@@ -74,11 +71,7 @@ const loginUser = async (req, res) => {
     req.body
   );
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
   try {
     const { email: rawEmail, password } = req.body;
@@ -142,11 +135,7 @@ const verifyEmail = async (req, res) => {
     req.body
   );
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
   try {
     const { email: rawEmail } = req.body;
@@ -462,15 +451,11 @@ const deleteUser = async (req, res) => {
 //   }
 // }
 
-const changePassword = async (req, res) => {
+export const changePassword = async (req, res) => {
   const { isValid, errors } =
     ClientSchemaHelper.ValidateChangePasswordSchemaData(req.body);
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
 
   const { currentPassword, password } = req.body;
@@ -517,16 +502,12 @@ const changePassword = async (req, res) => {
   }
 };
 
-const resetPassword = async (req, res) => {
+export const resetPassword = async (req, res) => {
   const { isValid, errors } = ClientSchemaHelper.ValidateResetPassword(
     req.body
   );
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
 
   try {
@@ -559,7 +540,7 @@ const resetPassword = async (req, res) => {
       statusCode: 200,
     });
   } catch {
-    return res.status(500).json({ message: "Server error while resetting password." });
+    return sendStatusMessage(res, 500, "Server error while resetting password.");
   }
 };
 

@@ -55,3 +55,34 @@ test("ValidateChangePasswordSchemaData rejects reusing the current password", ()
     "New password must be different from current password.",
   );
 });
+
+test("validateOtpSchemaData coerces numeric OTP strings", () => {
+  const result = ClientSchemaHelper.validateOtpSchemaData({
+    email: "vivek@example.com",
+    otp: "123456",
+  });
+
+  assert.equal(result.isValid, true);
+  assert.deepEqual(result.errors, {});
+});
+
+test("validateOtpSchemaData rejects short OTP values", () => {
+  const result = ClientSchemaHelper.validateOtpSchemaData({
+    email: "vivek@example.com",
+    otp: "12345",
+  });
+
+  assert.equal(result.isValid, false);
+  assert.equal(result.errors.otp, "OTP must be a 6-digit number.");
+});
+
+test("ValidateResetPassword requires a valid email and minimum password length", () => {
+  const result = ClientSchemaHelper.ValidateResetPassword({
+    email: "bad-email",
+    password: "short",
+  });
+
+  assert.equal(result.isValid, false);
+  assert.equal(result.errors.email, "Enter a valid email address.");
+  assert.equal(result.errors.password, "Password must be at least 6 characters long.");
+});

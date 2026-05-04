@@ -4,6 +4,7 @@ import Editor from "../../models/mongodbModels/editor.js";
 import Book from "../../models/mongodbModels/book.js";
 import Common from "../../services/common.js";
 import BestBookCinemaHelper from "../../helpers/BestBookCinemaHelper.js";
+import { sendValidationError } from "./responseHelper.js";
 
 const getUserId = (req) => req.user?._id || req.user?.id;
 
@@ -30,11 +31,7 @@ const createBook = async (req, res) => {
     req.files
   );
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
   try {
     const user = req.user.toObject();
@@ -101,11 +98,7 @@ const updateEntryById = async (req, res) => {
         req.files
       );
       if (!isValid) {
-        return res.status(422).json({
-          message: "Validation failed",
-          errors,
-          statusCode: 422,
-        });
+        return sendValidationError(res, errors);
       }
     }
 
@@ -307,11 +300,7 @@ export const bestBookCinemaById = async (req, res) => {
 const finalSubmit = async (req, res) => {
   const { isValid, errors } = BestBookCinemaHelper.finalSubmitStep(req.body);
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
 
   try {
