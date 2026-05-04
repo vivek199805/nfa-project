@@ -60,7 +60,7 @@ jobs:
             -Dsonar.organization=vivek199805
             -Dsonar.sources=bancked,nfa-project-frontend/src
             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/coverage/**
-            # -Dsonar.javascript.lcov.reportPaths=nfa-project-frontend/coverage/lcov.info,bancked/coverage/lcov.info
+            -Dsonar.javascript.lcov.reportPaths=nfa-project-frontend/coverage/lcov.info,bancked/coverage/lcov.info
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
