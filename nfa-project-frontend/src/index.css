@@ -102,7 +102,6 @@ h6 {
   height: 184px;
   color: #bea460;
   font-size: 50px;
-  width: auto;
   column-gap: 6px;
   line-height: 55px;
   width: 480px;
@@ -211,13 +210,13 @@ h6 {
 
 .pdf-carousel .owl-next::before {
   content: "\F134";
-  font-family: bootstrap-icons !important;
+  font-family: "bootstrap-icons", sans-serif;
   font-size: 30px;
 }
 
 .pdf-carousel .owl-prev::before {
   content: "\f12a";
-  font-family: bootstrap-icons !important;
+  font-family: "bootstrap-icons", sans-serif;
   font-size: 30px;
 }
 
@@ -416,7 +415,7 @@ h6 {
 .copyright {
   background: #171717;
   padding: 5px 0;
-  color: #444443;
+  color: #cccccc;
 }
 
 @media (min-width: 768px) {
@@ -447,11 +446,9 @@ h6 {
   width: min(100%, 640px);
   margin-top: 0;
   border: 1px solid rgba(190, 164, 96, 0.28);
-  background: linear-gradient(
-    180deg,
-    rgba(8, 8, 8, 0.8) 0%,
-    rgba(8, 8, 8, 0.64) 100%
-  );
+  background: linear-gradient(180deg,
+      rgba(8, 8, 8, 0.8) 0%,
+      rgba(8, 8, 8, 0.64) 100%);
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(4px);
   max-height: calc(100vh - 2rem);
@@ -653,7 +650,8 @@ h6 {
 }
 
 .form-container input.filled {
-  background-color: white !important; /* !important ensures override */
+  background-color: white !important;
+  /* !important ensures override */
   color: black;
 }
 
@@ -727,7 +725,7 @@ h6 {
   padding: 1rem;
 }
 
-.form-div > [class*="col-"] {
+.form-div>[class*="col-"] {
   height: 100%;
   min-height: 0;
   margin-top: 0 !important;
@@ -1225,6 +1223,7 @@ h6 {
 }
 
 @media (max-width: 991.98px) {
+
   html,
   body,
   #root {
