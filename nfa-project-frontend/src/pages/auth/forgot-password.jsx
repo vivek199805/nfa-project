@@ -149,7 +149,7 @@ const ForgotPasswordPage = () => {
             </div>
             <CustomOtp
               otpBoxNormal={false}
-              otpLength={4}
+              otpLength={6}
               showCloseIcon={false}
               submitBtnName={
                 verifyOtpMutation.isPending ? "Verifying..." : "Verify OTP"
