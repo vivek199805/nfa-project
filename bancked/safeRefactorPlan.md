@@ -66,29 +66,29 @@ Architecture observations:
 - Completed Phase 11 backend spelling and wording cleanup.
 - Completed Phase 12 backend duplication reduction pass.
 - Completed Phase 13 response helper centralization pass.
+- Completed targeted auth bug pass for the `verifyEmail` error path.
 
 ## Pending Tasks
 
-- Continue with future targeted vertical passes only when a concrete feature or bug fix requires them.
 - Rotate any real credentials present in ignored local environment files or external service dashboards.
 
 ## Current Phase
 
-Current phase: Phase 13, Response Helper Centralization Pass.
+Current phase: Targeted Auth Bug Pass.
 
 Status: Completed.
 
-Phase 13 scope:
+Targeted auth bug scope:
 
-- Reviewed active backend controllers under `bancked/controllers/mongoDBController/`, including the existing controller-local `responseHelper.js`.
-- Created the canonical helper at `bancked/helpers/responseHelper.js` because this repository's backend folder is named `bancked/`.
-- Merged the existing controller-local helper behavior into the canonical helper and kept `controllers/mongoDBController/responseHelper.js` as a compatibility re-export.
-- Centralized controller response sending through helper functions while preserving existing HTTP statuses, body-level `statusCode` values, message text, and extra response fields.
-- Preserved the one existing `.send()` response path through `sendBodyResponse()` instead of changing it to JSON response semantics.
+- Fixed the `verifyEmail` catch branch in `bancked/controllers/mongoDBController/authController.js` so database errors pass the caught `err` into the shared `errorResponse()` helper.
+- Removed stale unused response-helper imports from `authController.js`.
+- Exported `verifyEmail` as a named test target while preserving the default controller export used by active routes.
+- Added focused controller coverage for the `verifyEmail` user lookup failure branch.
+- Preserved the existing route path, HTTP status behavior, body-level `statusCode`, and response helper semantics.
 
 ## Next Step
 
-All planned Phase 13 validation is complete. Future work should start from a specific feature, bug, or vertical slice.
+The concrete auth bug slice is complete. The only remaining pending item is external credential rotation for any real values that may exist in ignored local environment files or service dashboards; code cannot rotate those secrets by itself.
 
 ## Phase-By-Phase Refactor Plan
 

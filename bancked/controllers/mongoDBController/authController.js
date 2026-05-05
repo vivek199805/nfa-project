@@ -9,9 +9,7 @@ import ClientSchemaHelper from "../../helpers/clientSchemaHelper.js";
 import { Mail } from "../../mailer/mail.js";
 import {
   errorResponse,
-  sendBodyResponse,
   sendJsonResponse,
-  sendStatusMessage,
   sendValidationError,
 } from "../../helpers/responseHelper.js";
 // dotenv.config();
@@ -136,7 +134,7 @@ const loginUser = async (req, res) => {
   }
 };
 
-const verifyEmail = async (req, res) => {
+export const verifyEmail = async (req, res) => {
   const { isValid, errors } = ClientSchemaHelper.validateEmailSchemaData(
     req.body
   );
@@ -166,7 +164,7 @@ const verifyEmail = async (req, res) => {
       statusCode: 200,
     });
   } catch (err) {
-    return errorResponse(res, error);
+    return errorResponse(res, err);
   }
 };
 

@@ -1,6 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { changePassword, resetPassword } from "./authController.js";
+import User from "../../models/mongodbModels/user.js";
+import { changePassword, resetPassword, verifyEmail } from "./authController.js";
+
+const originalUserFindOne = User.findOne;
+
+test.afterEach(() => {
+  User.findOne = originalUserFindOne;
+});
 
 function createResponse() {
   return {
@@ -79,4 +86,24 @@ test("resetPassword rejects invalid reset payloads before OTP lookup", async () 
   assert.equal(res.body.statusCode, 422);
   assert.equal(res.body.errors.email, "Enter a valid email address.");
   assert.equal(res.body.errors.password, "Password must be at least 6 characters long.");
+});
+
+test("verifyEmail returns the shared error response when user lookup fails", async () => {
+  const res = createResponse();
+  User.findOne = async () => {
+    throw new Error("database unavailable");
+  };
+
+  await verifyEmail(
+    {
+      body: {
+        email: "entrant@example.com",
+      },
+    },
+    res,
+  );
+
+  assert.equal(res.statusCode, 500);
+  assert.equal(res.body.message, "Internal Server Error");
+  assert.equal(res.body.statusCode, 500);
 });
