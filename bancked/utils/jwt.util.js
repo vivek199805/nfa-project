@@ -1,7 +1,4 @@
 import jwt from "jsonwebtoken";
-// import dotenv from "dotenv";
-
-// dotenv.config();
 
 function getJwtSecret() {
   const secret = process.env.JWT_SECRET;
