@@ -1,6 +1,7 @@
 import BestBookCinema from "../../models/mongodbModels/BestBookCinema.js";
 import BestFilmCritic from "../../models/mongodbModels/BestFilmCritic.js";
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
+import { errorResponse, sendJsonResponse } from "../../helpers/responseHelper.js";
 
 const formatItems = (items) =>
   items.map((item) => {
@@ -12,8 +13,8 @@ const formatItems = (items) =>
 
 const entryList = async (req, res) => {
   try {
-    
-    const user = req.user.toObject();    
+
+    const user = req.user.toObject();
     const userId = user._id;
     const userType = user.usertype;
 
@@ -21,7 +22,7 @@ const entryList = async (req, res) => {
       // Type 1 = Film Entries (Feature/Non-Feature)
       const filmEntryData = await FeatureForm.find({ client_id: userId }).populate(
         "producers directors songs actors audiographer documents"
-      );      
+      );
 
       const formattedData = formatItems(filmEntryData);
 
@@ -32,7 +33,7 @@ const entryList = async (req, res) => {
         (item) => item.film_type === "non-feature"
       );
 
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "Fetched successfully",
         statusCode: 200,
         data: {
@@ -50,7 +51,7 @@ const entryList = async (req, res) => {
       const bestFilmCritic = await BestFilmCritic.find({ client_id: userId })
       // .populate("editors");
 
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "Fetched successfully",
         statusCode: 200,
         data: {
@@ -60,13 +61,13 @@ const entryList = async (req, res) => {
       });
     }
 
-    return res.status(403).json({
+    return sendJsonResponse(res, 403, {
       statusCode: 403,
       message: "Unauthorized access",
     });
 
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return errorResponse(res, error);
   }
 };
 

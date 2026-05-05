@@ -4,7 +4,7 @@ import Editor from "../../models/mongodbModels/editor.js";
 import common from "../../services/common.js";
 import Common from "../../services/common.js";
 import BestFilmCriticHelper from "../../helpers/bestFilmCriticHelper.js";
-import { sendValidationError } from "./responseHelper.js";
+import { errorResponse, sendJsonResponse, sendValidationError } from "../../helpers/responseHelper.js";
 
 const getUserId = (req) => req.user?._id || req.user?.id;
 
@@ -67,7 +67,7 @@ const createFilmCritic = async (req, res) => {
       .status(200)
       .json({ message: "Submit successful", statusCode: 200, data: finalData });
   } catch (error) {
-    res.status(500).json({ message: error.message, statusCode: 500 });
+    return errorResponse(res, error);
   }
 };
 
@@ -77,7 +77,7 @@ const updateEntryById = async (req, res) => {
     const missingFields = requiredFields.filter((field) => !req.body[field]);
 
     if (missingFields.length > 0) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         statusCode: 203,
         message: `${missingFields.join(" and ")} ${missingFields.length > 1 ? "are" : "is"} required`,
       });
@@ -109,7 +109,7 @@ const updateEntryById = async (req, res) => {
       client_id: getUserId(req),
     });
     if (!existingEntry) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         statusCode: 203,
         message: "Please provide valid details to update.!!",
       });
@@ -125,8 +125,8 @@ const updateEntryById = async (req, res) => {
     if (stepHandler[+req.body.step]) {
       const result = await stepHandler[+req.body.step](existingEntry, payload);
       if (result?.status === false) {
-        return res.status(422).json({
-          statusCode: 422,        
+        return sendJsonResponse(res, 422, {
+          statusCode: 422,
           message: result.message || "Step processing failed",
         });
       }
@@ -137,23 +137,18 @@ const updateEntryById = async (req, res) => {
       // Save updated document
       const updated = await result.save();
 
-      res.status(200).json({
+      return sendJsonResponse(res, 200, {
         statusCode: 200,
         message: "Feature submission updated successfully",
         data: updated,
       });
-      return;
     }
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       statusCode: 203,
       message: "Invalid step provided",
     });
   } catch (error) {
-    res.status(500).json({
-      statusCode: 500,
-      message: "Error updating feature submission",
-      error: error.message,
-    });
+    return errorResponse(res, error);
   }
 };
 
@@ -175,14 +170,14 @@ const finalSubmit = async (req, res) => {
     });
 
     if (!bestFilmCritic) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "You do not have any entries.!!",
         statusCode: 203,
       });
     }
 
     if (bestFilmCritic.payment_status != 2) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "Your payment is not completed.!!",
         statusCode: 203,
       });
@@ -199,16 +194,12 @@ const finalSubmit = async (req, res) => {
     // };
     // await Mail.sendOtp(mailContent);
 
-    res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "You have successfully submitted your form.!!",
       statusCode: 200,
     });
   } catch (error) {
-    return res.status(500).json({
-      status: "exception",
-      message: error.message || "Internal Server Error",
-      statusCode: 500,
-    });
+    return errorResponse(res, error);
   }
 };
 
@@ -335,7 +326,7 @@ export const bestFilmCriticById = async (req, res) => {
     });
 
     if (!bestFilmCritic) {
-      return res.status(404).json({
+      return sendJsonResponse(res, 404, {
         status: "exception",
         message: "Something went wrong!!",
         statusCode: 404,
@@ -351,18 +342,14 @@ export const bestFilmCriticById = async (req, res) => {
       editors,
     };
 
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       status: "success",
       message: "Success.!!",
       statusCode: 200,
       data,
     });
   } catch (error) {
-    return res.status(500).json({
-      status: "exception",
-      message: error.message || "Internal Server Error",
-      statusCode: 500,
-    });
+    return errorResponse(res, error);
   }
 };
 

@@ -5,6 +5,7 @@ import { Document } from "../../models/mongodbModels/document.js";
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
 import BestBookCinema from "../../models/mongodbModels/BestBookCinema.js";
 import BestFilmCritic from "../../models/mongodbModels/BestFilmCritic.js";
+import { errorResponse, sendJsonResponse } from "../../helpers/responseHelper.js";
 import {
   documentTypeMap,
   formType,
@@ -111,7 +112,7 @@ const downloadDocument = async (req, res) => {
     const documentRecord = await Document.findById(req.params.id);
 
     if (!documentRecord) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "Document not found",
         statusCode: 203,
       });
@@ -119,7 +120,7 @@ const downloadDocument = async (req, res) => {
 
     const isOwner = await userOwnsDocument(req, documentRecord);
     if (!isOwner) {
-      return res.status(403).json({
+      return sendJsonResponse(res, 403, {
         message: "You are not authorized to access this document",
         statusCode: 403,
       });
@@ -127,7 +128,7 @@ const downloadDocument = async (req, res) => {
 
     const filePath = findStoredFile(documentRecord);
     if (!filePath) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "Document file not found",
         statusCode: 203,
       });
@@ -135,10 +136,7 @@ const downloadDocument = async (req, res) => {
 
     return res.download(filePath, documentRecord.name || path.basename(filePath));
   } catch (error) {
-    return res.status(500).json({
-      message: error.message,
-      statusCode: 500,
-    });
+    return errorResponse(res, error);
   }
 };
 

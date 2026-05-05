@@ -1,6 +1,6 @@
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
 import { validateContributorPayload } from "../../helpers/contributorSchemaHelper.js";
-import { sendValidationError } from "./responseHelper.js";
+import { errorResponse, sendJsonResponse, sendValidationError } from "../../helpers/responseHelper.js";
 
 const getUserId = (req) => req.user?._id || req.user?.id;
 
@@ -19,16 +19,16 @@ const getAllSongByFeatureId = async (req, res) => {
     }, "songs");
 
     if (!feature) {
-      return res.status(200).json({ message: "Records not found", statusCode: 203 });
+      return sendJsonResponse(res, 200, { message: "Records not found", statusCode: 203 });
     }
 
-    res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Data fetched successfully",
       data: feature.songs,
       statusCode: 200,
     });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch Songs", message: error.message });
+    return errorResponse(res, error);
   }
 };
 
@@ -47,13 +47,13 @@ const addSongToFeature = async (req, res) => {
       client_id: getUserId(req),
     });
     if (!feature) {
-      return res.status(200).json({ message: "Feature form not found", statusCode: 203 });
+      return sendJsonResponse(res, 200, { message: "Feature form not found", statusCode: 203 });
     }
     if (songId) {
       // Update existing song
       const existingSong = feature.songs.id(songId);
       if (!existingSong) {
-        return res.status(200).json({ message: "Song not found", statusCode: 203 });
+        return sendJsonResponse(res, 200, { message: "Song not found", statusCode: 203 });
       }
 
       Object.entries(req.body).forEach(([key, value]) => {
@@ -76,13 +76,13 @@ const addSongToFeature = async (req, res) => {
       return obj;
     });
 
-    res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: songId ? "song updated successfully" : "song added successfully",
       data: updatedData,
       statusCode: 200,
     });
   } catch (error) {
-    res.status(500).json({ error: "Failed to add song", message: error.message });
+    return errorResponse(res, error);
   }
 };
 
@@ -101,7 +101,7 @@ const deleteSongById = async (req, res) => {
     });
 
     if (!feature) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: 'Feature form not found',
         statusCode: 203,
       });
@@ -110,7 +110,7 @@ const deleteSongById = async (req, res) => {
     // Find the Song by ID and remove it
     const song = feature.songs.id(songId);
     if (!song) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: 'song not found',
         statusCode: 203,
       });
@@ -120,17 +120,13 @@ const deleteSongById = async (req, res) => {
 
     await feature.save(); // Save the updated document
 
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: 'song deleted successfully',
       statusCode: 200,
     });
 
   } catch (error) {
-    return res.status(500).json({
-      message: 'Error deleting song',
-      error: error.message,
-      statusCode: 500,
-    });
+    return errorResponse(res, error);
   }
 };
 

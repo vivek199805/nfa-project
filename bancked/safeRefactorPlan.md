@@ -65,6 +65,7 @@ Architecture observations:
 - Completed Phase 10 contributor controller validation branch tests.
 - Completed Phase 11 backend spelling and wording cleanup.
 - Completed Phase 12 backend duplication reduction pass.
+- Completed Phase 13 response helper centralization pass.
 
 ## Pending Tasks
 
@@ -73,20 +74,21 @@ Architecture observations:
 
 ## Current Phase
 
-Current phase: Phase 12, Backend Duplication Reduction Pass.
+Current phase: Phase 13, Response Helper Centralization Pass.
 
 Status: Completed.
 
-Phase 12 scope:
+Phase 13 scope:
 
-- Reviewed all backend Markdown files before source edits.
-- Scanned the active backend for repeated validation responses, Zod error formatting, numeric/ObjectId checks, language normalization patterns, and request user-id helpers.
-- Centralized duplicated validation response and helper parsing logic while preserving business logic and API contracts.
-- Left broader user-id helper consolidation for a future targeted pass because current call sites differ in precedence and string conversion.
+- Reviewed active backend controllers under `bancked/controllers/mongoDBController/`, including the existing controller-local `responseHelper.js`.
+- Created the canonical helper at `bancked/helpers/responseHelper.js` because this repository's backend folder is named `bancked/`.
+- Merged the existing controller-local helper behavior into the canonical helper and kept `controllers/mongoDBController/responseHelper.js` as a compatibility re-export.
+- Centralized controller response sending through helper functions while preserving existing HTTP statuses, body-level `statusCode` values, message text, and extra response fields.
+- Preserved the one existing `.send()` response path through `sendBodyResponse()` instead of changing it to JSON response semantics.
 
 ## Next Step
 
-All planned safe backend passes are complete. Future work should start from a specific feature, bug, or vertical slice.
+All planned Phase 13 validation is complete. Future work should start from a specific feature, bug, or vertical slice.
 
 ## Phase-By-Phase Refactor Plan
 
@@ -702,6 +704,53 @@ Verification:
 - `npm.cmd test`: sandboxed run failed with `spawn EPERM`; rerun outside the sandbox passed with 57 tests and 0 failures.
 
 ## Change Log
+
+### Phase 13
+
+- Added `helpers/responseHelper.js`.
+  - Created `successResponse(res, data, message, statusCode = 200)`.
+  - Created `errorResponse(res, error, message, statusCode = 500)`.
+  - Added `sendJsonResponse()` to preserve arbitrary existing controller JSON bodies exactly.
+  - Added `sendBodyResponse()` to preserve the existing auth `.send()` response behavior.
+  - Moved existing `sendValidationError()` and `sendStatusMessage()` behavior into the canonical helper.
+- Updated `controllers/mongoDBController/responseHelper.js`.
+  - Converted it to a compatibility re-export from `helpers/responseHelper.js`.
+  - Avoided duplicating helper logic in the controller folder.
+- Updated active Mongo controllers to import helpers from `../../helpers/responseHelper.js`.
+  - `actorController.js`
+  - `audiographerController.js`
+  - `authController.js`
+  - `bestBookController.js`
+  - `bestFilmCriticController.js`
+  - `bookController.js`
+  - `directorController.js`
+  - `documentController.js`
+  - `editorController.js`
+  - `entryListController.js`
+  - `filmController.js`
+  - `languagesController.js`
+  - `paymentController.js`
+  - `producerController.js`
+  - `songController.js`
+- Updated `controllers/mongoDBController/responseHelper.test.js`.
+  - Added direct coverage for `successResponse()`.
+  - Added direct coverage for `errorResponse()`.
+  - Added direct coverage for `sendBodyResponse()`.
+- Edge cases handled:
+  - Existing HTTP 200 responses with body `statusCode: 203` were preserved by sending the original response body through `sendJsonResponse()`.
+  - Existing response bodies with nonstandard fields such as `error`, `msg`, `token`, `user`, `status`, and nested `data` were preserved.
+  - Existing validation failure shape remains `{ message: "Validation failed", errors, statusCode: 422 }`.
+  - Existing `.send()` behavior in auth logout-all error handling remains centralized without changing the body shape.
+- Next steps:
+  - Keep using `successResponse()` and `errorResponse()` for new simple controller responses.
+  - Use `sendJsonResponse()` when an existing endpoint has a compatibility-sensitive custom body shape.
+  - Add endpoint-level tests before any future cleanup of response structures or body-level `statusCode` semantics.
+- Verification:
+  - `npm.cmd run lint`: passed with 0 warnings and 0 errors.
+  - Node syntax check across backend source `.js` files: passed.
+  - `npm.cmd test`: sandboxed run failed with `spawn EPERM`; rerun outside the sandbox passed with 34 tests and 0 failures.
+  - `rg -n '^[^/]*res\.status' controllers\mongoDBController helpers -g '*.js'`: only helper implementations and test assertions still contain direct `res.status` references.
+  - Removed generated `coverage/` output after the test run.
 
 ### Phase 0
 
@@ -1336,6 +1385,27 @@ fail 0
 duration_ms 1820.9577
 ```
 
+Phase 13 test command:
+
+```powershell
+npm.cmd test
+```
+
+Initial sandbox result:
+
+```text
+Error: spawn EPERM
+```
+
+Final result after rerun outside the sandbox:
+
+```text
+tests 34
+pass 34
+fail 0
+duration_ms 1075.2307
+```
+
 ## Any Unresolved Issues
 
 - ESLint warnings from Phase 0 have been resolved.
@@ -1360,9 +1430,10 @@ duration_ms 1820.9577
 - Phase 5 auth and payment safety pass completed.
 - Phase 6 response helper safety pass completed.
 - Phase 7 environment documentation and production safety pass completed.
+- Phase 13 response helper centralization pass completed.
 - Backend plan file created.
 - No business logic, auth/payment behavior, response contract, upload storage behavior, or optional integration behavior changed.
 - Lint passed with 0 warnings and 0 errors.
 - Node syntax checks passed.
-- Unit tests passed: 57 tests across 14 files.
+- Unit tests passed for Phase 13: 34 tests, 0 failures.
 - Current phase is error-free for compile/syntax checks.

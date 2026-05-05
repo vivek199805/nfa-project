@@ -4,13 +4,20 @@ import User from "../models/mongodbModels/user.js";
 export async function requireAuth(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
+    // const authHeader = req.header('Authorization') ?? req.header('authorization');
     if (!authHeader) {
       return res.status(401).json({ error: "Unauthorized", statusCode: 401 });
     }
 
     const [scheme, token] = authHeader.split(" ");
     if (scheme !== "Bearer" || !token) {
-      return res.status(401).json({ error: "Invalid authorization header", statusCode: 401 });
+      return res.status(401).json({
+        error: "Invalid authorization header",
+        status: 'failure',
+        responsecode: 'UNAUTHORIZED',
+        message: 'Authorization token missing',
+        statusCode: 401
+      });
     }
 
     const decoded = verifyToken(token);
@@ -24,6 +31,6 @@ export async function requireAuth(req, res, next) {
     req.token = token;
     next();
   } catch {
-    res.status(401).json({ error: "Invalid token", statusCode: 401 });
+    res.status(401).json({ error: "Invalid token", statusCode: 401, status: 'failure', responsecode: 'UNAUTHORIZED', message: 'Invalid or expired token' });
   }
 }

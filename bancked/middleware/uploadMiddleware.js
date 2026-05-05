@@ -36,3 +36,4 @@ const upload = multer({
 });
 
 export default upload;
+export const uploadNone = multer().none();

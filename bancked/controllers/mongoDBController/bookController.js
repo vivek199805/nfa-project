@@ -1,7 +1,7 @@
 import BestBookCinema from "../../models/mongodbModels/BestBookCinema.js";
 import Book from "../../models/mongodbModels/book.js";
 import BookSchemaHelper from "../../helpers/bookSchemaHelper.js";
-import { sendValidationError } from "./responseHelper.js";
+import { errorResponse, sendJsonResponse, sendValidationError } from "../../helpers/responseHelper.js";
 
 const normalizeLanguageIds = (languageIds) => {
   if (typeof languageIds === "string") {
@@ -72,23 +72,20 @@ const storeBook = async (req, res) => {
     const book = new Book(arrayToInsert);
 
     if (!book) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "Book not created.!!",
         statusCode: 203,
       });
     }
     const result = await book.save();
 
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Book created successfully.!!",
       statusCode: 200,
       data: result,
     });
   } catch (error) {
-    res.status(500).json({
-      error: "Failed to create book",
-      message: error.message,
-    });
+    return errorResponse(res, error);
   }
 };
 
@@ -110,7 +107,7 @@ const updateBook = async (req, res) => {
     });
 
     if (!book) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "book not found.!!",
         statusCode: 203,
       });
@@ -122,11 +119,11 @@ const updateBook = async (req, res) => {
     });
 
     if (!bestBookCinema) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "Related BestBookCinema not found!",
         statusCode: 203,
       });
-    }    
+    }
 
     const updatedData = {
       book_title_original:
@@ -147,14 +144,12 @@ const updateBook = async (req, res) => {
 
     await Book.findByIdAndUpdate(book._id, updatedData, { new: true });
 
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Book updated successfully!",
       statusCode: 200,
     });
   } catch (error) {
-    return res.status(500).json({
-      message: error.message,
-    });
+    return errorResponse(res, error);
   }
 };
 
@@ -180,7 +175,7 @@ const listBook = async (req, res) => {
       });
 
       if (!checkBestBook) {
-        return res.status(200).json({
+        return sendJsonResponse(res, 200, {
           message: "Please provide valid details.!!",
           statusCode: 203,
         });
@@ -193,7 +188,7 @@ const listBook = async (req, res) => {
     }
 
     if (Object.keys(whereTo).length === 0) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "No valid identifier provided.",
         statusCode: 203,
       });
@@ -202,21 +197,18 @@ const listBook = async (req, res) => {
     allBook = await Book.find(whereTo);
 
     if (!allBook || allBook.length === 0) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "No result found.!!",
         statusCode: 203,
       });
     }
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Success",
       statusCode: 200,
       data: allBook,
     });
   } catch (error) {
-    res.status(500).json({
-      error: "Failed to list books",
-      message: error.message,
-    });
+    return errorResponse(res, error);
   }
 };
 
@@ -231,20 +223,18 @@ const getBook = async (req, res) => {
       client_id: payload.user.id || payload.user._id,
     });
     if (!book) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "No result found.!!",
         statusCode: 203,
       });
     }
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Success",
       statusCode: 200,
       data: book,
     });
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
+    return errorResponse(res, error);
   }
 };
 
@@ -260,7 +250,7 @@ const deleteBook = async (req, res) => {
     });
 
     if (!book) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "book not found",
         statusCode: 203,
       });
@@ -268,14 +258,12 @@ const deleteBook = async (req, res) => {
 
     // Delete the document
     await Book.deleteOne({ _id: payload.id });
-    res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "book deleted successfully",
       statusCode: 200,
     });
   } catch (error) {
-    return res.status(500).json({
-      message: error.message,
-    });
+    return errorResponse(res, error);
   }
 };
 

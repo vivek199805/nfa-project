@@ -6,7 +6,7 @@ import Payment from "../../models/mongodbModels/Payment.js";
 import { formType } from "../../services/common.js";
 import BestBookCinema from "../../models/mongodbModels/BestBookCinema.js";
 import { validatePaymentConfirmationData, validatePaymentData, } from "../../helpers/paymentSchemaHelper.js";
-import { sendStatusMessage, sendValidationError } from "./responseHelper.js";
+import { errorResponse, sendJsonResponse, sendStatusMessage, sendValidationError } from "../../helpers/responseHelper.js";
 
 const RAZORPAY_GATEWAY = "RAZORPAY";
 const DEFAULT_CURRENCY = "INR";
@@ -236,7 +236,7 @@ export const createOrder = async (req, res) => {
     };
     await applicationData.save();
 
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Razorpay order created successfully",
       status: true,
       statusCode: 200,
@@ -250,10 +250,7 @@ export const createOrder = async (req, res) => {
       },
     });
   } catch (error) {
-    return res.status(500).json({
-      message: error.message || "Unable to create Razorpay order",
-      statusCode: 500,
-    });
+    return errorResponse(res, error, "Unable to create Razorpay order");
   }
 };
 
@@ -292,7 +289,7 @@ export const verifyPayment = async (req, res) => {
     }
 
     if (payment.status === 2 && String(applicationData.payment_status) === "2") {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "Payment already verified",
         statusCode: 200,
         data: payment,
@@ -305,7 +302,7 @@ export const verifyPayment = async (req, res) => {
     ]);
 
     if (!razorpayPayment) {
-      return res.status(422).json({
+      return sendJsonResponse(res, 422, {
         message: "Razorpay payment details could not be fetched",
         statusCode: 422,
       });
@@ -318,7 +315,7 @@ export const verifyPayment = async (req, res) => {
         "Razorpay payment order does not match the initiated order";
       await payment.save();
 
-      return res.status(422).json({
+      return sendJsonResponse(res, 422, {
         message: "Razorpay order mismatch",
         statusCode: 422,
       });
@@ -335,7 +332,7 @@ export const verifyPayment = async (req, res) => {
         "Razorpay payment amount does not match the initiated amount";
       await payment.save();
 
-      return res.status(422).json({
+      return sendJsonResponse(res, 422, {
         message: "Payment amount mismatch",
         statusCode: 422,
       });
@@ -349,7 +346,7 @@ export const verifyPayment = async (req, res) => {
       payment.response_payload = JSON.stringify(razorpayPayment);
       await payment.save();
 
-      return res.status(422).json({
+      return sendJsonResponse(res, 422, {
         message: "Payment was not captured successfully",
         statusCode: 422,
       });
@@ -386,16 +383,13 @@ export const verifyPayment = async (req, res) => {
     };
     await applicationData.save();
 
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Payment verified and application updated successfully",
       statusCode: 200,
       data: payment,
     });
   } catch (error) {
-    return res.status(500).json({
-      message: error.message || "Unable to verify Razorpay payment",
-      statusCode: 500,
-    });
+    return errorResponse(res, error, "Unable to verify Razorpay payment");
   }
 };
 

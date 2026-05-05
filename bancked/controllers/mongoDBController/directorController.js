@@ -2,7 +2,7 @@ import { Document } from "../../models/mongodbModels/document.js";
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
 import Common from "../../services/common.js"
 import { validateContributorPayload } from "../../helpers/contributorSchemaHelper.js";
-import { sendValidationError } from "./responseHelper.js";
+import { errorResponse, sendJsonResponse, sendValidationError } from "../../helpers/responseHelper.js";
 
 const getUserId = (req) => req.user?._id || req.user?.id;
 
@@ -21,7 +21,7 @@ const getAllDirectorsByFeatureId = async (req, res) => {
     }, "directors");
 
     if (!feature) {
-      return res.status(200).json({ message: "Records not found", statusCode: 203 });
+      return sendJsonResponse(res, 200, { message: "Records not found", statusCode: 203 });
     }
     // 2. Attach matching documents to each director manually
     const allDirectorWithDocs = await Promise.all(
@@ -50,13 +50,13 @@ const getAllDirectorsByFeatureId = async (req, res) => {
       }
     });
 
-    res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Data fetched successfully",
       data: allDirectorWithDocs,
       statusCode: 200,
     });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch directors", message: error.message });
+    return errorResponse(res, error);
   }
 };
 
@@ -79,14 +79,14 @@ const addDirectorToFeature = async (req, res) => {
       client_id: getUserId(req),
     });
     if (!feature) {
-      return res.status(200).json({ message: "Feature form not found", statusCode: 203 });
+      return sendJsonResponse(res, 200, { message: "Feature form not found", statusCode: 203 });
     }
     let updatedDirector;
     if (directorId) {
       // Update existing director
       const existingDirector = feature.directors.id(directorId);
       if (!existingDirector) {
-        return res.status(200).json({ message: "director not found", statusCode: 203 });
+        return sendJsonResponse(res, 200, { message: "director not found", statusCode: 203 });
       }
 
       Object.entries(req.body).forEach(([key, value]) => {
@@ -117,7 +117,7 @@ const addDirectorToFeature = async (req, res) => {
         });
 
         if (!fileUpload.status) {
-          return res.status(500).json({ message: "failed to upload director document", statusCode: 500, });
+          return sendJsonResponse(res, 500, { message: "failed to upload director document", statusCode: 500, });
         }
 
         // Add uploaded file to director.documents
@@ -136,13 +136,13 @@ const addDirectorToFeature = async (req, res) => {
       return obj;
     });
 
-    res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: directorId ? "Director updated successfully" : "Director added successfully",
       data: updatedData,
       statusCode: 200,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message, statusCode: 500 });
+    return errorResponse(res, error);
   }
 };
 const deleteDirectorById = async (req, res) => {
@@ -160,7 +160,7 @@ const deleteDirectorById = async (req, res) => {
     });
 
     if (!feature) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: 'Feature form not found',
         statusCode: 203,
       });
@@ -169,7 +169,7 @@ const deleteDirectorById = async (req, res) => {
     // Find the director by ID and remove it
     const director = feature.directors.id(directorId);
     if (!director) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: 'Director not found',
         statusCode: 203,
       });
@@ -179,18 +179,14 @@ const deleteDirectorById = async (req, res) => {
 
     await feature.save(); // Save the updated document
 
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: 'director deleted successfully',
       statusCode: 200,
       // data: feature.producers, // optionally return updated list
     });
 
   } catch (error) {
-    return res.status(500).json({
-      message: 'Error deleting director',
-      error: error.message,
-      statusCode: 500,
-    });
+    return errorResponse(res, error);
   }
 };
 

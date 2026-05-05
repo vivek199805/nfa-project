@@ -2,7 +2,7 @@ import { Document } from "../../models/mongodbModels/document.js";
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
 import Common, { documentTypeMap } from "../../services/common.js";
 import NfaFilmHelper from "../../helpers/nfaFilmHelper.js";
-import { sendValidationError } from "./responseHelper.js";
+import { errorResponse, sendJsonResponse, sendValidationError } from "../../helpers/responseHelper.js";
 
 const getUserId = (req) => req.user?._id || req.user?.id;
 
@@ -122,7 +122,7 @@ const createFeatureSubmission = async (req, res) => {
       .status(200)
       .json({ message: "Submit successful", statusCode: 200, data: finalData });
   } catch (error) {
-    res.status(500).json({ message: error.message, statusCode: 500 });
+    return errorResponse(res, error);
   }
 };
 
@@ -178,7 +178,7 @@ const createNonFeatureSubmission = async (req, res) => {
       .status(200)
       .json({ message: "Submit successful", statusCode: 200, data: finalData });
   } catch (error) {
-    res.status(500).json({ message: error.message, statusCode: 500 });
+    return errorResponse(res, error);
   }
 };
 
@@ -211,13 +211,13 @@ const getFilmEntryList = async (req, res) => {
       "non-feature": nonFeatureFilmData,
     };
 
-    res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Fetch successfully",
       statusCode: 200,
       data: finalData,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message, statusCode: 500 });
+    return errorResponse(res, error);
   }
 };
 // Get  Feature & non-feature List by id
@@ -225,7 +225,7 @@ const getFilmDetailsById = async (req, res) => {
   try {
     const { id } = req.params;
     if (!id) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         statusCode: 203,
         message: "Film ID is required",
       });
@@ -242,7 +242,7 @@ const getFilmDetailsById = async (req, res) => {
     ]);
 
     if (!featureForm) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         statusCode: 203,
         message: "Film submission not found",
       });
@@ -265,13 +265,13 @@ const getFilmDetailsById = async (req, res) => {
       featureData.company_reg_doc = documentUrlByType.get(documentTypeMap.COMPANY_REG_DOC);
     if (featureData.original_work_copy)
       featureData.original_work_copy = documentUrlByType.get(documentTypeMap.ORIGINAL_WORK_COPY);
-    res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Fetch successfully",
       statusCode: 200,
       data: featureData,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message, statusCode: 500 });
+    return errorResponse(res, error);
   }
 };
 
@@ -281,11 +281,10 @@ const updateFeatureNonfeatureById = async (req, res) => {
     const missingFields = requiredFields.filter((field) => !req.body[field]);
 
     if (missingFields.length > 0) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         statusCode: 203,
-        message: `${missingFields.join(" and ")} ${
-          missingFields.length > 1 ? "are" : "is"
-        } required`,
+        message: `${missingFields.join(" and ")} ${missingFields.length > 1 ? "are" : "is"
+          } required`,
       });
     }
     const payload = {
@@ -317,7 +316,7 @@ const updateFeatureNonfeatureById = async (req, res) => {
     if (stepHandler[+req.body.step]) {
       const result = await stepHandler[+req.body.step](existingEntry, payload);
       if (result?.status === false) {
-        return res.status(422).json({
+        return sendJsonResponse(res, 422, {
           statusCode: 422,
           message: result.message || "Step processing failed",
         });
@@ -328,7 +327,7 @@ const updateFeatureNonfeatureById = async (req, res) => {
       // Save updated document
       const updated = await result.save();
 
-      res.status(200).json({
+      return sendJsonResponse(res, 200, {
         statusCode: 200,
         message: "Feature submission updated successfully",
         data: updated,
@@ -336,16 +335,12 @@ const updateFeatureNonfeatureById = async (req, res) => {
       return;
     }
 
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       statusCode: 203,
       message: "Invalid step provided",
     });
   } catch (error) {
-    res.status(500).json({
-      statusCode: 500,
-      message: "Error updating feature submission",
-      error: error.message,
-    });
+    return errorResponse(res, error);
   }
 };
 
@@ -358,13 +353,13 @@ const getNonFeatureSubmissions = async (req, res) => {
     }).populate(
       "producers directors songs actors audiographer documents"
     );
-    res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Fetch successfully",
       statusCode: 200,
       data: submissions,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message, statusCode: 500 });
+    return errorResponse(res, error);
   }
 };
 
@@ -641,28 +636,25 @@ const finalSubmit = async (req, res) => {
     });
 
     if (!nfaFeature) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "You do not have any entries.!!",
         statusCode: 203,
       });
     }
 
     if (nfaFeature.payment_status != 2) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "Your payment is not completed.!!",
         statusCode: 203,
       });
     }
 
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "You have successfully submitted your form.!!",
       statusCode: 200,
     });
   } catch (error) {
-    return res.status(500).json({
-      status: "exception",
-      message: error.message || "Internal Server Error",
-    });
+    return errorResponse(res, error);
   }
 };
 
