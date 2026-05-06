@@ -73,7 +73,7 @@ const filmSchema = z.object({
 const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
   const { id } = useParams();
   const [producers, setProducers] = useState([]); // your producer list
-  const [showForm, setShowForm] = useState(producers.length === 0);
+  const [showForm, setShowForm] = useState(true);
   const numberRestriction = useInputRestriction("number");
   const [editingIndex, setEditingIndex] = useState(null);
 
@@ -166,6 +166,8 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
   const handleEdit = (index) => {
     //  const data = producers[index];
     const data = producers.find((item) => item._id === index);
+    if (!data) return;
+
     // Object.entries(data).forEach(([key, value]) => {
     //   setValue(key, value);
     // });
@@ -230,7 +232,7 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
       formData.append("id", id);
       formData.append("film_type", filmType);
       const response = await postRequest(url, formData);
-      if (response.statusCode == 200) {
+      if (Number(response.statusCode) === 200) {
         setActiveSection(getFilmNextSection(filmType, "producer"));
       }
 
@@ -278,7 +280,7 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
               </thead>
               <tbody>
                 {producers.map((producer, index) => (
-                  <tr key={index}>
+                  <tr key={producer._id ?? index}>
                     <td>{index + 1}</td>
                     <td>
                       <span className="nationality-badge">

@@ -1,10 +1,7 @@
 import { z } from "zod";
 import dayjs from "dayjs";
 import Common from "../services/common.js";
-
-const isNumeric = (val) => !isNaN(Number(val)) && Number(val).toString() === val.toString();
-
-const isObjectId = (val) => /^[0-9a-fA-F]{24}$/.test(val);
+import { isNumeric, isObjectId, parseZodResult } from "./validationCommon.js";
 
 const toStringArray = (val) => {
   if (typeof val === "string") {
@@ -194,53 +191,65 @@ const requireFileOrExistingValue = (payload, files, fieldName, label) => {
   };
 };
 
+const stepValidationRules = [
+  {
+    matches: (step) =>
+      step === String(Common.stepsFeature().GENERAL) ||
+      step === String(Common.stepsNonFeature().GENERAL),
+    schema: generalSchema,
+  },
+  {
+    matches: (step) =>
+      step === String(Common.stepsFeature().CENSOR) ||
+      step === String(Common.stepsNonFeature().CENSOR),
+    schema: censorSchema,
+    fileField: "censor_certificate_file",
+    fileLabel: "censor_certificate_file",
+  },
+  {
+    matches: (step) =>
+      step === String(Common.stepsFeature().COMPANY_REGISTRATION) ||
+      step === String(Common.stepsNonFeature().COMPANY_REGISTRATION),
+    schema: companySchema,
+    fileField: "company_reg_doc",
+    fileLabel: "company_reg_doc",
+  },
+  {
+    matches: (step, payload) =>
+      step === String(Common.stepsFeature().OTHER) &&
+      payload.film_type === "feature",
+    schema: featureOtherSchema,
+    fileField: "original_work_copy",
+    fileLabel: "original_work_copy",
+  },
+  {
+    matches: (step, payload) =>
+      step === String(Common.stepsNonFeature().OTHER) &&
+      payload.film_type === "non-feature",
+    schema: nonFeatureOtherSchema,
+  },
+  {
+    matches: (step) =>
+      step === String(Common.stepsFeature().RETURN_ADDRESS) ||
+      step === String(Common.stepsNonFeature().RETURN_ADDRESS),
+    schema: returnSchema,
+  },
+  {
+    matches: (step) =>
+      step === String(Common.stepsFeature().DECLARATION) ||
+      step === String(Common.stepsNonFeature().DECLARATION),
+    schema: declarationSchema,
+  },
+];
+
+const findStepValidationRule = (step, payload) =>
+  stepValidationRules.find((rule) => rule.matches(step, payload));
+
 const validateStepInput = (payload, files = []) => {
   const step = String(payload.step ?? "");
-  let schema = baseStepSchema;
-  let fileRequirementError = null;
+  const validationRule = findStepValidationRule(step, payload);
 
-  if (step === String(Common.stepsFeature().GENERAL) || step === String(Common.stepsNonFeature().GENERAL)) {
-    schema = schema.merge(generalSchema);
-  } else if (step === String(Common.stepsFeature().CENSOR) || step === String(Common.stepsNonFeature().CENSOR)) {
-    schema = schema.merge(censorSchema);
-    fileRequirementError = requireFileOrExistingValue(
-      payload,
-      files,
-      "censor_certificate_file",
-      "censor_certificate_file"
-    );
-  } else if (
-    step === String(Common.stepsFeature().COMPANY_REGISTRATION) ||
-    step === String(Common.stepsNonFeature().COMPANY_REGISTRATION)
-  ) {
-    schema = schema.merge(companySchema);
-    fileRequirementError = requireFileOrExistingValue(
-      payload,
-      files,
-      "company_reg_doc",
-      "company_reg_doc"
-    );
-  } else if (step === String(Common.stepsFeature().OTHER) && payload.film_type === "feature") {
-    schema = schema.merge(featureOtherSchema);
-    fileRequirementError = requireFileOrExistingValue(
-      payload,
-      files,
-      "original_work_copy",
-      "original_work_copy"
-    );
-  } else if (step === String(Common.stepsNonFeature().OTHER) && payload.film_type === "non-feature") {
-    schema = schema.merge(nonFeatureOtherSchema);
-  } else if (
-    step === String(Common.stepsFeature().RETURN_ADDRESS) ||
-    step === String(Common.stepsNonFeature().RETURN_ADDRESS)
-  ) {
-    schema = schema.merge(returnSchema);
-  } else if (
-    step === String(Common.stepsFeature().DECLARATION) ||
-    step === String(Common.stepsNonFeature().DECLARATION)
-  ) {
-    schema = schema.merge(declarationSchema);
-  } else {
+  if (!validationRule) {
     return {
       isValid: false,
       errors: {
@@ -249,36 +258,29 @@ const validateStepInput = (payload, files = []) => {
     };
   }
 
+  const fileRequirementError = validationRule.fileField
+    ? requireFileOrExistingValue(
+      payload,
+      files,
+      validationRule.fileField,
+      validationRule.fileLabel
+    )
+    : null;
+
   if (fileRequirementError) {
     return fileRequirementError;
   }
 
+  const schema = baseStepSchema.merge(validationRule.schema);
   const result = schema.safeParse(payload);
-
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce(
-        (acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }),
-        {}
-      ),
-  };
+  return parseZodResult(result);
 };
 
 const finalSubmitStep = (payload) => {
   const schema = lastIdSchema;
   const result = schema.safeParse(payload);
 
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce(
-        (acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }),
-        {}
-      ),
-  };
+  return parseZodResult(result);
 };
 
 export default {

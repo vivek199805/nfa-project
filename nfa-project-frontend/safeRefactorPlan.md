@@ -80,11 +80,11 @@ No business logic changes are planned in this document. Future refactors must pr
 - Completed Phase 6 service/query endpoint audit with no remaining active call-site endpoint literals outside workflow/endpoint metadata.
 - Completed Phase 7 as a consolidated UI/accessibility pass across auth, dashboard, shared layout, OTP, password, step indicator, and workflow controls without changing business logic.
 - Completed a folder-structure stabilization pass by moving shared UI, layout, modal, and form-control components into `src/components/*` while preserving feature workflow modules and business behavior.
+- Completed a controlled frontend duplication pass by extracting shared workflow page chrome and repeated workflow route children.
 
 ## Pending Tasks
 
 - Add more targeted tests before high-risk refactors.
-- Audit route tree for duplicate or legacy route patterns.
 - Audit form sections phase-by-phase without changing payloads.
 - Audit payment flow configuration and error handling.
 - Consider route-level code splitting after behavior is stable.
@@ -565,13 +565,58 @@ Pending items:
 - Consider a future deliberate migration from singular `src/component/` to `src/components/features/*` for the large workflow sections after a separate form-flow regression plan is in place.
 - Consider replacing compatibility `src/store/*` and `src/common/services/*` imports only after confirming all legacy call sites are no longer needed.
 
-## Current Phase Status
+### Phase 10: Controlled Duplication Reduction Pass
 
-Current phase: Phase 9, Folder Structure Stabilization.
+Goal: Identify and remove low-risk frontend duplication while preserving route names, UI structure, workflow state, API payloads, and business logic.
+
+Duplicate code identified:
+
+- The four workflow route pages repeated the same `Navbar`, form container, `StepIndicator`, title, subtitle, and child-section wrapper markup.
+- The workflow route groups in `src/App.jsx` repeated the same index route, `:id` edit route, and optional `view/:id` route structure.
+- Larger duplication remains in form-section `FormData` construction, child-resource add/edit/delete handlers, toast branches, and document URL rendering. These are intentionally left for later because they are payload- and flow-sensitive.
+
+Refactoring actions taken:
+
+- Added `src/features/components/layout/WorkflowPageLayout.jsx` to centralize shared workflow page chrome.
+- Updated feature film, non-feature film, best book, and film critic route pages to render their existing step sections inside `WorkflowPageLayout`.
+- Added a local `createWorkflowRoutes()` helper in `src/App.jsx` to centralize repeated workflow route child definitions.
+- Preserved the current route set exactly, including the existing non-feature route children.
+
+Files modified:
+
+- `src/App.jsx`
+- `src/features/components/layout/WorkflowPageLayout.jsx`
+- `src/pages/feature-film.jsx`
+- `src/pages/non-feature-film.jsx`
+- `src/pages/best-book.jsx`
+- `src/pages/best-filmCritic.jsx`
+- `safeRefactorPlan.md`
+
+Before vs after summary:
+
+- Before: each workflow page owned identical layout chrome and each workflow route group repeated the same child-route shape.
+- After: shared layout chrome lives in one component and workflow route children are generated from one helper, while page-specific section order, resume behavior, endpoint usage, and transition logic remain local and unchanged.
+
+Remaining duplication:
+
+- Form sections still duplicate request payload assembly and CRUD table patterns. Those areas should be audited one vertical slice at a time with tests because they are tightly coupled to backend field names and `active_step` behavior.
+- Payment preview sections still have similar success/error handling. Leave these until a payment-specific pass can verify checkout behavior end to end.
+
+Validation:
+
+- `npm.cmd run lint`: passed.
+- `npm.cmd run test`: passed, 6 files and 31 tests.
+- `npm.cmd run build`: initial sandbox run failed with esbuild `spawn EPERM`; rerun outside the sandbox passed with existing Vite empty-chunk warnings.
 
 Status: Completed.
 
-Current status: Shared UI, layout, modal, and reusable form-control components have been moved into `src/components/*`; lint, tests, and production build are verified.
+## Current Phase Status
+
+Current phase: Phase 10, Controlled Duplication Reduction Pass.
+
+Status: Completed.
+
+Current status: Shared workflow page chrome and repeated workflow route child definitions have been centralized without changing business logic; lint, tests, and production build are verified.
 
 What was completed in Phase 5: Resume-step calculation, film endpoint selection, best book / film critic endpoint constants, shared entry workflow metadata, shared film section step/payment metadata, shared award payment metadata, shared award section step metadata, film final-submit endpoint, and remaining film section navigation metadata are centralized without changing form contracts.
 
@@ -1855,3 +1900,371 @@ Status: Passed with existing Vite chunk warnings.
 - [x] Phase 9 folder structure stabilization completed without business logic changes.
 - [x] Phase 9 import/path updates verified.
 - [x] Phase 9 lint, unit tests, and production build passed.
+- [x] Phase 10 duplication reduction completed without business logic changes.
+- [x] Phase 10 lint passed.
+- [x] Phase 10 tests passed.
+- [x] Phase 10 build passed after sandbox `spawn EPERM` rerun outside sandbox.
+
+## Best Book Component React 19 Audit
+
+Scope reviewed:
+
+- `src/component/best-book-component/author-component.jsx`
+- `src/component/best-book-component/book-cinema-component.jsx`
+- `src/component/best-book-component/declaration-component.jsx`
+- `src/component/best-book-component/preview-payment.jsx`
+- `src/component/best-book-component/punlisher-book-component.jsx`
+
+React version:
+
+- Frontend currently uses React `^19.1.0` and React DOM `^19.1.0`.
+- The reviewed folder already uses function components and hooks; no class lifecycle methods, `UNSAFE_` lifecycles, `findDOMNode`, or legacy `ReactDOM.render` usage were found.
+
+Deprecated or outdated patterns found:
+
+- Index-based React keys in persisted book/editor preview and table lists.
+- A no-op `useEffect` in the preview/payment section.
+- A state toggle in the preview/payment section that closed over the current `activeIndex` value instead of using a functional state update.
+- Repeated declaration key arrays created inside render-time functions.
+- Minor loose equality checks and formatting issues around React-controlled form fields.
+- Preview subviews assumed fetched data was already present when an accordion was opened.
+
+React compatibility fixes applied:
+
+- Replaced index keys with stable backend ids where available, keeping index fallback only for missing ids.
+- Removed the no-op preview `useEffect` and hoisted static preview step labels outside the component.
+- Updated accordion toggle state to use a functional setter.
+- Added optional chaining in preview subviews so loading data cannot throw during render.
+- Centralized declaration field keys and cleaned the checkbox controller binding comments/formatting.
+- Kept numeric-string tolerant comparisons by using `Number(value) === 1` and `Number(statusCode) === 200` where loose comparisons were tightened.
+- Initialized `showForm` directly to `true` in child-list sections, matching the original initial empty-list behavior without reading another state variable during initialization.
+- Added defensive edit guards when a stale or missing child id is passed.
+
+Business logic and UI behavior preserved:
+
+- No endpoint strings changed.
+- No request payload field names changed.
+- No response shape handling changed.
+- No step values or previous/next section targets changed.
+- No validation schemas or submit timing changed.
+- No visible copy, layout, or workflow order changed.
+
+Files modified:
+
+- `src/component/best-book-component/author-component.jsx`
+- `src/component/best-book-component/book-cinema-component.jsx`
+- `src/component/best-book-component/declaration-component.jsx`
+- `src/component/best-book-component/preview-payment.jsx`
+- `src/component/best-book-component/punlisher-book-component.jsx`
+- `safeRefactorPlan.md`
+
+Validation log:
+
+- `npm.cmd run lint -- --quiet src/component/best-book-component`: passed.
+- `npm.cmd run lint`: passed.
+- `npm.cmd run test`: passed, 6 test files and 31 tests.
+- `npm.cmd run build`: initially failed in the sandbox with esbuild `spawn EPERM`; rerun outside the sandbox passed.
+
+Remaining issues:
+
+- Existing Vite empty chunk warnings remain:
+  - `vendor-emotion-weak-memoize`
+  - `vendor-fingerprintjs-fingerprintjs`
+  - `vendor-react-router-dom`
+  - `vendor-set-cookie-parser`
+  - `vendor-tslib`
+- These warnings are not introduced by the best-book component refactor.
+
+Next steps:
+
+- Consider a separate build-splitting/config audit for the existing empty chunk warnings.
+- Add component-level tests for best-book create/edit/preview flows before any future behavior-level refactor.
+
+## Full Component Folder React 19 Audit
+
+Scope reviewed:
+
+- `src/component/best-book-component/*`
+- `src/component/best-filmCritic-component/*`
+- `src/component/feature-component/*`
+- `src/component/non-feature-component/*`
+
+React version detected:
+
+- Frontend currently uses React `^19.1.0` and React DOM `^19.1.0`.
+
+Deprecated patterns found:
+
+- No class components or deprecated lifecycle methods were found.
+- No `UNSAFE_` lifecycles were found.
+- No legacy `ReactDOM.render` usage was found in `src/component`.
+- No `findDOMNode` usage was found.
+- No legacy context API usage was found.
+- No string refs were found.
+
+React compatibility issues found:
+
+- Preview accordion components recreated static step arrays on every render.
+- Preview accordion toggles closed over current state instead of using functional state updates.
+- Preview components had no-op `useEffect` blocks that only depended on fetched data.
+- Several preview/list tables used array indexes as keys even though persisted backend ids were available.
+- Declaration components recreated declaration field key arrays inside effects and submit handlers.
+- Some preview subviews assumed async fetched data existed before render.
+- Some React-controlled select components passed `undefined` as their selected values before form initialization.
+- Some child edit handlers assumed the clicked id always mapped to a current item.
+
+React compatibility fixes applied:
+
+- Hoisted static preview step arrays outside render functions.
+- Replaced stale accordion state toggles with functional state setters.
+- Removed no-op preview `useEffect` blocks.
+- Replaced index keys with stable backend ids where available, retaining index fallback only for missing ids.
+- Hoisted declaration key arrays once per module and reused them for reset and submit mapping.
+- Added optional chaining in preview subviews that render async fetched data.
+- Passed empty arrays to multi-select controls while form values are not initialized.
+- Added defensive edit guards for persisted child-list rows.
+- Initialized child-list `showForm` state directly to the original empty-list initial behavior.
+- Kept old numeric-string tolerant backend comparisons by using `Number(value) === ...` instead of narrowing the API contract.
+
+Components modified:
+
+- `src/component/best-book-component/author-component.jsx`
+- `src/component/best-book-component/book-cinema-component.jsx`
+- `src/component/best-book-component/declaration-component.jsx`
+- `src/component/best-book-component/preview-payment.jsx`
+- `src/component/best-book-component/punlisher-book-component.jsx`
+- `src/component/best-filmCritic-component/best-film-critic-component.jsx`
+- `src/component/best-filmCritic-component/critic-component.jsx`
+- `src/component/best-filmCritic-component/declaration-component.jsx`
+- `src/component/best-filmCritic-component/publisher-component.jsx`
+- `src/component/best-filmCritic-component/view-component.jsx`
+- `src/component/feature-component/Declaration-component.jsx`
+- `src/component/feature-component/PaymentSection-component.jsx`
+- `src/component/feature-component/actor-component.jsx`
+- `src/component/feature-component/audiographer.jsx`
+- `src/component/feature-component/censor-component.jsx`
+- `src/component/feature-component/company-component.jsx`
+- `src/component/feature-component/director-component.jsx`
+- `src/component/feature-component/film-details-component.jsx`
+- `src/component/feature-component/producer-component.jsx`
+- `src/component/feature-component/return-component.jsx`
+- `src/component/feature-component/screenplay-component.jsx`
+- `src/component/feature-component/songs-component.jsx`
+- `src/component/non-feature-component/other-component.jsx`
+- `src/component/non-feature-component/view-section.jsx`
+
+Business logic and UI behavior preserved:
+
+- No endpoint strings changed.
+- No `FormData` field names changed.
+- No route names changed.
+- No submitted step values changed.
+- No previous/next section targets changed.
+- No validation schema requirements changed.
+- No visible layout or workflow order changed.
+
+Validation log:
+
+- `npm.cmd run lint -- --quiet src/component`: passed.
+- `npm.cmd run lint`: passed.
+- `npm.cmd run test`: passed, 6 test files and 31 tests.
+- `npm.cmd run build`: initially failed in the sandbox with esbuild `spawn EPERM`; rerun outside the sandbox passed.
+
+Warnings/errors resolved:
+
+- Removed React key warning risk for persisted child rows and preview cards where backend ids exist.
+- Removed no-op effects in preview components.
+- Removed stale state closure in preview accordion toggles.
+- Removed undefined multi-select values before form initialization.
+- Removed duplicated declaration key arrays from render-time functions.
+
+Remaining risks/issues:
+
+- Existing Vite empty chunk warnings remain:
+  - `vendor-emotion-weak-memoize`
+  - `vendor-fingerprintjs-fingerprintjs`
+  - `vendor-react-router-dom`
+  - `vendor-set-cookie-parser`
+  - `vendor-tslib`
+- Existing unrelated dirty files outside `src/component` remain in the worktree and were not changed during this component pass.
+- Component-level workflow tests are still sparse; current coverage is mostly helper-level.
+
+Next steps:
+
+- Add focused component tests for create/edit/resume paths before behavior-level refactors.
+- Consider a separate Vite chunk configuration audit for the existing empty chunk warnings.
+
+## Award Endpoint Metadata Centralization
+
+Requested objective:
+
+- Add `filmCriticEndpoints` and `bestBookEndpoints` to `src/services/apiEndpoints.js`.
+- Update frontend usage to import the endpoint constants from the service endpoint metadata source.
+- Preserve all existing API strings, payloads, response handling, UI behavior, and business logic.
+
+Markdown files reviewed first:
+
+- `README.md`
+- `FRONTEND_DOCUMENTATION.md`
+- `safeRefactorPlan.md`
+
+Frontend code reviewed:
+
+- `src/services/*`
+- `src/common/*`
+- `src/pages/*`
+- `src/component/best-book-component/*`
+- `src/component/best-filmCritic-component/*`
+- `src/component/feature-component/*`
+- `src/component/non-feature-component/*`
+- Existing endpoint metadata tests in `src/services/apiEndpoints.test.js`
+- Existing award and entry workflow tests in `src/common/*`
+
+Endpoints added:
+
+```js
+export const filmCriticEndpoints = {
+  entryBy: "best-film-critic-entry-by",
+  create: "create-entry",
+  update: "update-entry",
+  finalSubmit: "best-film-critic-final-submit",
+};
+
+export const bestBookEndpoints = {
+  entryBy: "best-book-cinema-entry-by",
+  create: "best-book-cinema-entry",
+  update: "best-book-cinema-update",
+  finalSubmit: "best-book-cinema-final-submit",
+};
+```
+
+Files modified:
+
+- `src/services/apiEndpoints.js`
+- `src/services/apiEndpoints.test.js`
+- `src/common/award-workflow.js`
+- `src/common/award-workflow.test.js`
+- `src/common/entry-workflow.js`
+- `src/pages/best-book.jsx`
+- `src/pages/best-filmCritic.jsx`
+- `src/component/best-book-component/author-component.jsx`
+- `src/component/best-book-component/book-cinema-component.jsx`
+- `src/component/best-book-component/declaration-component.jsx`
+- `src/component/best-book-component/preview-payment.jsx`
+- `src/component/best-book-component/punlisher-book-component.jsx`
+- `src/component/best-filmCritic-component/best-film-critic-component.jsx`
+- `src/component/best-filmCritic-component/critic-component.jsx`
+- `src/component/best-filmCritic-component/declaration-component.jsx`
+- `src/component/best-filmCritic-component/publisher-component.jsx`
+- `src/component/best-filmCritic-component/view-component.jsx`
+
+Implementation notes:
+
+- `src/services/apiEndpoints.js` is now the source of truth for best book and film critic endpoint groups.
+- Active pages, components, and entry workflow metadata now import these endpoint groups from `src/services/apiEndpoints.js`.
+- `src/common/award-workflow.js` keeps a compatibility re-export for the endpoint groups while continuing to own workflow/payment/step metadata.
+- Endpoint string assertions moved to `src/services/apiEndpoints.test.js`.
+- No request payloads, endpoint string values, body-level `statusCode` checks, route names, step values, query keys, or UI behavior were changed.
+
+Validation results:
+
+- `npm.cmd run lint -- --quiet src/services src/common src/component src/pages`: passed.
+- `npm.cmd run lint`: passed.
+- `npm.cmd run test`: passed, 6 test files and 30 tests.
+- `npm.cmd run build`: initially failed in the sandbox with esbuild `spawn EPERM`; rerun outside the sandbox passed.
+
+Remaining issues:
+
+- Existing Vite empty chunk warnings remain:
+  - `vendor-emotion-weak-memoize`
+  - `vendor-fingerprintjs-fingerprintjs`
+  - `vendor-react-router-dom`
+  - `vendor-set-cookie-parser`
+  - `vendor-tslib`
+- Existing unrelated dirty files remain in the working tree.
+
+Next step:
+
+- Consider a separate Vite manual chunk configuration audit if the empty chunk warnings need to be removed.
+
+## ApiConfig Award Endpoint Follow-Up
+
+Requested objective:
+
+- Remove standalone `filmCriticEndpoints` and `bestBookEndpoints` exports.
+- Keep best book and film critic endpoint groups inside `apiConfig`.
+- Keep other frontend files importing from `src/services/apiEndpoints.js` and using `apiConfig.bestBook` / `apiConfig.filmCritic`.
+- Add/update test coverage for the modified endpoint metadata behavior.
+
+Files modified:
+
+- `src/services/apiEndpoints.js`
+- `src/services/apiEndpoints.test.js`
+- `src/common/entry-workflow.js`
+- `safeRefactorPlan.md`
+
+Testing files updated:
+
+- `src/services/apiEndpoints.test.js`
+  - Covers `apiConfig.bestBook`.
+  - Covers `apiConfig.filmCritic`.
+  - Confirms endpoint strings remain unchanged.
+- Existing `src/common/entry-workflow.test.js`
+  - Continues to cover entry workflow metadata that now reads award entry-by endpoints from `apiConfig`.
+
+Implementation notes:
+
+- Removed the standalone named exports:
+  - `filmCriticEndpoints`
+  - `bestBookEndpoints`
+- `apiConfig.bestBook` and `apiConfig.filmCritic` are now the direct endpoint access points.
+- `src/common/entry-workflow.js` now reads award `entryBy` values from `apiConfig` instead of imported endpoint aliases.
+- No request payloads, route names, endpoint string values, response handling, UI behavior, or workflow logic changed.
+
+Validation results:
+
+- `npm.cmd run lint -- --quiet src/services src/common src/component src/pages`: passed.
+- `npm.cmd run test -- src/services/apiEndpoints.test.js src/common/entry-workflow.test.js`: initially failed in the sandbox with esbuild `spawn EPERM`; rerun outside the sandbox passed, 2 files and 8 tests.
+- `npm.cmd run test`: passed, 6 files and 30 tests.
+
+Remaining issues:
+
+- Existing unrelated dirty files remain in the working tree.
+- Existing Vite empty chunk warnings are unrelated to this endpoint metadata change.
+
+## Modified File Test Coverage Follow-Up
+
+Requested objective:
+
+- Add unit test coverage for modified frontend files.
+- Update `safeRefactorPlan.md`.
+
+Testing approach:
+
+- Existing project dependencies do not include React Testing Library or another component rendering helper.
+- Added a lightweight Vitest import smoke test for modified page/component modules so broken imports, missing exports, and compile-time regressions are caught without introducing new dependencies.
+- Added direct unit assertions for modified pure metadata modules.
+
+Test files added or updated:
+
+- `src/component/modified-components-import.test.jsx`
+  - Imports modified page/component modules.
+  - Verifies each module still exports a component function.
+- `src/common/award-workflow.test.js`
+  - Added unknown-section assertions for award workflow helpers.
+- `src/common/entry-workflow.test.js`
+  - Added assertions that award workflow metadata reads entry endpoints from `apiConfig`.
+- `src/services/apiEndpoints.test.js`
+  - Covers `apiConfig.bestBook` and `apiConfig.filmCritic` endpoint groups.
+
+Validation results:
+
+- `npm.cmd run lint -- --quiet src/component/modified-components-import.test.jsx src/common/award-workflow.test.js src/common/entry-workflow.test.js src/services/apiEndpoints.test.js`: passed.
+- `npm.cmd run test -- src/services/apiEndpoints.test.js src/common/entry-workflow.test.js src/common/award-workflow.test.js src/component/modified-components-import.test.jsx`: initially failed in the sandbox with esbuild `spawn EPERM`; rerun outside the sandbox passed, 4 files and 45 tests.
+- `npm.cmd run test`: passed, 7 files and 61 tests.
+- `npm.cmd run lint`: passed.
+
+Remaining issues:
+
+- Vitest prints an existing jsdom warning, `Could not parse CSS stylesheet`, while importing component modules that pull in CSS. The test run exits successfully.
+- Component behavior tests remain limited because no component testing library is installed.

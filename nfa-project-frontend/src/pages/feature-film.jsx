@@ -11,9 +11,8 @@ import ProducerDetailsSection from "../component/feature-component/producer-comp
 import ReturnSection from "../component/feature-component/return-component";
 import ScreenPlaySection from "../component/feature-component/screenplay-component";
 import SongsFormSection from "../component/feature-component/songs-component";
-import StepIndicator from "../features/components/shared/StepIndicator";
 import { useEffect, useState } from "react";
-import Navbar from "../features/components/layout/Navbar";
+import WorkflowPageLayout from "../features/components/layout/WorkflowPageLayout";
 import { useFetchById } from "../hooks/useFetchById";
 import { getResumeStep } from "../common/entry-step";
 import { getFilmEntryByEndpoint } from "../common/film-workflow";
@@ -46,99 +45,85 @@ const FeatureFilmPage = () => {
   }, [id, formData]);
 
   return (
-    <>
-      <Navbar />
-
-      <div className="row form-div">
-        <div className="col-lg-12 mt-5">
-          <div className="film-form-container">
-            <StepIndicator
-              currentStep={activeSection}
-              onStepClick={(stepNumber) => setActiveSection(stepNumber)}
-            />
-            <div className="form-box">
-              <h2 className="form-title">{steps[activeSection - 1]}</h2>
-              <h3 className="form-subtitle">
-                Feature Film Registration | Step {activeSection}
-              </h3>
-
-              {activeSection == 1 && (
-                <FilmDetailsSection
-                  filmType={"feature"}
-                  setActiveSection={setActiveSection}
-                />
-              )}
-              {activeSection == 2 && (
-                <CensorSection
-                  filmType={"feature"}
-                  setActiveSection={setActiveSection}
-                />
-              )}
-              {activeSection == 3 && (
-                <CompanyRegistrationSection
-                  filmType={"feature"}
-                  setActiveSection={setActiveSection}
-                />
-              )}
-              {activeSection == 4 && (
-                <ProducerDetailsSection
-                  filmType={"feature"}
-                  setActiveSection={setActiveSection}
-                />
-              )}
-              {activeSection == 5 && (
-                <DirectorDetailsSection
-                  filmType={"feature"}
-                  setActiveSection={setActiveSection}
-                />
-              )}
-              {activeSection == 6 && (
-                <ActorSection
-                  filmType={"feature"}
-                  setActiveSection={setActiveSection}
-                />
-              )}
-              {activeSection == 7 && (
-                <SongsFormSection
-                  filmType={"feature"}
-                  setActiveSection={setActiveSection}
-                />
-              )}
-              {activeSection == 8 && (
-                <AudiographerSection
-                  filmType={"feature"}
-                  setActiveSection={setActiveSection}
-                />
-              )}
-              {activeSection == 9 && (
-                <ScreenPlaySection
-                  filmType={"feature"}
-                  setActiveSection={setActiveSection}
-                />
-              )}
-              {activeSection == 10 && (
-                <ReturnSection
-                  filmType={"feature"}
-                  setActiveSection={setActiveSection}
-                />
-              )}
-              {activeSection == 11 && (
-                <DeclarationSection
-                  filmType={"feature"}
-                  setActiveSection={setActiveSection}
-                />
-              )}
-              {activeSection == 12 && (
-                <PaymentSection
-                  filmType={"feature"}
-                  setActiveSection={setActiveSection}
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
+    <WorkflowPageLayout
+      activeSection={activeSection}
+      setActiveSection={setActiveSection}
+      steps={steps}
+      subtitle="Feature Film Registration"
+    >
+      {activeSection == 1 && (
+        <FilmDetailsSection
+          filmType={"feature"}
+          setActiveSection={setActiveSection}
+        />
+      )}
+      {activeSection == 2 && (
+        <CensorSection
+          filmType={"feature"}
+          setActiveSection={setActiveSection}
+        />
+      )}
+      {activeSection == 3 && (
+        <CompanyRegistrationSection
+          filmType={"feature"}
+          setActiveSection={setActiveSection}
+        />
+      )}
+      {activeSection == 4 && (
+        <ProducerDetailsSection
+          filmType={"feature"}
+          setActiveSection={setActiveSection}
+        />
+      )}
+      {activeSection == 5 && (
+        <DirectorDetailsSection
+          filmType={"feature"}
+          setActiveSection={setActiveSection}
+        />
+      )}
+      {activeSection == 6 && (
+        <ActorSection
+          filmType={"feature"}
+          setActiveSection={setActiveSection}
+        />
+      )}
+      {activeSection == 7 && (
+        <SongsFormSection
+          filmType={"feature"}
+          setActiveSection={setActiveSection}
+        />
+      )}
+      {activeSection == 8 && (
+        <AudiographerSection
+          filmType={"feature"}
+          setActiveSection={setActiveSection}
+        />
+      )}
+      {activeSection == 9 && (
+        <ScreenPlaySection
+          filmType={"feature"}
+          setActiveSection={setActiveSection}
+        />
+      )}
+      {activeSection == 10 && (
+        <ReturnSection
+          filmType={"feature"}
+          setActiveSection={setActiveSection}
+        />
+      )}
+      {activeSection == 11 && (
+        <DeclarationSection
+          filmType={"feature"}
+          setActiveSection={setActiveSection}
+        />
+      )}
+      {activeSection == 12 && (
+        <PaymentSection
+          filmType={"feature"}
+          setActiveSection={setActiveSection}
+        />
+      )}
+    </WorkflowPageLayout>
   );
 };
 

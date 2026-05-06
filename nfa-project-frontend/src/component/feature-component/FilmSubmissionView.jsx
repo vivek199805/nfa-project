@@ -345,7 +345,7 @@ const FilmSubmissionView = ({ data = {} }) => {
     <div className="card-box submission-view-page">
       <div className="container py-4" ref={invoiceRef} id="invoiceBox">
         <header className="submission-header text-center mb-4">
-          <img src="/logo.png" alt="Logo" className="submission-logo" />
+          <img src="/images/nfa-logo.png" alt="NFA Logo" className="submission-logo" />
           <p className="submission-badge mb-1">Application Summary</p>
           <h3 className="submission-title">Creative Minds of Tomorrow</h3>
         </header>

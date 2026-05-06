@@ -27,7 +27,7 @@ const filmSchema = z.object({
 
 const OtherSection = ({ setActiveSection, filmType }) => {
   const { id } = useParams();
-    const { data: formData } = useFetchById(getFilmEntryByEndpoint(filmType), id);
+  const { data: formData } = useFetchById(getFilmEntryByEndpoint(filmType), id);
 
   const {
     register,
@@ -49,7 +49,7 @@ const OtherSection = ({ setActiveSection, filmType }) => {
         editor: formData?.data?.editor,
         audiographer: formData?.data?.non_audiographer,
         music_director: formData?.data?.music_director,
-        shot_digital_video_format: formData?.data?.shot_digital_video_format == 1 ? "Yes" : "No",
+        shot_digital_video_format: Number(formData?.data?.shot_digital_video_format) === 1 ? "Yes" : "No",
         production_designer: formData?.data?.production_designer,
         choreographer: formData?.data?.choreographer,
         voice_over_artist: formData?.data?.voice_over_artist,
@@ -58,7 +58,7 @@ const OtherSection = ({ setActiveSection, filmType }) => {
     }
   }, [formData, reset]);
 
-  const onSubmit =  async (data) => {
+  const onSubmit = async (data) => {
     // Call API to submit form data
     const formData = new FormData();
     formData.append("cinemetographer", data.cinemetographer);
@@ -75,7 +75,7 @@ const OtherSection = ({ setActiveSection, filmType }) => {
     formData.append("film_type", filmType);
 
     const response = await postRequest(getFilmUpdateEndpoint(filmType), formData);
-    if (response.statusCode == 200) {
+    if (Number(response.statusCode) === 200) {
       setActiveSection(getFilmNextSection(filmType, "other"));
     }
   };

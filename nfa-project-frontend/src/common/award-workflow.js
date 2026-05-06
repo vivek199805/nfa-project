@@ -1,21 +1,8 @@
-export const bestBookEndpoints = {
-  entryBy: "best-book-cinema-entry-by",
-  create: "best-book-cinema-entry",
-  update: "best-book-cinema-update",
-  finalSubmit: "best-book-cinema-final-submit",
-};
 
 export const bestBookWorkflow = {
   paymentFormType: "BEST_BOOK",
   paymentDescription: "Best Book on Cinema Registration Payment",
   previewPreviousSection: 4,
-};
-
-export const filmCriticEndpoints = {
-  entryBy: "best-film-critic-entry-by",
-  create: "create-entry",
-  update: "update-entry",
-  finalSubmit: "best-film-critic-final-submit",
 };
 
 export const filmCriticWorkflow = {

@@ -32,7 +32,7 @@ const filmSchema = z.object({
 
 const SongsFormSection = ({ setActiveSection, filmType }) => {
   const [songsData, setSongsData] = useState([]); // your producer list
-  const [showForm, setShowForm] = useState(songsData.length === 0);
+  const [showForm, setShowForm] = useState(true);
   const [editingIndex, setEditingIndex] = useState(null);
   const { id } = useParams();
 
@@ -117,6 +117,8 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
 
   const handleEdit = (index) => {
     const data = songsData.find((item) => item._id === index);
+    if (!data) return;
+
     reset({
       songTitle: data.song_title,
       musicDirector: data.music_director,
@@ -173,7 +175,7 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
       formData.append("id", id);
       formData.append("film_type", filmType);
       const response = await postRequest(getFilmUpdateEndpoint(filmType), formData);
-      if (response.statusCode == 200) {
+      if (Number(response.statusCode) === 200) {
         setActiveSection(getFilmNextSection(filmType, "songs"));
       } else {
         showErrorToast(response.message);
@@ -217,7 +219,7 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
               <tbody>
                 {songsData.length > 0 &&
                   songsData.map((song, index) => (
-                    <tr key={index}>
+                    <tr key={song._id ?? index}>
                       <td>{index + 1}</td>
                       <td>{song.song_title}</td>
                       <td>{song.music_director}</td>

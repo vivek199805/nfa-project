@@ -1,5 +1,6 @@
 // clientSchema.js
 import { z } from "zod";
+import { parseZodResult } from "./validationCommon.js";
 
 // Regex patterns
 const mobileRegex = /^[6-9]\d{9}$/;
@@ -121,85 +122,37 @@ export const loginSchema = z.object({
 const validateRegisterData = (payload) => {
   const result = registerSchema.safeParse(payload);
 
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce(
-          (acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }),
-          {}
-        ),
-  };
+  return parseZodResult(result);
 };
 
 const validateEmailSchemaData = (payload) => {
   const result = validateEmailSchema.safeParse(payload);
 
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce(
-          (acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }),
-          {}
-        ),
-  };
+  return parseZodResult(result);
 };
 
 const validateOtpSchemaData = (payload) => {
   const result = verifyOtpSchema.safeParse(payload);
 
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce(
-          (acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }),
-          {}
-        ),
-  };
+  return parseZodResult(result);
 };
 
 const ValidateChangePasswordSchemaData = (payload) => {
   const result = changePasswordSchema.safeParse(payload);
 
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce(
-          (acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }),
-          {}
-        ),
-  };
+  return parseZodResult(result);
 };
 
 const ValidateResetPassword = (payload) => {
   const result = resetPasswordSchema.safeParse(payload);
 
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce(
-          (acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }),
-          {}
-        ),
-  };
+  return parseZodResult(result);
 };
 
 const ValidateLoginSchemaData = (payload) => {    
   const result = loginSchema.safeParse(payload);
 
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce(
-          (acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }),
-          {}
-        ),
-  };
+  return parseZodResult(result);
 };
 
 

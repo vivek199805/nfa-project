@@ -78,7 +78,7 @@ const ReturnSection = ({ setActiveSection, filmType }) => {
     formData.append("film_type", filmType);
 
     const response = await postRequest(url, formData);
-    if (response.statusCode == 200) {
+    if (Number(response.statusCode) === 200) {
       setActiveSection(getFilmNextSection(filmType, "return"));
     }
   };

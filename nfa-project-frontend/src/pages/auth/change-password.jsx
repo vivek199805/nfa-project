@@ -64,8 +64,8 @@ export default function ChangePasswordPage() {
 
   return (
     <>
-      <div className="form-container p-5">
-        <div className="col-md-8 mx-auto">
+      <div className="form-container auth-form-container auth-pane-left p-4 p-md-5">
+        <div className="auth-form-inner mx-auto">
           <div className="top-logo d-flex justify-content-between mb-3">
             <div>
               <img src="/images/nfa-logo.png" alt="NFA" />

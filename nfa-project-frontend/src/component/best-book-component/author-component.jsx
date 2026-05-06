@@ -7,11 +7,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useFetchById } from "../../hooks/useFetchById";
 import { countWords } from "../../common/common-function";
 import { useInputRestriction } from "../../hooks/useInputRestriction";
-import {
-  bestBookEndpoints,
-  getAwardNextSection,
-  getAwardSectionStep,
-} from "../../common/award-workflow";
+import { getAwardNextSection, getAwardSectionStep } from "../../common/award-workflow";
+import { apiConfig } from "../../services/apiEndpoints";
 
 const filmSchema = z.object({
   author_name: z.string().min(1, "This field is required"),
@@ -45,7 +42,7 @@ const AuthorSection = ({ setActiveSection }) => {
   const numberRestriction = useInputRestriction("number");
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: formData } = useFetchById(bestBookEndpoints.entryBy, id);
+  const { data: formData } = useFetchById(apiConfig.bestBook.entryBy, id);
 
   const {
     register,
@@ -67,7 +64,7 @@ const AuthorSection = ({ setActiveSection }) => {
       author_name: formData?.data.author_name,
       author_contact: formData?.data.author_contact,
       author_nationality_indian:
-        formData?.data.author_nationality_indian == 1 ? "Yes" : "No",
+        Number(formData?.data.author_nationality_indian) === 1 ? "Yes" : "No",
       author_address: formData?.data.author_address,
       author_profile: formData?.data.author_profile,
     });
@@ -90,13 +87,13 @@ const AuthorSection = ({ setActiveSection }) => {
     formData.append("step", getAwardSectionStep("first"));
     if (id) {
       formData.append("id", id);
-      url = bestBookEndpoints.update
+      url = apiConfig.bestBook.update;
     } else {
-      url = bestBookEndpoints.create
+      url = apiConfig.bestBook.create;
     }
 
     const response = await postRequest(url, formData);
-    if (response.statusCode == 200) {
+    if (Number(response.statusCode) === 200) {
       if (!id) navigate(`/best-book/${response.data.id}`);
       setActiveSection(getAwardNextSection("first"));
     }

@@ -1,4 +1,4 @@
-import { bestBookEndpoints, filmCriticEndpoints } from "./award-workflow";
+import { apiConfig } from "../services/apiEndpoints";
 import { getFilmEntryByEndpoint } from "./film-workflow";
 
 export const entryWorkflowTypes = [
@@ -27,14 +27,14 @@ export const entryWorkflowMeta = {
     label: "Best Book on Cinema",
     route: "best-book",
     viewType: "best-book",
-    entryBy: bestBookEndpoints.entryBy,
+    entryBy: apiConfig.bestBook.entryBy,
     viewPath: "/best-book/view/",
   },
   bestFilmCritic: {
     label: "Best Critic on Cinema",
     route: "film-critic",
     viewType: "film-critic",
-    entryBy: filmCriticEndpoints.entryBy,
+    entryBy: apiConfig.filmCritic.entryBy,
     viewPath: "/film-critic/view/",
   },
 };

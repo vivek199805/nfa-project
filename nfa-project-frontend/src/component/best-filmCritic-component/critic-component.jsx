@@ -7,11 +7,11 @@ import { useFetchById } from "../../hooks/useFetchById";
 import { postRequest } from "../../services/requestService";
 import { useInputRestriction } from "../../hooks/useInputRestriction";
 import {
-  filmCriticEndpoints,
   getAwardNextSection,
   getAwardPreviousSection,
   getAwardSectionStep,
 } from "../../common/award-workflow";
+import { apiConfig } from "../../services/apiEndpoints";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const fileTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
@@ -49,7 +49,7 @@ const filmSchema = z.object({
 const CriticSection = ({ setActiveSection }) => {
   const { id } = useParams();
   const numberRestriction = useInputRestriction("number");
-  const { data: formData } = useFetchById(filmCriticEndpoints.entryBy, id);
+  const { data: formData } = useFetchById(apiConfig.filmCritic.entryBy, id);
 
   const {
     register,
@@ -72,7 +72,7 @@ const CriticSection = ({ setActiveSection }) => {
       critic_address: formData?.data.critic_address,
       critic_contact: formData?.data.critic_contact,
       critic_indian_nationality:
-        formData?.data.critic_indian_nationality == 1 ? "Yes" : "No",
+        Number(formData?.data.critic_indian_nationality) === 1 ? "Yes" : "No",
       critic_profile: formData?.data.critic_profile,
       critic_aadhaar_card: formData?.data?.critic_aadhaar_card
         ? formData?.data?.critic_aadhaar_card.split("/").pop()
@@ -94,13 +94,13 @@ const CriticSection = ({ setActiveSection }) => {
     if (data.critic_aadhaar_card instanceof File) {
       formData.append("critic_aadhaar_card", data.critic_aadhaar_card);
     } else {
-      formData.append("critic_aadhaar_card",data.critic_aadhaar_card.split("/").pop()); // Extract filename if it's a string
+      formData.append("critic_aadhaar_card", data.critic_aadhaar_card.split("/").pop()); // Extract filename if it's a string
     }
     formData.append("step", getAwardSectionStep("detail"));
     formData.append("id", id);
 
-    const response = await postRequest(filmCriticEndpoints.update, formData);
-    if (response.statusCode == 200) {
+    const response = await postRequest(apiConfig.filmCritic.update, formData);
+    if (Number(response.statusCode) === 200) {
       setActiveSection(getAwardNextSection("detail"));
     }
   };
@@ -118,9 +118,8 @@ const CriticSection = ({ setActiveSection }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${
-                errors.critic_name ? "is-invalid" : ""
-              }`}
+              className={`form-control ${errors.critic_name ? "is-invalid" : ""
+                }`}
               placeholder=""
               {...register("critic_name")}
             />
@@ -137,9 +136,8 @@ const CriticSection = ({ setActiveSection }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${
-                errors.critic_address ? "is-invalid" : ""
-              }`}
+              className={`form-control ${errors.critic_address ? "is-invalid" : ""
+                }`}
               placeholder=""
               {...register("critic_address")}
             />
@@ -157,9 +155,8 @@ const CriticSection = ({ setActiveSection }) => {
             <input
               type="text"
               {...numberRestriction}
-              className={`form-control ${
-                errors.critic_contact ? "is-invalid" : ""
-              }`}
+              className={`form-control ${errors.critic_contact ? "is-invalid" : ""
+                }`}
               placeholder="Film Title (Roman Script)"
               {...register("critic_contact")}
               maxLength={10}
@@ -208,9 +205,8 @@ const CriticSection = ({ setActiveSection }) => {
             </label>
             <input
               type="text"
-              className={`form-control ${
-                errors.critic_profile ? "is-invalid" : ""
-              }`}
+              className={`form-control ${errors.critic_profile ? "is-invalid" : ""
+                }`}
               placeholder=""
               {...register("critic_profile")}
             />
@@ -233,9 +229,8 @@ const CriticSection = ({ setActiveSection }) => {
                   <input
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png,.webp"
-                    className={`form-control ${
-                      errors.critic_aadhaar_card ? "is-invalid" : ""
-                    }`}
+                    className={`form-control ${errors.critic_aadhaar_card ? "is-invalid" : ""
+                      }`}
                     onChange={(e) =>
                       field.onChange(e.target.files?.[0] || null)
                     }
@@ -244,9 +239,8 @@ const CriticSection = ({ setActiveSection }) => {
                     "string" &&
                     formData?.data?.censor_certificate_file && (
                       <a
-                        href={`${
-                          import.meta.env.VITE_API_URL
-                        }/${formData?.data?.censor_certificate_file.trim()}`} // Adjust path based on backend storage
+                        href={`${import.meta.env.VITE_API_URL
+                          }/${formData?.data?.censor_certificate_file.trim()}`} // Adjust path based on backend storage
                         target="_blank"
                         rel="noopener noreferrer"
                         className="btn btn-sm btn-outline-primary mt-2"

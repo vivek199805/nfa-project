@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import "../../styles/accordion.css";
 import { ChevronDown, Pencil } from "lucide-react";
 import { useParams } from "react-router-dom";
@@ -9,36 +9,32 @@ import {
   getFilmPreviousSection,
 } from "../../common/film-workflow";
 
+const previewSteps = [
+  "General",
+  "Censor",
+  "Company Registration",
+  "Producer(s) Details",
+  "Director(s) Details",
+  "Other",
+  "Return",
+];
+
 const ViewSection = ({ setActiveSection }) => {
   const [activeIndex, setActiveIndex] = useState(null);
   const { id } = useParams();
 
-  const steps = [
-    "General",
-    "Censor",
-    "Company Registration",
-    "Producer(s) Details",
-    "Director(s) Details",
-    "Other",
-    "Return",
-  ];
-
   const { data: formData } = useFetchById(getFilmEntryByEndpoint("non-feature"), id);
 
   const toggle = (index) => {
-    setActiveIndex(activeIndex === index ? null : index);
+    setActiveIndex((currentIndex) => (currentIndex === index ? null : index));
   };
-
-  useEffect(() => {
-    // Optional data initialization if needed
-  }, [formData]);
 
   return (
     <>
       <div className="accordion">
-        {steps.map((step, idx) => (
+        {previewSteps.map((step, idx) => (
           <AccordionItem
-            key={idx}
+            key={step}
             title={step}
             index={idx}
             isOpen={activeIndex === idx}
@@ -260,7 +256,7 @@ const CensorView = ({ data }) => {
                   href={`${import.meta.env.VITE_API_URL}/${data.censor_certificate_file}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                    className="btn btn-sm btn-outline-primary ms-2"
+                  className="btn btn-sm btn-outline-primary ms-2"
                 >
                   View
                 </a>
@@ -305,8 +301,8 @@ const CompanyRegistrationView = ({ data }) => {
 const ProducerView = ({ data }) => {
   return (
     <div className="producer-view">
-      {data?.producers.map((producer, index) => (
-        <div className="card p-3 mb-3" key={index}>
+      {data?.producers?.map((producer, index) => (
+        <div className="card p-3 mb-3" key={producer._id ?? index}>
           <div className="fw-semibold mb-2">({index + 1}) Producer Details</div>
           <div className="row">
             <div className="col-md-4 col-sm-6 mb-2">
@@ -343,8 +339,8 @@ const ProducerView = ({ data }) => {
 const DirectorView = ({ data }) => {
   return (
     <div className="producer-view">
-      {data?.directors.map((director, index) => (
-        <div className="card p-3 mb-3" key={index}>
+      {data?.directors?.map((director, index) => (
+        <div className="card p-3 mb-3" key={director._id ?? index}>
           <div className="fw-semibold mb-2">({index + 1}) Director Details</div>
           <div className="row">
             <div className="col-md-4 col-sm-6 mb-2">

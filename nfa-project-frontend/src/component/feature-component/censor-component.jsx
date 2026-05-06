@@ -100,7 +100,7 @@ const CensorSection = ({ setActiveSection, filmType }) => {
     formData.append("film_type", filmType);
     url = getFilmUpdateEndpoint(filmType);
     const response = await postRequest(url, formData);
-    if (response.statusCode == 200) {
+    if (Number(response.statusCode) === 200) {
       setActiveSection(getFilmNextSection(filmType, "censor"));
     }
   };

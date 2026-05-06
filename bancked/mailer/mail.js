@@ -2,10 +2,7 @@ import nodemailer from "nodemailer";
 import ejs from "ejs";
 import fs from "fs/promises";
 import path from "path";
-import dotenv from "dotenv";
 import { fileURLToPath } from "url";
-
-dotenv.config();
 
 // Helpers for __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -101,7 +98,7 @@ async function sendTemplateEmail({ To, Subject, templateName, Data = {} }) {
     throw new Error("Email recipient and subject are required");
   }
 
-  const templateData = {...Data};
+  const templateData = { ...Data };
 
   if (frontendLinkTemplates.has(templateName)) {
     templateData.frontendBaseUrl = getFrontendBaseUrl();

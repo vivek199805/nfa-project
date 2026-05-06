@@ -10,7 +10,6 @@ import dayjs from "dayjs";
 import CustomDatePicker from "../../features/components/form/CustomDatePicker";
 import { formatDate } from "../../common/common-function";
 import {
-  filmCriticEndpoints,
   getAwardNextSection,
   getAwardSectionStep,
 } from "../../common/award-workflow";
@@ -36,7 +35,7 @@ const BestFilmSection = ({ setActiveSection }) => {
   const [languageOptions, setLanguageOptions] = useState([]);
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: formData } = useFetchById(filmCriticEndpoints.entryBy, id);
+  const { data: formData } = useFetchById(apiConfig.filmCritic.entryBy, id);
 
   const {
     register,
@@ -79,7 +78,7 @@ const BestFilmSection = ({ setActiveSection }) => {
       ),
       publication_date: formatDate(formData?.data?.publication_date) || "",
       publication_name: formData?.data.publication_name,
-      rni: formData?.data.rni == 1 ? "Yes" : "No",
+      rni: Number(formData?.data.rni) === 1 ? "Yes" : "No",
     });
   }, [formData, reset, id, languageOptions]);
 
@@ -96,13 +95,13 @@ const BestFilmSection = ({ setActiveSection }) => {
     formData.append("step", getAwardSectionStep("first"));
     if (id) {
       formData.append("id", id);
-      url = filmCriticEndpoints.update
+      url = apiConfig.filmCritic.update;
     } else {
-      url = filmCriticEndpoints.create
+      url = apiConfig.filmCritic.create;
     }
 
     const response = await postRequest(url, formData);
-    if (response.statusCode == 200) {
+    if (Number(response.statusCode) === 200) {
       if (!id) navigate(`/film-critic/${response.data.id}`);
       setActiveSection(getAwardNextSection("first"));
     }
@@ -164,7 +163,7 @@ const BestFilmSection = ({ setActiveSection }) => {
                   {...field}
                   options={languageOptions}
                   multi
-                  values={field.value}
+                  values={field.value ?? []}
                   onChange={field.onChange}
                   placeholder="Select language(s)"
                   itemRenderer={({ item, methods }) => (

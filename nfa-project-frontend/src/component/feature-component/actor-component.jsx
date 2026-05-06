@@ -47,7 +47,7 @@ const options = [
 
 const ActorSection = ({ setActiveSection, filmType }) => {
   const [actorData, setActorData] = useState([]); // your producer list
-  const [showForm, setShowForm] = useState(actorData.length === 0);
+  const [showForm, setShowForm] = useState(true);
   const [editingIndex, setEditingIndex] = useState(null);
   const { id } = useParams();
 
@@ -108,7 +108,7 @@ const ActorSection = ({ setActiveSection, filmType }) => {
     formData.append("actor_category_id", data.category);
     formData.append("name", data.actorName);
     formData.append("screen_name", data.screenName);
-    formData.append("if_voice_dubbed", data.isVoiceDubbed == true ? 1 : 0);
+    formData.append("if_voice_dubbed", data.isVoiceDubbed === true ? 1 : 0);
     formData.append("nfa_feature_id", id);
     formData.append("film_type", filmType);
     if (editingIndex !== null) {
@@ -138,11 +138,13 @@ const ActorSection = ({ setActiveSection, filmType }) => {
   const handleEdit = (index) => {
     //  const data = actorData[index];
     const data = actorData.find((item) => item._id === index);
+    if (!data) return;
+
     reset({
       category: data.actor_category_id.toString(),
       actorName: data.name,
       screenName: data.screen_name,
-      isVoiceDubbed: data.if_voice_dubbed == 1 ? true : false,
+      isVoiceDubbed: Number(data.if_voice_dubbed) === 1,
     });
     setEditingIndex(index);
     setShowForm(true);
@@ -192,7 +194,7 @@ const ActorSection = ({ setActiveSection, filmType }) => {
       formData.append("id", id);
       formData.append("film_type", filmType);
       const response = await postRequest(getFilmUpdateEndpoint(filmType), formData);
-      if (response.statusCode == 200) {
+      if (Number(response.statusCode) === 200) {
         setActiveSection(getFilmNextSection(filmType, "actor"));
       } else {
         showErrorToast(response.message);
@@ -241,12 +243,12 @@ const ActorSection = ({ setActiveSection, filmType }) => {
               <tbody>
                 {actorData.length > 0 &&
                   actorData.map((actor, index) => (
-                    <tr key={index}>
+                    <tr key={actor._id ?? index}>
                       <td>{index + 1}</td>
                       <td>
                         {
                           options.find(
-                            (item) => item.value == actor.actor_category_id
+                            (item) => item.value === Number(actor.actor_category_id)
                           ).label
                         }
                       </td>

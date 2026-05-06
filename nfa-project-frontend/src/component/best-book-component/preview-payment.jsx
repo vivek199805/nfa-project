@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import "../../styles/accordion.css";
 import { ChevronDown, Pencil } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -9,30 +9,27 @@ import { startRazorpayPayment } from "../../services/paymentService";
 import { useAuth } from "../../hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../lib/queryClient";
-import { bestBookEndpoints, bestBookWorkflow } from "../../common/award-workflow";
+import { bestBookWorkflow } from "../../common/award-workflow";
+import { apiConfig } from "../../services/apiEndpoints";
+
+const previewSteps = [
+  "Author",
+  "Best Book on Cinema",
+  "Publisher of the Book/Editor(S) of the  Newspaper",
+];
 
 const PreviewPaymentSection = ({ setActiveSection }) => {
   const [activeIndex, setActiveIndex] = useState(null);
   const [isPaying, setIsPaying] = useState(false);
   const { id } = useParams();
-  const { data: formData } = useFetchById(bestBookEndpoints.entryBy, id);
+  const { data: formData } = useFetchById(apiConfig.bestBook.entryBy, id);
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const steps = [
-    "Author",
-    "Best Book on Cinema",
-    "Publisher of the Book/Editor(S) of the  Newspaper",
-  ];
-
   const toggle = (index) => {
-    setActiveIndex(activeIndex === index ? null : index);
+    setActiveIndex((currentIndex) => (currentIndex === index ? null : index));
   };
-
-  useEffect(() => {
-    // Optional data initialization if needed
-  }, [formData]);
 
   const onPayment = async () => {
     if (String(formData?.data?.payment_status) === "2" || isPaying) {
@@ -55,7 +52,7 @@ const PreviewPaymentSection = ({ setActiveSection }) => {
       showSuccessToast(result?.verificationResponse?.message || "Payment completed successfully");
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: queryKeys.entry.byId(bestBookEndpoints.entryBy, id),
+          queryKey: queryKeys.entry.byId(apiConfig.bestBook.entryBy, id),
         }),
         queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.entries }),
       ]);
@@ -70,8 +67,8 @@ const PreviewPaymentSection = ({ setActiveSection }) => {
     // payment logic here
     const formData = new FormData();
     formData.append("id", id);
-    const response = await postRequest(bestBookEndpoints.finalSubmit, formData);
-    if (response.statusCode == 200) {
+    const response = await postRequest(apiConfig.bestBook.finalSubmit, formData);
+    if (Number(response.statusCode) === 200) {
       showSuccessToast(response.message);
       navigate("/dashboard");
     }
@@ -80,9 +77,9 @@ const PreviewPaymentSection = ({ setActiveSection }) => {
   return (
     <>
       <div className="accordion">
-        {steps.map((step, idx) => (
+        {previewSteps.map((step, idx) => (
           <AccordionItem
-            key={idx}
+            key={step}
             title={step}
             index={idx}
             isOpen={activeIndex === idx}
@@ -122,7 +119,9 @@ const PreviewPaymentSection = ({ setActiveSection }) => {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => setActiveSection(bestBookWorkflow.previewPreviousSection)}
+          onClick={() =>
+            setActiveSection(bestBookWorkflow.previewPreviousSection)
+          }
         >
           <i className="bi bi-arrow-left me-2"></i>
           Back to Prev
@@ -179,8 +178,8 @@ const AccordionItem = ({
 const BestBookView = ({ data }) => {
   return (
     <div className="producer-view">
-      {data?.book.map((book, index) => (
-        <div className="card p-3 mb-3" key={index}>
+      {data?.book?.map((book, index) => (
+        <div className="card p-3 mb-3" key={book._id ?? index}>
           <div className="fw-semibold mb-2">({index + 1}) Books Details</div>
           <div className="row">
             <div className="col-md-4 col-sm-6 mb-2">
@@ -211,8 +210,8 @@ const BestBookView = ({ data }) => {
 const PublisherBookView = ({ data }) => {
   return (
     <div className="producer-view">
-      {data?.editors.map((editor, index) => (
-        <div className="card p-3 mb-3" key={index}>
+      {data?.editors?.map((editor, index) => (
+        <div className="card p-3 mb-3" key={editor._id ?? index}>
           <div className="fw-semibold mb-2">
             ({index + 1}) Publisher Details
           </div>
@@ -274,11 +273,13 @@ const AuthorView = ({ data }) => {
         </div>
 
         <div className="col-6 value-column">
-          <div>{data.author_name}</div>
-          <div>{data.author_contact}</div>
-          <div>{data.author_nationality_indian == 1 ? "Yes" : "No"}</div>
-          <div>{data.author_address}</div>
-          <div>{data.author_profile}</div>
+          <div>{data?.author_name}</div>
+          <div>{data?.author_contact}</div>
+          <div>
+            {Number(data?.author_nationality_indian) === 1 ? "Yes" : "No"}
+          </div>
+          <div>{data?.author_address}</div>
+          <div>{data?.author_profile}</div>
         </div>
       </div>
     </div>

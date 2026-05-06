@@ -1,11 +1,12 @@
 import { fetchLanguages } from "../../services/languages.js";
+import { errorResponse, sendJsonResponse } from "../../helpers/responseHelper.js";
 
 const getAllLang = async (req, res) => {
   try {
-   const langData = await fetchLanguages()
-    res.status(200).json({ message: 'Fetch successfully', data: langData, statusCode: 200 });
+    const langData = await fetchLanguages()
+    return sendJsonResponse(res, 200, { message: 'Fetch successfully', data: langData, statusCode: 200 });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return errorResponse(res, err);
   }
 };
 

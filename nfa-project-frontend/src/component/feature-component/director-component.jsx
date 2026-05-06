@@ -79,7 +79,7 @@ const filmSchema = z.object({
 
 const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
   const [directors, setDirectors] = useState([]);
-  const [showForm, setShowForm] = useState(directors.length === 0);
+  const [showForm, setShowForm] = useState(true);
   const numberRestriction = useInputRestriction("number");
   const [editingIndex, setEditingIndex] = useState(null);
   const { id } = useParams();
@@ -182,6 +182,8 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
   const handleEdit = (index) => {
     //  const data = directors[index];
     const data = directors.find((item) => item._id === index);
+    if (!data) return;
+
     reset({
       indianNationality: data.indian_national === 1 ? "Yes" : "No",
       directorName: data.name,
@@ -239,7 +241,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
       formData.append("id", id);
       formData.append("film_type", filmType);
       const response = await postRequest(url, formData);
-      if (response.statusCode == 200) {
+      if (Number(response.statusCode) === 200) {
         setActiveSection(getFilmNextSection(filmType, "director"));
       }
     } else {
@@ -286,7 +288,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
               </thead>
               <tbody>
                 {directors.map((director, index) => (
-                  <tr key={index}>
+                  <tr key={director._id ?? index}>
                     <td>{index + 1}</td>
                     <td>
                       <span className="nationality-badge">

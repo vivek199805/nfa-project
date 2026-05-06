@@ -2,18 +2,78 @@ import { Document } from "../../models/mongodbModels/document.js";
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
 import Common, { documentTypeMap } from "../../services/common.js";
 import NfaFilmHelper from "../../helpers/nfaFilmHelper.js";
+import { errorResponse, sendJsonResponse, sendValidationError } from "../../helpers/responseHelper.js";
 
 const getUserId = (req) => req.user?._id || req.user?.id;
+
+const featureValidationSteps = new Set([
+  Common.stepsFeature().GENERAL,
+  Common.stepsFeature().CENSOR,
+  Common.stepsFeature().COMPANY_REGISTRATION,
+  Common.stepsFeature().OTHER,
+  Common.stepsFeature().RETURN_ADDRESS,
+  Common.stepsFeature().DECLARATION,
+]);
+
+const nonFeatureValidationSteps = new Set([
+  Common.stepsNonFeature().GENERAL,
+  Common.stepsNonFeature().CENSOR,
+  Common.stepsNonFeature().COMPANY_REGISTRATION,
+  Common.stepsNonFeature().OTHER,
+  Common.stepsNonFeature().RETURN_ADDRESS,
+  Common.stepsNonFeature().DECLARATION,
+]);
+
+const shouldValidateFilmStep = (step, filmType) => {
+  const stepNumber = Number(step);
+
+  if (filmType === "feature") {
+    return featureValidationSteps.has(stepNumber);
+  }
+
+  if (filmType === "non-feature") {
+    return nonFeatureValidationSteps.has(stepNumber);
+  }
+
+  return false;
+};
+
+const buildFeatureStepHandlers = () => ({
+  [Common.stepsFeature().GENERAL]: handleGeneralStep,
+  [Common.stepsFeature().CENSOR]: handleCensorStep,
+  [Common.stepsFeature().COMPANY_REGISTRATION]: handleCompanyRegistrationStep,
+  [Common.stepsFeature().PRODUCER]: handleProducerStep,
+  [Common.stepsFeature().DIRECTOR]: handleDirectorStep,
+  [Common.stepsFeature().ACTORS]: handleActorsStep,
+  [Common.stepsFeature().SONGS]: handleSongsStep,
+  [Common.stepsFeature().AUDIOGRAPHER]: handleAudiographerStep,
+  [Common.stepsFeature().OTHER]: handleOtherStep,
+  [Common.stepsFeature().RETURN_ADDRESS]: handleReturnAddressStep,
+  [Common.stepsFeature().DECLARATION]: handleDeclarationStep,
+});
+
+const buildNonFeatureStepHandlers = () => ({
+  [Common.stepsNonFeature().GENERAL]: handleGeneralStep,
+  [Common.stepsNonFeature().CENSOR]: handleCensorStep,
+  [Common.stepsNonFeature().COMPANY_REGISTRATION]: handleCompanyRegistrationStep,
+  [Common.stepsNonFeature().PRODUCER]: handleProducerStep,
+  [Common.stepsNonFeature().DIRECTOR]: handleDirectorStep,
+  [Common.stepsNonFeature().OTHER]: handleOtherStep,
+  [Common.stepsNonFeature().RETURN_ADDRESS]: handleReturnAddressStep,
+  [Common.stepsNonFeature().DECLARATION]: handleDeclarationStep,
+});
+
+const getStepHandlers = (filmType) => {
+  if (filmType === "feature") return buildFeatureStepHandlers();
+  if (filmType === "non-feature") return buildNonFeatureStepHandlers();
+  return {};
+};
 
 // Create Feature Submission
 const createFeatureSubmission = async (req, res) => {
   const { isValid, errors } = NfaFilmHelper.validateStepInput(req.body, req.files);
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
 
   try {
@@ -62,7 +122,7 @@ const createFeatureSubmission = async (req, res) => {
       .status(200)
       .json({ message: "Submit successful", statusCode: 200, data: finalData });
   } catch (error) {
-    res.status(500).json({ message: error.message, statusCode: 500 });
+    return errorResponse(res, error);
   }
 };
 
@@ -70,11 +130,7 @@ const createFeatureSubmission = async (req, res) => {
 const createNonFeatureSubmission = async (req, res) => {
   const { isValid, errors } = NfaFilmHelper.validateStepInput(req.body, req.files);
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
 
   try {
@@ -122,7 +178,7 @@ const createNonFeatureSubmission = async (req, res) => {
       .status(200)
       .json({ message: "Submit successful", statusCode: 200, data: finalData });
   } catch (error) {
-    res.status(500).json({ message: error.message, statusCode: 500 });
+    return errorResponse(res, error);
   }
 };
 
@@ -155,13 +211,13 @@ const getFilmEntryList = async (req, res) => {
       "non-feature": nonFeatureFilmData,
     };
 
-    res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Fetch successfully",
       statusCode: 200,
       data: finalData,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message, statusCode: 500 });
+    return errorResponse(res, error);
   }
 };
 // Get  Feature & non-feature List by id
@@ -169,7 +225,7 @@ const getFilmDetailsById = async (req, res) => {
   try {
     const { id } = req.params;
     if (!id) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         statusCode: 203,
         message: "Film ID is required",
       });
@@ -186,7 +242,7 @@ const getFilmDetailsById = async (req, res) => {
     ]);
 
     if (!featureForm) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         statusCode: 203,
         message: "Film submission not found",
       });
@@ -209,13 +265,13 @@ const getFilmDetailsById = async (req, res) => {
       featureData.company_reg_doc = documentUrlByType.get(documentTypeMap.COMPANY_REG_DOC);
     if (featureData.original_work_copy)
       featureData.original_work_copy = documentUrlByType.get(documentTypeMap.ORIGINAL_WORK_COPY);
-    res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Fetch successfully",
       statusCode: 200,
       data: featureData,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message, statusCode: 500 });
+    return errorResponse(res, error);
   }
 };
 
@@ -225,11 +281,10 @@ const updateFeatureNonfeatureById = async (req, res) => {
     const missingFields = requiredFields.filter((field) => !req.body[field]);
 
     if (missingFields.length > 0) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         statusCode: 203,
-        message: `${missingFields.join(" and ")} ${
-          missingFields.length > 1 ? "are" : "is"
-        } required`,
+        message: `${missingFields.join(" and ")} ${missingFields.length > 1 ? "are" : "is"
+          } required`,
       });
     }
     const payload = {
@@ -238,27 +293,10 @@ const updateFeatureNonfeatureById = async (req, res) => {
     };
     const step = String(req.body.step ?? "");
 
-    if (
-      step === String(Common.stepsFeature().GENERAL) ||
-      step === String(Common.stepsFeature().CENSOR) ||
-      step === String(Common.stepsFeature().COMPANY_REGISTRATION) ||
-      step === String(Common.stepsFeature().OTHER) ||
-      step === String(Common.stepsFeature().RETURN_ADDRESS) ||
-      step === String(Common.stepsFeature().DECLARATION) ||
-      step === String(Common.stepsNonFeature().GENERAL) ||
-      step === String(Common.stepsNonFeature().CENSOR) ||
-      step === String(Common.stepsNonFeature().COMPANY_REGISTRATION) ||
-      step === String(Common.stepsNonFeature().OTHER) ||
-      step === String(Common.stepsNonFeature().RETURN_ADDRESS) ||
-      step === String(Common.stepsNonFeature().DECLARATION)
-    ) {
+    if (shouldValidateFilmStep(step, req.body.film_type)) {
       const { isValid, errors } = NfaFilmHelper.validateStepInput(req.body, req.files);
       if (!isValid) {
-        return res.status(422).json({
-          message: "Validation failed",
-          errors,
-          statusCode: 422,
-        });
+        return sendValidationError(res, errors);
       }
     }
 
@@ -273,65 +311,12 @@ const updateFeatureNonfeatureById = async (req, res) => {
         .status(200)
         .json({ statusCode: 203, message: "Feature submission not found" });
     }
-    let stepHandler = {};
-    if (film_type === "feature") {
-      stepHandler = {
-        [Common.stepsFeature().GENERAL]: async (existingEntry, payload) =>
-          await handleGeneralStep(existingEntry, payload),
-        [Common.stepsFeature().CENSOR]: async (existingEntry, payload) =>
-          await handleCensorStep(existingEntry, payload),
-        [Common.stepsFeature().COMPANY_REGISTRATION]: async (data, payload) =>
-          await handleCompanyRegistrationStep(data, payload),
-        [Common.stepsFeature().PRODUCER]: async (existingEntry, payload) =>
-          await handleProducerStep(existingEntry, payload),
-        [Common.stepsFeature().DIRECTOR]: async (existingEntry, payload) =>
-          await handleDirectorStep(existingEntry, payload),
-        [Common.stepsFeature().ACTORS]: async (existingEntry, payload) =>
-          await handleActorsStep(existingEntry, payload),
-        [Common.stepsFeature().SONGS]: async (existingEntry, payload) =>
-          await handleSongsStep(existingEntry, payload),
-        [Common.stepsFeature().AUDIOGRAPHER]: async (existingEntry, payload) =>
-          await handleAudiographerStep(existingEntry, payload),
-        [Common.stepsFeature().OTHER]: async (existingEntry, payload) =>
-          await handleOtherStep(existingEntry, payload),
-        [Common.stepsFeature().RETURN_ADDRESS]: async (
-          existingEntry,
-          payload
-        ) => await handleReturnAddressStep(existingEntry, payload),
-        [Common.stepsFeature().DECLARATION]: async (existingEntry, payload) =>
-          await handleDeclarationStep(existingEntry, payload),
-      };
-    } else if (film_type === "non-feature") {
-      stepHandler = {
-        [Common.stepsNonFeature().GENERAL]: async (existingEntry, payload) =>
-          await handleGeneralStep(existingEntry, payload),
-        [Common.stepsNonFeature().CENSOR]: async (existingEntry, payload) =>
-          await handleCensorStep(existingEntry, payload),
-        [Common.stepsNonFeature().COMPANY_REGISTRATION]: async (
-          data,
-          payload
-        ) => await handleCompanyRegistrationStep(data, payload),
-        [Common.stepsNonFeature().PRODUCER]: async (existingEntry, payload) =>
-          await handleProducerStep(existingEntry, payload),
-        [Common.stepsNonFeature().DIRECTOR]: async (existingEntry, payload) =>
-          await handleDirectorStep(existingEntry, payload),
-        [Common.stepsNonFeature().OTHER]: async (existingEntry, payload) =>
-          await handleOtherStep(existingEntry, payload),
-        [Common.stepsNonFeature().RETURN_ADDRESS]: async (
-          existingEntry,
-          payload
-        ) => await handleReturnAddressStep(existingEntry, payload),
-        [Common.stepsNonFeature().DECLARATION]: async (
-          existingEntry,
-          payload
-        ) => await handleDeclarationStep(existingEntry, payload),
-      };
-    }
+    const stepHandler = getStepHandlers(film_type);
 
     if (stepHandler[+req.body.step]) {
       const result = await stepHandler[+req.body.step](existingEntry, payload);
       if (result?.status === false) {
-        return res.status(422).json({
+        return sendJsonResponse(res, 422, {
           statusCode: 422,
           message: result.message || "Step processing failed",
         });
@@ -342,7 +327,7 @@ const updateFeatureNonfeatureById = async (req, res) => {
       // Save updated document
       const updated = await result.save();
 
-      res.status(200).json({
+      return sendJsonResponse(res, 200, {
         statusCode: 200,
         message: "Feature submission updated successfully",
         data: updated,
@@ -350,16 +335,12 @@ const updateFeatureNonfeatureById = async (req, res) => {
       return;
     }
 
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       statusCode: 203,
       message: "Invalid step provided",
     });
   } catch (error) {
-    res.status(500).json({
-      statusCode: 500,
-      message: "Error updating feature submission",
-      error: error.message,
-    });
+    return errorResponse(res, error);
   }
 };
 
@@ -372,13 +353,13 @@ const getNonFeatureSubmissions = async (req, res) => {
     }).populate(
       "producers directors songs actors audiographer documents"
     );
-    res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Fetch successfully",
       statusCode: 200,
       data: submissions,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message, statusCode: 500 });
+    return errorResponse(res, error);
   }
 };
 
@@ -640,11 +621,7 @@ const handleDeclarationStep = async (data, payload) => {
 const finalSubmit = async (req, res) => {
   const { isValid, errors } = NfaFilmHelper.finalSubmitStep(req.body);
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode:422
-    });
+    return sendValidationError(res, errors);
   }
 
   try {
@@ -659,28 +636,25 @@ const finalSubmit = async (req, res) => {
     });
 
     if (!nfaFeature) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "You do not have any entries.!!",
         statusCode: 203,
       });
     }
 
     if (nfaFeature.payment_status != 2) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "Your payment is not completed.!!",
         statusCode: 203,
       });
     }
 
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "You have successfully submitted your form.!!",
       statusCode: 200,
     });
   } catch (error) {
-    return res.status(500).json({
-      status: "exception",
-      message: error.message || "Internal Server Error",
-    });
+    return errorResponse(res, error);
   }
 };
 

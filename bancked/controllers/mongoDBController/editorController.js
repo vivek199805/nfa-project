@@ -2,15 +2,12 @@ import BestBookCinema from "../../models/mongodbModels/BestBookCinema.js";
 import BestFilmCritic from "../../models/mongodbModels/BestFilmCritic.js";
 import Editor from "../../models/mongodbModels/editor.js";
 import EditorSchemaHelper from "../../helpers/editorSchemaHelper.js";
+import { errorResponse, sendJsonResponse, sendValidationError } from "../../helpers/responseHelper.js";
 
 const storeEditor = async (req, res) => {
   const { isValid, errors } = EditorSchemaHelper.validateStore(req.body);
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
 
   try {
@@ -66,33 +63,26 @@ const storeEditor = async (req, res) => {
     const editor = await Editor.create(arrayToInsert);
 
     if (!editor) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "Editor not created.!!",
         statusCode: 203,
       });
     }
 
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Editor created successfully.!!",
       statusCode: 200,
       data: editor,
     });
   } catch (error) {
-    res.status(500).json({
-      error: "Failed to create editor",
-      message: error.message,
-    });
+    return errorResponse(res, error);
   }
 };
 
 const updateEditor = async (req, res) => {
   const { isValid, errors } = EditorSchemaHelper.validateUpdate(req.body);
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
 
   try {
@@ -105,10 +95,10 @@ const updateEditor = async (req, res) => {
       _id: payload.id,
       client_id: payload.user.id || payload.user._id,
     });
-    
+
 
     if (!editor) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "Editor not found.!!",
         statusCode: 203,
       });
@@ -118,17 +108,17 @@ const updateEditor = async (req, res) => {
       editor.best_book_cinema_id &&
       payload.best_book_cinema_id !== String(editor.best_book_cinema_id)
     ) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "You cannot modify Best book cinema ID.!!",
         statusCode: 203,
       });
     }
 
     if (
-      editor.best_film_critic_id  &&
+      editor.best_film_critic_id &&
       payload.best_film_critic_id !== String(editor.best_film_critic_id)
     ) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "You cannot modify Best film critic ID.!!",
         statusCode: 203,
       });
@@ -155,27 +145,20 @@ const updateEditor = async (req, res) => {
       { new: true }
     );
 
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Updated successfully!",
       statusCode: 200,
       data: updatedEditor,
     });
   } catch (error) {
-    return res.status(500).json({
-      message: error.message,
-      statusCode: 500,
-    });
+    return errorResponse(res, error);
   }
 };
 
 const listEditor = async (req, res) => {
   const { isValid, errors } = EditorSchemaHelper.validateList(req.body);
   if (!isValid) {
-    return res.status(422).json({
-      message: "Validation failed",
-      errors,
-      statusCode: 422,
-    });
+    return sendValidationError(res, errors);
   }
 
   try {
@@ -194,7 +177,7 @@ const listEditor = async (req, res) => {
       });
 
       if (!checkBestBook) {
-        return res.status(200).json({
+        return sendJsonResponse(res, 200, {
           message: "Please provide valid details.!!",
           statusCode: 203,
         });
@@ -213,7 +196,7 @@ const listEditor = async (req, res) => {
       });
 
       if (!checkBestFilmCritic) {
-        return res.status(200).json({
+        return sendJsonResponse(res, 200, {
           message: "Please provide valid details.!!",
           statusCode: 203,
         });
@@ -226,7 +209,7 @@ const listEditor = async (req, res) => {
     }
 
     if (Object.keys(whereTo).length === 0) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "No valid identifier provided.",
         statusCode: 203,
       });
@@ -235,21 +218,18 @@ const listEditor = async (req, res) => {
     allEditor = await Editor.find(whereTo);
 
     if (!allEditor || allEditor.length === 0) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "No result found.!!",
         statusCode: 203,
       });
     }
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Success",
       statusCode: 200,
       data: allEditor,
     });
   } catch (error) {
-    res.status(500).json({
-      error: "Failed to list editors",
-      message: error.message,
-    });
+    return errorResponse(res, error);
   }
 };
 
@@ -264,20 +244,18 @@ const getEditor = async (req, res) => {
       client_id: payload.user.id || payload.user._id,
     });
     if (!editor) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "No result found.!!",
         statusCode: 203,
       });
     }
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Success",
       statusCode: 200,
       data: editor,
     });
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
+    return errorResponse(res, error);
   }
 };
 
@@ -293,7 +271,7 @@ const deleteEditor = async (req, res) => {
     });
 
     if (!editor) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: "editor not found",
         statusCode: 203,
       });
@@ -301,14 +279,12 @@ const deleteEditor = async (req, res) => {
 
     // Delete the document
     await Editor.deleteOne({ _id: payload.id });
-    res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: "Editor deleted successfully",
       statusCode: 200,
     });
   } catch (error) {
-    return res.status(500).json({
-      message: error.message,
-    });
+    return errorResponse(res, error);
   }
 };
 

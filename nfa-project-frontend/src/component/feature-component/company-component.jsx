@@ -84,7 +84,7 @@ const CompanyRegistrationSection = ({ setActiveSection, filmType }) => {
     formData.append("film_type", filmType);
 
     const response = await postRequest(url, formData);
-    if (response.statusCode == 200) {
+    if (Number(response.statusCode) === 200) {
       setActiveSection(getFilmNextSection(filmType, "company"));
     }
   };
@@ -130,16 +130,16 @@ const CompanyRegistrationSection = ({ setActiveSection, filmType }) => {
                     }`}
                   onChange={(e) => field.onChange(e.target.files?.[0] || null)}
                 />
-                  {typeof  formData?.data?.company_reg_doc === "string" &&  formData?.data?.company_reg_doc && (
-                    <a
-                      href={`${import.meta.env.VITE_API_URL}/${ formData?.data?.company_reg_doc.trim()}`} // Adjust path based on backend storage
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-sm btn-outline-primary mt-2"
-                    >
-                      View Uploaded File
-                    </a>
-                  )}
+                {typeof formData?.data?.company_reg_doc === "string" && formData?.data?.company_reg_doc && (
+                  <a
+                    href={`${import.meta.env.VITE_API_URL}/${formData?.data?.company_reg_doc.trim()}`} // Adjust path based on backend storage
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-sm btn-outline-primary mt-2"
+                  >
+                    View Uploaded File
+                  </a>
+                )}
               </>
             )}
           />

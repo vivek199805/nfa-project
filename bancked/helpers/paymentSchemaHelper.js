@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isObjectId, parseZodResultWithData } from "./validationCommon.js";
 
 const ALLOWED_FORMS = [
   "FEATURE",
@@ -7,7 +8,6 @@ const ALLOWED_FORMS = [
   "BEST_FILM_CRITIC",
 ];
 
-const isMongoObjectId = (val) => /^[0-9a-fA-F]{24}$/.test(val);
 const isNumericString = (val) => /^\d+$/.test(val);
 
 const amountSchema = z.union([z.string().trim().min(1), z.number().positive()]);
@@ -16,7 +16,7 @@ const paymentSchema = z.object({
   id: z
     .string()
     .trim()
-    .refine((val) => isNumericString(val) || isMongoObjectId(val), {
+    .refine((val) => isNumericString(val) || isObjectId(val), {
       message: "Last ID must be a number or a valid MongoDB ObjectId.",
     }),
   form_type: z.enum(ALLOWED_FORMS, {
@@ -41,13 +41,7 @@ const paymentConfirmationSchema = z.object({
     .min(1, "razorpay_signature is required"),
 });
 
-const formatValidation = (result) => ({
-  isValid: result.success,
-  data: result.success ? result.data : null,
-  errors: result.success
-    ? {}
-    : result.error.issues.reduce((acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }), {}),
-});
+const formatValidation = (result) => parseZodResultWithData(result);
 
 export const validatePaymentData = (data) => formatValidation(paymentSchema.safeParse(data));
 

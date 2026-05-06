@@ -1,66 +1,66 @@
-# name: SonarQube Analysis
+name: SonarQube Analysis
 
-# on:
-#   push:
-#     branches:
-#       - vivek
-#       - staging
-#   pull_request:
-#     branches:
-#       - staging
-#     types: [opened, synchronize, reopened]
+on:
+  push:
+    branches:
+      - vivek
+      - staging
+  pull_request:
+    branches:
+      - staging
+    types: [opened, synchronize, reopened]
 
-# permissions:
-#   contents: read
-#   pull-requests: write
-#   issues: write
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
 
-# jobs:
-#   sonarqube:
-#     name: SonarCloud Scan
-#     runs-on: ubuntu-latest
+jobs:
+  sonarqube:
+    name: SonarCloud Scan
+    runs-on: ubuntu-latest
 
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v4
-#         with:
-#           fetch-depth: 0
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-#       - name: Setup Node.js
-#         uses: actions/setup-node@v4
-#         with:
-#           node-version: 20
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-#       # ---------------- FRONTEND ----------------
-#       - name: Install frontend dependencies
-#         working-directory: nfa-project-frontend
-#         run: npm ci
+      # ---------------- FRONTEND ----------------
+      - name: Install frontend dependencies
+        working-directory: nfa-project-frontend
+        run: npm ci
 
-#       - name: Run frontend tests with coverage
-#         working-directory: nfa-project-frontend
-#         run: npm run test:coverage
-#         continue-on-error: true
+      - name: Run frontend tests with coverage
+        working-directory: nfa-project-frontend
+        run: npm run test:coverage
+        # continue-on-error: true
 
-#       # ---------------- BACKEND ----------------
-#       - name: Install backend dependencies
-#         working-directory: bancked
-#         run: npm ci
+      # ---------------- BACKEND ----------------
+      - name: Install backend dependencies
+        working-directory: bancked
+        run: npm ci
 
-#       - name: Run backend tests with coverage
-#         working-directory: bancked
-#         run: npm test --if-present -- --coverage
-#         continue-on-error: true
+      - name: Run backend tests with coverage
+        working-directory: bancked
+        run: npm test
+        # continue-on-error: true
 
-#       # ---------------- SONAR SCAN ----------------
-#       - name: SonarCloud Scan
-#         uses: SonarSource/sonarqube-scan-action@v7
-#         with:
-#           args: >
-#             -Dsonar.projectKey=vivek199805_nfa-project
-#             -Dsonar.organization=vivek199805
-#             -Dsonar.sources=bancked,nfa-project-frontend/src
-#             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/coverage/**
-#             -Dsonar.javascript.lcov.reportPaths=nfa-project-frontend/coverage/lcov.info,bancked/coverage/lcov.info
-#         env:
-#           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-#           SONAR_HOST_URL: https://sonarcloud.io
+      # ---------------- SONAR SCAN ----------------
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v7
+        with:
+          args: >
+            -Dsonar.projectKey=vivek199805_nfa-project
+            -Dsonar.organization=vivek199805
+            -Dsonar.sources=bancked,nfa-project-frontend/src
+            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/coverage/**
+            -Dsonar.javascript.lcov.reportPaths=nfa-project-frontend/coverage/lcov.info,bancked/coverage/lcov.info
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io

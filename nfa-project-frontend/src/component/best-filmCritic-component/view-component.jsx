@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import "../../styles/accordion.css";
 import { ChevronDown, Pencil } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -13,9 +13,15 @@ import { useAuth } from "../../hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../lib/queryClient";
 import {
-  filmCriticEndpoints,
   filmCriticWorkflow,
 } from "../../common/award-workflow";
+import { apiConfig } from "../../services/apiEndpoints";
+
+const previewSteps = [
+  "Best Film Critic",
+  "Critic",
+  "Publisher of the Newspaper Journel",
+];
 
 const ViewSection = ({ setActiveSection }) => {
   const [activeIndex, setActiveIndex] = useState(null);
@@ -25,21 +31,11 @@ const ViewSection = ({ setActiveSection }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const steps = [
-    "Best Film Critic",
-    "Critic",
-    "Publisher of the Newspaper Journel",
-  ];
-
-  const { data: formData } = useFetchById(filmCriticEndpoints.entryBy, id);
+  const { data: formData } = useFetchById(apiConfig.filmCritic.entryBy, id);
 
   const toggle = (index) => {
-    setActiveIndex(activeIndex === index ? null : index);
+    setActiveIndex((currentIndex) => (currentIndex === index ? null : index));
   };
-
-  useEffect(() => {
-    // Optional data initialization if needed
-  }, [formData]);
 
   const onPayment = async () => {
     if (String(formData?.data?.payment_status) === "2" || isPaying) {
@@ -62,7 +58,7 @@ const ViewSection = ({ setActiveSection }) => {
       showSuccessToast(result?.verificationResponse?.message || "Payment completed successfully");
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: queryKeys.entry.byId(filmCriticEndpoints.entryBy, id),
+          queryKey: queryKeys.entry.byId(apiConfig.filmCritic.entryBy, id),
         }),
         queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.entries }),
       ]);
@@ -72,13 +68,13 @@ const ViewSection = ({ setActiveSection }) => {
       setIsPaying(false);
     }
   };
-  
+
   const onFinish = async () => {
     // payment logic here
     const formData = new FormData();
     formData.append("id", id);
-    const response = await postRequest(filmCriticEndpoints.finalSubmit, formData);
-    if (response.statusCode == 200) {
+    const response = await postRequest(apiConfig.filmCritic.finalSubmit, formData);
+    if (Number(response.statusCode) === 200) {
       showSuccessToast(response.message);
       navigate("/dashboard");
     }
@@ -87,9 +83,9 @@ const ViewSection = ({ setActiveSection }) => {
   return (
     <>
       <div className="accordion">
-        {steps.map((step, idx) => (
+        {previewSteps.map((step, idx) => (
           <AccordionItem
-            key={idx}
+            key={step}
             title={step}
             index={idx}
             isOpen={activeIndex === idx}
@@ -117,11 +113,7 @@ const ViewSection = ({ setActiveSection }) => {
           onClick={() => onPayment()}
           disabled={isPaying || String(formData?.data?.payment_status) === "2"}
         >
-          {String(formData?.data?.payment_status) === "2"
-            ? "Payment Completed"
-            : isPaying
-              ? "Processing Payment..."
-              : "Pay with Build Desk"}
+          {String(formData?.data?.payment_status) === "2" ? "Payment Completed" : isPaying ? "Processing Payment..." : "Pay with Build Desk"}
         </button>
       </div>
 
@@ -221,13 +213,15 @@ const CriticView = ({ data }) => {
         </div>
 
         <div className="col-6 value-column">
-          <div>{data.critic_name}</div>
-          <div>{data.critic_address}</div>
-          <div>{data.critic_contact}</div>
-          <div>{data.critic_indian_nationality == 1 ? "YES" : "NO"}</div>
-          <div>{data.critic_profile}</div>
+          <div>{data?.critic_name}</div>
+          <div>{data?.critic_address}</div>
+          <div>{data?.critic_contact}</div>
           <div>
-            {data.critic_aadhaar_card ? (
+            {Number(data?.critic_indian_nationality) === 1 ? "YES" : "NO"}
+          </div>
+          <div>{data?.critic_profile}</div>
+          <div>
+            {data?.critic_aadhaar_card ? (
               <>
                 <a
                   href={`${import.meta.env.VITE_API_URL}/${data.critic_aadhaar_card
@@ -252,8 +246,8 @@ const CriticView = ({ data }) => {
 const PublisherView = ({ data }) => {
   return (
     <div className="producer-view">
-      {data?.editors.map((producer, index) => (
-        <div className="card p-3 mb-3" key={index}>
+      {data?.editors?.map((producer, index) => (
+        <div className="card p-3 mb-3" key={producer._id ?? index}>
           <div className="fw-semibold mb-2">
             ({index + 1}) Publisher Details
           </div>
@@ -322,12 +316,12 @@ const BestFilmView = ({ data }) => {
         </div>
 
         <div className="col-6 value-column">
-          <div>{data.writer_name}</div>
-          <div>{data.article_title}</div>
-          <div>{data.article_language_id}</div>
-          <div>{data.publication_date}</div>
-          <div>{data.publication_name}</div>
-          <div>{data.rni == 1 ? "Yes" : "No"}</div>
+          <div>{data?.writer_name}</div>
+          <div>{data?.article_title}</div>
+          <div>{data?.article_language_id}</div>
+          <div>{data?.publication_date}</div>
+          <div>{data?.publication_name}</div>
+          <div>{Number(data?.rni) === 1 ? "Yes" : "No"}</div>
         </div>
       </div>
     </div>

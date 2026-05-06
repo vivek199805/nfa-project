@@ -5,10 +5,11 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "start": "cross-env NODE_ENV=development nodemon server.js",
-    "prod": "cross-env NODE_ENV=production node server.js",
+    "start": "dotenv -e .env.development nodemon server.js",
+    "dev": "dotenv -e .env.development nodemon server.js",
+    "prod": "dotenv -e .env.production node server.js",
     "lint": "eslint .",
-    "test": "node --test",
+    "test": "c8 node --test",
     "lint:fix": "eslint . --fix"
   },
   "keywords": [],
@@ -22,6 +23,7 @@
     "cors": "^2.8.5",
     "dayjs": "^1.11.13",
     "dotenv": "^16.5.0",
+    "dotenv-cli": "^11.0.0",
     "ejs": "^3.1.10",
     "express": "^4.21.2",
     "express-rate-limit": "^8.1.0",
@@ -37,6 +39,7 @@
     "zod": "^3.25.74"
   },
   "devDependencies": {
+    "c8": "^11.0.0",
     "cross-env": "^10.0.0",
     "eslint": "^10.2.0"
   }

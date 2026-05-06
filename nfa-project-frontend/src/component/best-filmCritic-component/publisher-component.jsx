@@ -13,7 +13,6 @@ import {
 import { useParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import {
-  filmCriticEndpoints,
   getAwardNextSection,
   getAwardPreviousSection,
   getAwardSectionStep,
@@ -43,7 +42,7 @@ const filmSchema = z.object({
 
 const PublisherNewspaperSection = ({ setActiveSection }) => {
   const [publishers, setPublishers] = useState([]);
-  const [showForm, setShowForm] = useState(publishers.length === 0);
+  const [showForm, setShowForm] = useState(true);
   const numberRestriction = useInputRestriction("number");
   const [editingIndex, setEditingIndex] = useState(null);
   const { id } = useParams();
@@ -84,7 +83,7 @@ const PublisherNewspaperSection = ({ setActiveSection }) => {
   }, [publishers.length]);
 
   const onSubmit = async (data) => {
-    let url
+    let url;
     const formData = new FormData();
     formData.append(
       "indian_national",
@@ -103,9 +102,9 @@ const PublisherNewspaperSection = ({ setActiveSection }) => {
       // updated[editingIndex] = data;
       // setProducers(updated);
       formData.append("id", editingIndex);
-      url = apiConfig.awardChild.editor.update
+      url = apiConfig.awardChild.editor.update;
     } else {
-      url = apiConfig.awardChild.editor.store
+      url = apiConfig.awardChild.editor.store;
     }
 
     try {
@@ -127,6 +126,8 @@ const PublisherNewspaperSection = ({ setActiveSection }) => {
 
   const handleEdit = (index) => {
     const data = publishers.find((item) => item._id === index);
+    if (!data) return;
+
     reset({
       editor_name: data.editor_name,
       editor_email: data.editor_email,
@@ -151,7 +152,10 @@ const PublisherNewspaperSection = ({ setActiveSection }) => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const response = await getRequestById(apiConfig.awardChild.editor.delete, index);
+          const response = await getRequestById(
+            apiConfig.awardChild.editor.delete,
+            index
+          );
           if (response.statusCode === 200) {
             showSuccessToast(response.message);
             await getPublisher();
@@ -174,8 +178,8 @@ const PublisherNewspaperSection = ({ setActiveSection }) => {
       const formData = new FormData();
       formData.append("step", getAwardSectionStep("publisher"));
       formData.append("id", id);
-      const response = await postRequest(filmCriticEndpoints.update, formData);
-      if (response.statusCode == 200) {
+      const response = await postRequest(apiConfig.filmCritic.update, formData);
+      if (Number(response.statusCode) === 200) {
         setActiveSection(getAwardNextSection("publisher"));
       }
     } else {
@@ -222,7 +226,7 @@ const PublisherNewspaperSection = ({ setActiveSection }) => {
               </thead>
               <tbody>
                 {publishers.map((publisher, index) => (
-                  <tr key={index}>
+                  <tr key={publisher._id ?? index}>
                     <td>{index + 1}</td>
                     <td>{publisher.editor_name}</td>
                     <td>{publisher.editor_email}</td>

@@ -1,9 +1,5 @@
 import { z } from "zod";
-
-const isNumeric = (val) =>
-  !isNaN(Number(val)) && Number(val).toString() === val.toString();
-
-const isObjectId = (val) => /^[0-9a-fA-F]{24}$/.test(val);
+import { isNumeric, isObjectId, parseZodResult } from "./validationCommon.js";
 
 const linkedEntrySchema = z.object({
   best_book_cinema_id: z
@@ -89,7 +85,7 @@ const editorSchema = z.object({
     .regex(/^\+?[0-9]{10,15}$/, "Invalid phone number"),
 
   editor_address: z.string().trim().min(1, "editor_address is required"),
-  editor_citizenship: z.string().trim().min(1, "editor_citizenshipis required"),
+  editor_citizenship: z.string().trim().min(1, "editor_citizenship is required"),
 });
 
 // Validation function
@@ -99,12 +95,7 @@ const validateStore = (payload) => {
   schema = schema.merge(linkedEntrySchema);
   const result = appendLinkedEntryRequirement(schema.safeParse(payload), payload);
 
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce((acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }), {}),
-  };
+  return parseZodResult(result);
 };
 
 const validateUpdate = (payload) => {
@@ -112,23 +103,13 @@ const validateUpdate = (payload) => {
   schema = schema.merge(linkedEntrySchema).merge(IDSchema);
 
   const result = appendLinkedEntryRequirement(schema.safeParse(payload), payload);
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce((acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }), {}),
-  };
+  return parseZodResult(result);
 };
 
 const validateList = (payload) => {
   const schema = linkedEntrySchema;
   const result = appendLinkedEntryRequirement(schema.safeParse(payload), payload);
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce((acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }), {}),
-  };
+  return parseZodResult(result);
 };
 
 export default {

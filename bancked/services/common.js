@@ -96,7 +96,7 @@ function sanitizeFileName(filename) {
   return filename.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
-const imageUpload = async (data) => {
+export const imageUpload = async (data) => {
   const websiteTypeValue = websiteType[data.websiteType] || null;
   const formTypeValue = formType[data.formType] || null;
 

@@ -1,8 +1,15 @@
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
+import { validateContributorPayload } from "../../helpers/contributorSchemaHelper.js";
+import { errorResponse, sendJsonResponse, sendValidationError } from "../../helpers/responseHelper.js";
 
 const getUserId = (req) => req.user?._id || req.user?.id;
 
 const getAllAudiographerByFeatureId = async (req, res) => {
+    const { isValid, errors } = validateContributorPayload(req.body, {
+        requiredIds: ["id"],
+    });
+    if (!isValid) return sendValidationError(res, errors);
+
     const { id } = req.body;
 
     try {
@@ -12,20 +19,26 @@ const getAllAudiographerByFeatureId = async (req, res) => {
         }, "audiographer");
 
         if (!feature) {
-            return res.status(200).json({ message: "Records not found", statusCode: 203 });
+            return sendJsonResponse(res, 200, { message: "Records not found", statusCode: 203 });
         }
 
-        res.status(200).json({
-            message: "data fetch successfully",
+        return sendJsonResponse(res, 200, {
+            message: "Data fetched successfully",
             data: feature.audiographer,
             statusCode: 200,
         });
     } catch (error) {
-        res.status(500).json({ error: "Failed to fetch audiographer", message: error.message });
+        return errorResponse(res, error);
     }
 };
 
 const addAudiographerToFeature = async (req, res) => {
+    const { isValid, errors } = validateContributorPayload(req.body, {
+        requiredIds: ["nfa_feature_id"],
+        optionalIds: ["audiographerId"],
+    });
+    if (!isValid) return sendValidationError(res, errors);
+
     const { nfa_feature_id: _id, audiographerId } = req.body; // audiographer data from client
     try {
         // Find the feature form by ID
@@ -34,13 +47,13 @@ const addAudiographerToFeature = async (req, res) => {
             client_id: getUserId(req),
         });
         if (!feature) {
-            return res.status(200).json({ message: "Feature form not found", statusCode: 203 });
+            return sendJsonResponse(res, 200, { message: "Feature form not found", statusCode: 203 });
         }
         if (audiographerId) {
-            // ✅ Update existing audiographer
+            // Update existing audiographer
             const existingAudiographer = feature.audiographer.id(audiographerId);
             if (!existingAudiographer) {
-                return res.status(200).json({ message: "audiographer not found", statusCode: 203 });
+                return sendJsonResponse(res, 200, { message: "audiographer not found", statusCode: 203 });
             }
 
             Object.entries(req.body).forEach(([key, value]) => {
@@ -50,7 +63,7 @@ const addAudiographerToFeature = async (req, res) => {
             });
 
         } else {
-            // ✅ Add new Song
+            // Add new audiographer
             feature.audiographer.push(req.body);
         }
 
@@ -63,17 +76,22 @@ const addAudiographerToFeature = async (req, res) => {
             return obj;
         });
 
-        res.status(200).json({
+        return sendJsonResponse(res, 200, {
             message: audiographerId ? "audiographer updated successfully" : "audiographer added successfully",
             data: updatedData,
             statusCode: 200,
         });
     } catch (error) {
-        res.status(500).json({ error: "Failed to add audiographer", message: error.message });
+        return errorResponse(res, error);
     }
 };
 
 const deleteAudiographerById = async (req, res) => {
+    const { isValid, errors } = validateContributorPayload(req.body, {
+        requiredIds: ["nfa_feature_id", "audiographerId"],
+    });
+    if (!isValid) return sendValidationError(res, errors);
+
     const { nfa_feature_id, audiographerId } = req.body;
 
     try {
@@ -83,7 +101,7 @@ const deleteAudiographerById = async (req, res) => {
         });
 
         if (!feature) {
-            return res.status(200).json({
+            return sendJsonResponse(res, 200, {
                 message: 'Feature form not found',
                 statusCode: 203,
             });
@@ -92,7 +110,7 @@ const deleteAudiographerById = async (req, res) => {
         // Find the audiographer by ID and remove it
         const audiographer = feature.audiographer.id(audiographerId);
         if (!audiographer) {
-            return res.status(200).json({
+            return sendJsonResponse(res, 200, {
                 message: 'audiographer not found',
                 statusCode: 203,
             });
@@ -102,17 +120,13 @@ const deleteAudiographerById = async (req, res) => {
 
         await feature.save(); // Save the updated document
 
-        return res.status(200).json({
+        return sendJsonResponse(res, 200, {
             message: 'audiographer deleted successfully',
             statusCode: 200,
         });
 
     } catch (error) {
-        return res.status(500).json({
-            message: 'Error deleting audiographer',
-            error: error.message,
-            statusCode: 500,
-        });
+        return errorResponse(res, error);
     }
 };
 

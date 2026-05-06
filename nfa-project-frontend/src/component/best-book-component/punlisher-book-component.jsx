@@ -16,7 +16,6 @@ import {
 import { useParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import {
-  bestBookEndpoints,
   getAwardNextSection,
   getAwardPreviousSection,
   getAwardSectionStep,
@@ -46,7 +45,7 @@ const filmSchema = z.object({
 
 const PublisherBookSection = ({ setActiveSection }) => {
   const [publishers, setPublishers] = useState([]);
-  const [showForm, setShowForm] = useState(publishers.length === 0);
+  const [showForm, setShowForm] = useState(true);
   const numberRestriction = useInputRestriction("number");
   const [editingIndex, setEditingIndex] = useState(null);
   const { id } = useParams();
@@ -133,6 +132,8 @@ const PublisherBookSection = ({ setActiveSection }) => {
 
   const handleEdit = (index) => {
     const data = publishers.find((item) => item._id === index);
+    if (!data) return;
+
     reset({
       editor_name: data.editor_name,
       editor_email: data.editor_email,
@@ -157,7 +158,10 @@ const PublisherBookSection = ({ setActiveSection }) => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const response = await getRequestById(apiConfig.awardChild.editor.delete, index);
+          const response = await getRequestById(
+            apiConfig.awardChild.editor.delete,
+            index
+          );
           if (response.statusCode === 200) {
             showSuccessToast(response.message);
             await getPublisher();
@@ -179,8 +183,8 @@ const PublisherBookSection = ({ setActiveSection }) => {
       const formData = new FormData();
       formData.append("step", getAwardSectionStep("publisher"));
       formData.append("id", id);
-      const response = await postRequest(bestBookEndpoints.update, formData);
-      if (response.statusCode == 200) {
+      const response = await postRequest(apiConfig.bestBook.update, formData);
+      if (Number(response.statusCode) === 200) {
         setActiveSection(getAwardNextSection("publisher"));
       }
     } else {
@@ -234,7 +238,7 @@ const PublisherBookSection = ({ setActiveSection }) => {
               </thead>
               <tbody>
                 {publishers.map((publisher, index) => (
-                  <tr key={index}>
+                  <tr key={publisher._id ?? index}>
                     <td>{index + 1}</td>
                     <td>{publisher.editor_name}</td>
                     <td>{publisher.editor_email}</td>

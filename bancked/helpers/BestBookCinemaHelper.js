@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { stepsBestBook } from "../services/common.js";
 import dayjs from "dayjs";
-
-const isObjectId = (val) => /^[0-9a-fA-F]{24}$/.test(val);
+import { isObjectId, parseZodResult } from "./validationCommon.js";
 
 // Shared schema parts
 const baseStepSchema = z.object({
@@ -54,7 +53,7 @@ const editorSchema = z.object({
     .regex(/^\+?[0-9]{10,15}$/, "Invalid phone number"),
 
   editor_address: z.string().trim().min(1, "editor_address is required"),
-  editor_citizenship: z.string().trim().min(1, "editor_citizenshipis required"),
+  editor_citizenship: z.string().trim().min(1, "editor_citizenship is required"),
 });
 
 const toRequiredTrue = z.preprocess(
@@ -130,12 +129,7 @@ const validateStepInput = (payload, files) => {
 
   const result = schema.safeParse(payload);
 
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce((acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }), {}),
-  };
+  return parseZodResult(result);
 };
 
 const finalSubmitStep = (payload) => {
@@ -153,12 +147,7 @@ const finalSubmitStep = (payload) => {
   //       ),
   // };
 
-  return {
-    isValid: result.success,
-    errors: result.success
-      ? {}
-      : result.error.issues.reduce((acc, issue) => ({ ...acc, [issue.path[0]]: issue.message }), {}),
-  };
+  return parseZodResult(result);
 };
 
 export default {

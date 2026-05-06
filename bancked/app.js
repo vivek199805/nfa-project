@@ -1,7 +1,6 @@
 // package.json should include: "type": "module"
 
 import express from "express";
-import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/mongoDBRoutes/auth.js";
@@ -12,7 +11,6 @@ import ApiRoutes from "./routes/mongoDBRoutes/apiRoutes.js";
 import { rateLimit } from "express-rate-limit";
 import morgan from "morgan";
 
-dotenv.config();
 const app = express();
 app.disable("x-powered-by");
 

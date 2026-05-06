@@ -1,11 +1,17 @@
 import { Document } from "../../models/mongodbModels/document.js";
 import { FeatureForm } from "../../models/mongodbModels/featureForm.js";
 import Common from "../../services/common.js"
+import { validateContributorPayload } from "../../helpers/contributorSchemaHelper.js";
+import { errorResponse, sendJsonResponse, sendValidationError } from "../../helpers/responseHelper.js";
 
 const getUserId = (req) => req.user?._id || req.user?.id;
 
-
 const getAllProducersByFeatureId = async (req, res) => {
+  const { isValid, errors } = validateContributorPayload(req.body, {
+    requiredIds: ["id"],
+  });
+  if (!isValid) return sendValidationError(res, errors);
+
   const { id, film_type } = req.body;
 
   try {
@@ -15,7 +21,7 @@ const getAllProducersByFeatureId = async (req, res) => {
     }, "producers");
 
     if (!producersData) {
-      return res.status(200).json({ message: "Records not found", statusCode: 203 });
+      return sendJsonResponse(res, 200, { message: "Records not found", statusCode: 203 });
     }
     // 2. Attach matching documents to each producer manually
     const allProducerWithDocs = await Promise.all(
@@ -36,26 +42,32 @@ const getAllProducersByFeatureId = async (req, res) => {
 
     allProducerWithDocs.forEach((producer) => {
       if (producer?.documents?.file) {
-      producer.documents.file = `/api/documents/${producer.documents._id}/download`;
+        producer.documents.file = `/api/documents/${producer.documents._id}/download`;
       }
       if (producer?.producer_self_attested_doc) {
-      producer.producer_self_attested_doc = producer.documents?._id
-        ? `/api/documents/${producer.documents._id}/download`
-        : null;
+        producer.producer_self_attested_doc = producer.documents?._id
+          ? `/api/documents/${producer.documents._id}/download`
+          : null;
       }
     });
 
-    res.status(200).json({
-      message: "data fetch successfully",
+    return sendJsonResponse(res, 200, {
+      message: "Data fetched successfully",
       data: allProducerWithDocs,
       statusCode: 200,
     });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch producers", message: error.message });
+    return errorResponse(res, error);
   }
 };
 
 const addProducerToFeature = async (req, res) => {
+  const { isValid, errors } = validateContributorPayload(req.body, {
+    requiredIds: ["nfa_feature_id"],
+    optionalIds: ["id"],
+  });
+  if (!isValid) return sendValidationError(res, errors);
+
   const { nfa_feature_id: _id, id: producerId } = req.body; // Producer data from client
   try {
     const payload = {
@@ -68,15 +80,15 @@ const addProducerToFeature = async (req, res) => {
       client_id: getUserId(req),
     });
     if (!feature) {
-      return res.status(200).json({ message: "Feature form not found", statusCode: 203 });
+      return sendJsonResponse(res, 200, { message: "Feature form not found", statusCode: 203 });
     }
     let updatedProducer;
     // 2. Update existing producer
     if (producerId) {
-      // ✅ Update existing producer
+      // Update existing producer
       const existingProducer = feature.producers.id(producerId);
       if (!existingProducer) {
-        return res.status(200).json({ message: "Producer not found", statusCode: 203 });
+        return sendJsonResponse(res, 200, { message: "Producer not found", statusCode: 203 });
       }
 
       Object.entries(req.body).forEach(([key, value]) => {
@@ -108,10 +120,10 @@ const addProducerToFeature = async (req, res) => {
         });
 
         if (!fileUpload.status) {
-          return res.status(500).json({ message: "failed to upload producer document", statusCode: 500, });
+          return errorResponse(res, '', "failed to upload producer document");
         }
 
-        // // ✅ Add uploaded file to producer.documents
+        // Add uploaded file to producer.documents
         updatedProducer.documents.push(fileUpload.data);
 
         // Also store file name directly for UI usage if needed
@@ -129,17 +141,22 @@ const addProducerToFeature = async (req, res) => {
       return obj;
     });
 
-    res.status(200).json({
+   return sendJsonResponse(res, 200, {
       message: producerId ? "Producer updated successfully" : "Producer added successfully",
       data: updatedData,
       statusCode: 200,
     });
   } catch (error) {
-    res.status(500).json({ error: "Failed to add producer", message: error.message });
+    return errorResponse(res, error);
   }
 };
 
 const deleteProducerById = async (req, res) => {
+  const { isValid, errors } = validateContributorPayload(req.body, {
+    requiredIds: ["nfa_feature_id", "producerId"],
+  });
+  if (!isValid) return sendValidationError(res, errors);
+
   const { nfa_feature_id: _id, producerId } = req.body;
 
   try {
@@ -149,7 +166,7 @@ const deleteProducerById = async (req, res) => {
     });
 
     if (!feature) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: 'Feature form not found',
         statusCode: 203,
       });
@@ -158,7 +175,7 @@ const deleteProducerById = async (req, res) => {
     // Find the producer by ID and remove it
     const producer = feature.producers.id(producerId);
     if (!producer) {
-      return res.status(200).json({
+      return sendJsonResponse(res, 200, {
         message: 'Producer not found',
         statusCode: 203,
       });
@@ -168,18 +185,14 @@ const deleteProducerById = async (req, res) => {
 
     await feature.save(); // Save the updated document
 
-    return res.status(200).json({
+    return sendJsonResponse(res, 200, {
       message: 'Producer deleted successfully',
       statusCode: 200,
       // data: feature.producers, // optionally return updated list
     });
 
   } catch (error) {
-    return res.status(500).json({
-      message: 'Error deleting producer',
-      error: error.message,
-      statusCode: 500,
-    });
+    return errorResponse(res, error);
   }
 };
 

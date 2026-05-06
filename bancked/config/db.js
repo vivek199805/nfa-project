@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 
+// These settings enable strict query validation and filter sanitization for security and schema compliance.
 mongoose.set("strictQuery", true);
+mongoose.set("sanitizeFilter", true);
 
 export const connectDB = async () => {
   try {

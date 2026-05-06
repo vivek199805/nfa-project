@@ -140,12 +140,12 @@
 }
 
 .step-item.completed .step-circle {
-  background-color: #b59b5b;
+  background-color: #8a6f2d;
   color: white;
 }
 
 .step-item.active .step-circle {
-  background-color: #c9a850;
+   background-color: #8a6f2d;
   color: white;
   border: 2px solid #e0c172;
   transform: scale(1.05);
