@@ -20,7 +20,6 @@ import dayjs from "dayjs";
 import Select from "react-dropdown-select";
 import CustomDatePicker from "../../features/components/form/CustomDatePicker";
 import {
-  bestBookEndpoints,
   getAwardNextSection,
   getAwardPreviousSection,
   getAwardSectionStep,
@@ -49,7 +48,7 @@ const filmSchema = z.object({
 const BestBookCinemaSection = ({ setActiveSection }) => {
   const [languageOptions, setLanguageOptions] = useState([]);
   const [bookList, setBookList] = useState([]);
-  const [showForm, setShowForm] = useState(bookList.length === 0);
+  const [showForm, setShowForm] = useState(true);
   const numberRestriction = useInputRestriction("number");
   const [editingIndex, setEditingIndex] = useState(null);
   const { id } = useParams();
@@ -148,6 +147,7 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
 
   const handleEdit = (index) => {
     const data = bookList.find((item) => item._id === index);
+    if (!data) return;
 
     reset({
       book_title_original: data.book_title_original,
@@ -181,7 +181,10 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
         // setBookList(updated);
         // if (bookList.length === 1) setShowForm(true);
         try {
-          const response = await getRequestById(apiConfig.awardChild.book.delete, index);
+          const response = await getRequestById(
+            apiConfig.awardChild.book.delete,
+            index
+          );
           if (response.statusCode === 200) {
             showSuccessToast(response.message);
             await getBookList();
@@ -203,8 +206,8 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
       const formData = new FormData();
       formData.append("step", getAwardSectionStep("detail"));
       formData.append("id", id);
-      const response = await postRequest(bestBookEndpoints.update, formData);
-      if (response.statusCode == 200) {
+      const response = await postRequest(apiConfig.bestBook.update, formData);
+      if (Number(response.statusCode) === 200) {
         setActiveSection(getAwardNextSection("detail"));
       }
     } else {
@@ -260,7 +263,7 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
               </thead>
               <tbody>
                 {bookList.map((book, index) => (
-                  <tr key={index}>
+                  <tr key={book._id ?? index}>
                     <td>{index + 1}</td>
                     <td>{book.book_title_original}</td>
                     <td>{book.book_title_english}</td>
@@ -370,7 +373,7 @@ const BestBookCinemaSection = ({ setActiveSection }) => {
                     {...field}
                     options={languageOptions}
                     multi
-                    values={field.value}
+                    values={field.value ?? []}
                     onChange={field.onChange}
                     placeholder="Select language(s)"
                     itemRenderer={({ item, methods }) => (

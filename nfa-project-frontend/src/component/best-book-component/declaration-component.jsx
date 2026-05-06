@@ -3,16 +3,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import {
-  postRequest,
-} from "../../services/requestService";
+import { postRequest } from "../../services/requestService";
 import { useFetchById } from "../../hooks/useFetchById";
 import {
-  bestBookEndpoints,
   getAwardNextSection,
   getAwardPreviousSection,
   getAwardSectionStep,
 } from "../../common/award-workflow";
+import { apiConfig } from "../../services/apiEndpoints";
 
 const declarationSchema = z.object({
   declarations: z.tuple([
@@ -30,14 +28,21 @@ const declarationTexts = [
   "The decision of the juries shall be final and binding and no appeal or correspondence regarding their decision shall be made by me/us Author/Critic's profile and stills/logo of publisher are sent to email.",
 ];
 
+const declarationKeysInOrder = [
+  "declaration_one",
+  "declaration_two",
+  "declaration_three",
+  "declaration_four",
+];
+
 const defaultValues = {
   declarations: Array(declarationTexts.length).fill(false),
 };
 
 const BookDeclarationSection = ({ setActiveSection }) => {
   const { id } = useParams();
-  const { data: formData } = useFetchById(bestBookEndpoints.entryBy, id);
-  
+  const { data: formData } = useFetchById(apiConfig.bestBook.entryBy, id);
+
   const {
     control,
     handleSubmit,
@@ -49,34 +54,24 @@ const BookDeclarationSection = ({ setActiveSection }) => {
   });
 
   useEffect(() => {
-    if (formData) {
-      const declarationKeysInOrder = [
-        "declaration_one",
-        "declaration_two",
-        "declaration_three",
-        "declaration_four",
-      ];
-
-      const declarations = declarationKeysInOrder.map((key) => formData.data[key]);
+    if (formData?.data) {
+      const declarations = declarationKeysInOrder.map(
+        (key) => formData.data[key]
+      );
       reset({ declarations });
     }
   }, [formData, reset]);
 
   const onSubmit = async (data) => {
-    const declarationKeysInOrder = [
-      "declaration_one",
-      "declaration_two",
-      "declaration_three",
-      "declaration_four",
-    ];
-    const formData = new FormData();
+    const submitData = new FormData();
     declarationKeysInOrder.forEach((item, index) => {
-    formData.append(item, data.declarations[index] ? "true" : "false");
+      submitData.append(item, data.declarations[index] ? "true" : "false");
     });
-    formData.append("step", getAwardSectionStep("declaration"));
-    formData.append("id", id);
-      const response = await postRequest(bestBookEndpoints.update, formData);
-    if (response.statusCode == 200) {
+    submitData.append("step", getAwardSectionStep("declaration"));
+    submitData.append("id", id);
+
+    const response = await postRequest(apiConfig.bestBook.update, submitData);
+    if (Number(response.statusCode) === 200) {
       setActiveSection(getAwardNextSection("declaration"));
     }
   };
@@ -85,7 +80,7 @@ const BookDeclarationSection = ({ setActiveSection }) => {
     <form onSubmit={handleSubmit(onSubmit)}>
       <h4>Declaration</h4>
       {declarationTexts.map((text, index) => (
-        <div key={index} className="mb-3">
+        <div key={text} className="mb-3">
           <div className="form-check">
             <Controller
               name={`declarations.${index}`}
@@ -93,12 +88,11 @@ const BookDeclarationSection = ({ setActiveSection }) => {
               render={({ field }) => (
                 <input
                   type="checkbox"
-                  className={`form-check-input ${
-                    errors.declarations?.[index] ? "is-invalid" : ""
-                  }`}
+                  className={`form-check-input ${errors.declarations?.[index] ? "is-invalid" : ""
+                    }`}
                   id={`decl-${index}`}
-                  checked={field.value || false} // ✅ Explicitly bind checked state
-                  onChange={(e) => field.onChange(e.target.checked)} // ✅ Ensure proper update
+                  checked={field.value || false}
+                  onChange={(e) => field.onChange(e.target.checked)}
                 />
               )}
             />

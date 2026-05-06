@@ -60,7 +60,7 @@ const PaymentSection = ({ setActiveSection, filmType }) => {
     const formData = new FormData();
     formData.append("id", id);
     const response = await postRequest(filmFinalSubmitEndpoint, formData);
-    if (response.statusCode == 200) {
+    if (Number(response.statusCode) === 200) {
       showSuccessToast(response.message);
       navigate("/dashboard");
     }

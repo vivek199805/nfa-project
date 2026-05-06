@@ -26,7 +26,7 @@ const filmSchema = z.object({
 
 const AudiographerSection = ({ setActiveSection, filmType }) => {
   const [audioGrapherData, setAudioGrapherData] = useState([]); // your producer list
-  const [showForm, setShowForm] = useState(audioGrapherData.length === 0);
+  const [showForm, setShowForm] = useState(true);
   const [editingIndex, setEditingIndex] = useState(null);
   const { id } = useParams();
 
@@ -103,6 +103,8 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
   const handleEdit = (index) => {
     //  const data = audioGrapherData[index];
     const data = audioGrapherData.find((item) => item._id === index);
+    if (!data) return;
+
     reset({
       soundRecordist: data.production_sound_recordist,
       soundDesigner: data.sound_designer,
@@ -156,7 +158,7 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
       formData.append("id", id);
       formData.append("film_type", filmType);
       const response = await postRequest(getFilmUpdateEndpoint(filmType), formData);
-      if (response.statusCode == 200) {
+      if (Number(response.statusCode) === 200) {
         setActiveSection(getFilmNextSection(filmType, "audiographer"));
       }
     } else {
@@ -196,7 +198,7 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
               <tbody>
                 {audioGrapherData.length > 0 &&
                   audioGrapherData.map((audiographer, index) => (
-                    <tr key={index}>
+                    <tr key={audiographer._id ?? index}>
                       <td>{index + 1}</td>
                       <td>{audiographer.production_sound_recordist}</td>
                       <td>{audiographer.sound_designer}</td>

@@ -39,6 +39,18 @@ describe("api endpoint metadata", () => {
         delete: "delete-editor",
       },
     });
+    expect(apiConfig.filmCritic).toEqual({
+      entryBy: "best-film-critic-entry-by",
+      create: "create-entry",
+      update: "update-entry",
+      finalSubmit: "best-film-critic-final-submit",
+    });
+    expect(apiConfig.bestBook).toEqual({
+      entryBy: "best-book-cinema-entry-by",
+      create: "best-book-cinema-entry",
+      update: "best-book-cinema-update",
+      finalSubmit: "best-book-cinema-final-submit",
+    });
     expect(apiConfig.filmChild).toEqual({
       producer: {
         list: "film/producer-list",
@@ -65,6 +77,22 @@ describe("api endpoint metadata", () => {
         store: "film/store-audiographer",
         delete: "film/delete-audiographer",
       },
+    });
+  });
+
+  it("keeps award entry endpoint paths aligned with the backend route contract", () => {
+    expect(apiConfig.filmCritic).toEqual({
+      entryBy: "best-film-critic-entry-by",
+      create: "create-entry",
+      update: "update-entry",
+      finalSubmit: "best-film-critic-final-submit",
+    });
+
+    expect(apiConfig.bestBook).toEqual({
+      entryBy: "best-book-cinema-entry-by",
+      create: "best-book-cinema-entry",
+      update: "best-book-cinema-update",
+      finalSubmit: "best-book-cinema-final-submit",
     });
   });
 

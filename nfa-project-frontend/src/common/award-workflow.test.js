@@ -1,33 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  bestBookEndpoints,
   bestBookWorkflow,
-  filmCriticEndpoints,
   filmCriticWorkflow,
   getAwardNextSection,
   getAwardPreviousSection,
   getAwardSectionStep,
 } from "./award-workflow";
-
-describe("award workflow endpoints", () => {
-  it("keeps best book endpoint names stable", () => {
-    expect(bestBookEndpoints).toEqual({
-      entryBy: "best-book-cinema-entry-by",
-      create: "best-book-cinema-entry",
-      update: "best-book-cinema-update",
-      finalSubmit: "best-book-cinema-final-submit",
-    });
-  });
-
-  it("keeps film critic endpoint names stable", () => {
-    expect(filmCriticEndpoints).toEqual({
-      entryBy: "best-film-critic-entry-by",
-      create: "create-entry",
-      update: "update-entry",
-      finalSubmit: "best-film-critic-final-submit",
-    });
-  });
-});
 
 describe("award workflow payment metadata", () => {
   it("keeps best book payment metadata stable", () => {
@@ -69,5 +47,11 @@ describe("award workflow steps", () => {
     expect(getAwardSectionStep("declaration")).toBe(4);
     expect(getAwardPreviousSection("declaration")).toBe(3);
     expect(getAwardNextSection("declaration")).toBe(5);
+  });
+
+  it("returns undefined for unknown award sections", () => {
+    expect(getAwardSectionStep("missing")).toBeUndefined();
+    expect(getAwardPreviousSection("missing")).toBeUndefined();
+    expect(getAwardNextSection("missing")).toBeUndefined();
   });
 });

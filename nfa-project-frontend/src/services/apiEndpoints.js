@@ -43,6 +43,21 @@ export const apiConfig = {
     },
   },
 
+  // award entry endpoints
+  filmCritic: {
+    entryBy: "best-film-critic-entry-by",
+    create: "create-entry",
+    update: "update-entry",
+    finalSubmit: "best-film-critic-final-submit",
+  },
+
+  bestBook: {
+    entryBy: "best-book-cinema-entry-by",
+    create: "best-book-cinema-entry",
+    update: "best-book-cinema-update",
+    finalSubmit: "best-book-cinema-final-submit",
+  },
+
   // film child endpoints
   filmChild: {
     producer: {

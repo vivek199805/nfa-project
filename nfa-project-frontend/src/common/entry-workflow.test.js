@@ -5,6 +5,7 @@ import {
   getEntryWorkflowMeta,
   resolveViewWorkflowFromPath,
 } from "./entry-workflow";
+import { apiConfig } from "../services/apiEndpoints";
 
 describe("entry workflow metadata", () => {
   it("keeps dashboard workflow ordering stable", () => {
@@ -65,5 +66,14 @@ describe("entry workflow metadata", () => {
       entryBy: "film/feature-entry-by",
       viewType: "feature",
     });
+  });
+
+  it("uses apiConfig award endpoints for award entry metadata", () => {
+    expect(getEntryWorkflowMeta("bestBooks").entryBy).toBe(
+      apiConfig.bestBook.entryBy,
+    );
+    expect(getEntryWorkflowMeta("bestFilmCritic").entryBy).toBe(
+      apiConfig.filmCritic.entryBy,
+    );
   });
 });

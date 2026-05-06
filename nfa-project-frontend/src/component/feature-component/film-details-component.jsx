@@ -113,23 +113,26 @@ const FilmDetailsSection = ({ setActiveSection, filmType }) => {
       languages: languageOptions.filter((opt) =>
         formData?.data.language_id?.includes(opt.value.toString())
       ),
-      englishSubtitle: formData?.data.english_subtitle == 1 ? "Yes" : "No",
-      colorFormat: formData?.data.color_bw == 1 ? "Color" : "Black & White",
+      englishSubtitle:
+        Number(formData?.data.english_subtitle) === 1 ? "Yes" : "No",
+      colorFormat:
+        Number(formData?.data.color_bw) === 1 ? "Color" : "Black & White",
       aspectRatio: formData?.data.aspect_ratio,
       runningTime: formData?.data.running_time,
       format:
-        formData?.data?.format == 1
+        Number(formData?.data?.format) === 1
           ? "35mm"
-          : formData?.data?.format == 2
+          : Number(formData?.data?.format) === 2
             ? "DCP"
             : "Blu Ray",
-      directorDebut: formData?.data?.director_debut == 1 ? "Yes" : "No",
+      directorDebut:
+        Number(formData?.data?.director_debut) === 1 ? "Yes" : "No",
       soundSystem:
-        formData?.data?.sound_system == 1
+        Number(formData?.data?.sound_system) === 1
           ? "Optional Mono"
-          : formData?.data?.sound_system == 2
+          : Number(formData?.data?.sound_system) === 2
             ? "Dolby"
-            : formData?.data?.sound_system == 3
+            : Number(formData?.data?.sound_system) === 3
               ? "DTS"
               : "Other",
       synopsis: formData?.data?.film_synopsis,
@@ -177,7 +180,7 @@ const FilmDetailsSection = ({ setActiveSection, filmType }) => {
     }
 
     const response = await postRequest(url, formData);
-    if (response.statusCode == 200) {
+    if (Number(response.statusCode) === 200) {
       if (!id) navigate(`/${filmType}/${response.data.id}`)
       setActiveSection(getFilmNextSection(filmType, "details"));
 
@@ -270,7 +273,7 @@ const FilmDetailsSection = ({ setActiveSection, filmType }) => {
             options={options}
             multi
             onChange={field.onChange}
-            values={field.value}
+                  values={field.value ?? []}
             placeholder="Select languages"
             dropdownHandle={true}
           />
@@ -285,7 +288,7 @@ const FilmDetailsSection = ({ setActiveSection, filmType }) => {
                   {...field}
                   options={languageOptions}
                   multi
-                  values={field.value}
+                  values={field.value ?? []}
                   onChange={field.onChange}
                   placeholder="Select language(s)"
                   itemRenderer={({ item, methods }) => (

@@ -3,9 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import {
-  postRequest,
-} from "../../services/requestService";
+import { postRequest } from "../../services/requestService";
 import { useFetchById } from "../../hooks/useFetchById";
 import {
   getFilmEntryByEndpoint,
@@ -44,7 +42,22 @@ const declarationTexts = [
   "I/We certify that the musical score used is original.",
   "I also certify that the film in no way violates any provisions of the Indian Copyright Act, 1957.",
   "I/We hereby declare that the information provided is true...",
-  "Whether Synopsis (150 word), Director and Producer’s Profile, Photo/Logo and film Stills are sent to email.",
+  "Whether Synopsis (150 word), Director and Producerâ€™s Profile, Photo/Logo and film Stills are sent to email.",
+];
+
+const declarationKeysInOrder = [
+  "declaration_one",
+  "declaration_two",
+  "declaration_three",
+  "declaration_four",
+  "declaration_five",
+  "declaration_six",
+  "declaration_seven",
+  "declaration_eight",
+  "declaration_nine",
+  "declaration_ten",
+  "declaration_eleven",
+  "declaration_twelve",
 ];
 
 const defaultValues = {
@@ -53,8 +66,8 @@ const defaultValues = {
 
 const DeclarationSection = ({ setActiveSection, filmType }) => {
   const { id } = useParams();
-    const { data: formData } = useFetchById(getFilmEntryByEndpoint(filmType), id);
-  
+  const { data: formData } = useFetchById(getFilmEntryByEndpoint(filmType), id);
+
   const {
     control,
     handleSubmit,
@@ -66,53 +79,23 @@ const DeclarationSection = ({ setActiveSection, filmType }) => {
   });
 
   useEffect(() => {
-    if (formData) {
-      const declarationKeysInOrder = [
-        "declaration_one",
-        "declaration_two",
-        "declaration_three",
-        "declaration_four",
-        "declaration_five",
-        "declaration_six",
-        "declaration_seven",
-        "declaration_eight",
-        "declaration_nine",
-        "declaration_ten",
-        "declaration_eleven",
-        "declaration_twelve",
-      ];
-
+    if (formData?.data) {
       const declarations = declarationKeysInOrder.map((key) => formData.data[key]);
       reset({ declarations });
     }
   }, [formData, reset]);
 
   const onSubmit = async (data) => {
-    let url = getFilmUpdateEndpoint(filmType);
-    const declarationKeysInOrder = [
-      "declaration_one",
-      "declaration_two",
-      "declaration_three",
-      "declaration_four",
-      "declaration_five",
-      "declaration_six",
-      "declaration_seven",
-      "declaration_eight",
-      "declaration_nine",
-      "declaration_ten",
-      "declaration_eleven",
-      "declaration_twelve",
-    ];
-    const formData = new FormData();
+    const submitData = new FormData();
     declarationKeysInOrder.forEach((item, index) => {
-    formData.append(item, data.declarations[index] ? "true" : "false");
+      submitData.append(item, data.declarations[index] ? "true" : "false");
     });
-    formData.append("step", getFilmSectionStep(filmType, "declaration"));
-    formData.append("id", id);
-    formData.append("film_type", filmType);
+    submitData.append("step", getFilmSectionStep(filmType, "declaration"));
+    submitData.append("id", id);
+    submitData.append("film_type", filmType);
 
-    const response = await postRequest(url, formData);
-    if (response.statusCode == 200) {
+    const response = await postRequest(getFilmUpdateEndpoint(filmType), submitData);
+    if (Number(response.statusCode) === 200) {
       setActiveSection(getFilmNextSection(filmType, "declaration"));
     }
   };
@@ -121,7 +104,7 @@ const DeclarationSection = ({ setActiveSection, filmType }) => {
     <form onSubmit={handleSubmit(onSubmit)}>
       <h4>Declaration</h4>
       {declarationTexts.map((text, index) => (
-        <div key={index} className="mb-3">
+        <div key={text} className="mb-3">
           <div className="form-check">
             <Controller
               name={`declarations.${index}`}
@@ -129,12 +112,11 @@ const DeclarationSection = ({ setActiveSection, filmType }) => {
               render={({ field }) => (
                 <input
                   type="checkbox"
-                  className={`form-check-input ${
-                    errors.declarations?.[index] ? "is-invalid" : ""
-                  }`}
+                  className={`form-check-input ${errors.declarations?.[index] ? "is-invalid" : ""
+                    }`}
                   id={`decl-${index}`}
-                  checked={field.value || false} // ✅ Explicitly bind checked state
-                  onChange={(e) => field.onChange(e.target.checked)} // ✅ Ensure proper update
+                  checked={field.value || false}
+                  onChange={(e) => field.onChange(e.target.checked)}
                 />
               )}
             />

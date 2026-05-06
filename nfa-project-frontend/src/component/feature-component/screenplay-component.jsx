@@ -52,7 +52,7 @@ const filmSchema = z.object({
 
 const ScreenPlaySection = ({ setActiveSection, filmType }) => {
   const { id } = useParams();
-    const { data: formData } = useFetchById(getFilmEntryByEndpoint(filmType), id);
+  const { data: formData } = useFetchById(getFilmEntryByEndpoint(filmType), id);
 
 
   const {
@@ -73,14 +73,12 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
         originalScreenplay: formData?.data.original_screenplay_name,
         adaptedScreenplay: formData?.data.adapted_screenplay_name,
         storyWriter: formData?.data.story_writer_name,
-        isPublicDomain:
-          formData?.data.work_under_public_domain == 1 ? "Yes" : "No",
+        isPublicDomain: Number(formData?.data.work_under_public_domain) === 1 ? "Yes" : "No",
         originalCopy: formData?.data.original_work_copy,
         dialogues: formData?.data.dialogue,
         effectsCreater: formData?.data.effectsCreater,
         cinemetographer: formData?.data.cinemetographer,
-        isDigitalVideo:
-          formData?.data.shot_digital_video_format == 1 ? "Yes" : "No",
+        isDigitalVideo: Number(formData?.data.shot_digital_video_format) === 1 ? "Yes" : "No",
         editor: formData?.data.editor,
         productionDesigner: formData?.data.production_designer,
         costumeDesigner: formData?.data.costume_designer,
@@ -123,9 +121,9 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
     formData.append("id", id);
     formData.append("film_type", filmType);
     const response = await postRequest(getFilmUpdateEndpoint(filmType), formData);
-    if (response.statusCode == 200) {
+    if (Number(response.statusCode) === 200) {
       setActiveSection(getFilmNextSection(filmType, "screenplay"));
-    }else {
+    } else {
       showErrorToast(response?.message || "Failed to submit form");
     }
   };
@@ -142,9 +140,8 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
           </label>
           <input
             type="text"
-            className={`form-control ${
-              errors.originalScreenplay ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.originalScreenplay ? "is-invalid" : ""
+              }`}
             placeholder=" Enter Original Screenplay"
             {...register("originalScreenplay")}
           />
@@ -161,9 +158,8 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
           </label>
           <input
             type="text"
-            className={`form-control ${
-              errors.adaptedScreenplay ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.adaptedScreenplay ? "is-invalid" : ""
+              }`}
             placeholder=" Enter Adapted Screenplay"
             {...register("adaptedScreenplay")}
           />
@@ -229,9 +225,8 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
               <input
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png,.webp"
-                className={`form-control ${
-                  errors.originalCopy ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.originalCopy ? "is-invalid" : ""
+                  }`}
                 onChange={(e) => field.onChange(e.target.files?.[0] || null)}
               />
             )}
@@ -260,9 +255,8 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
           <label className="form-label"> Special Effects Creater </label>
           <input
             type="text"
-            className={`form-control ${
-              errors.effectsCreater ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.effectsCreater ? "is-invalid" : ""
+              }`}
             placeholder=" Enter Effects Creater"
             {...register("effectsCreater")}
           />
@@ -277,9 +271,8 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
           <label className="form-label"> Cinemetographer(s)</label>
           <input
             type="text"
-            className={`form-control ${
-              errors.cinemetographer ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.cinemetographer ? "is-invalid" : ""
+              }`}
             placeholder=" Enter Effects Creater"
             {...register("cinemetographer")}
           />
@@ -329,9 +322,8 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
           <label className="form-label"> Production Designer</label>
           <input
             type="text"
-            className={`form-control ${
-              errors.productionDesigner ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.productionDesigner ? "is-invalid" : ""
+              }`}
             placeholder=" Enter Production Designer"
             {...register("productionDesigner")}
           />
@@ -346,9 +338,8 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
           <label className="form-label"> Costume Designer</label>
           <input
             type="text"
-            className={`form-control ${
-              errors.costumeDesigner ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.costumeDesigner ? "is-invalid" : ""
+              }`}
             placeholder=" Enter Costume Designer"
             {...register("costumeDesigner")}
           />
@@ -391,9 +382,8 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
           <label className="form-label">Choreographer</label>
           <input
             type="text"
-            className={`form-control ${
-              errors.choreographer ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.choreographer ? "is-invalid" : ""
+              }`}
             placeholder=" Enter Choreographer"
             {...register("choreographer")}
           />
@@ -408,9 +398,8 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
           <label className="form-label">Stunt Choreographer</label>
           <input
             type="text"
-            className={`form-control ${
-              errors.stuntChoreographer ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.stuntChoreographer ? "is-invalid" : ""
+              }`}
             placeholder=" Enter Stunt Choreographe"
             {...register("stuntChoreographer")}
           />
@@ -427,9 +416,8 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
           </label>
           <input
             type="text"
-            className={`form-control ${
-              errors.musicDirector ? "is-invalid" : ""
-            }`}
+            className={`form-control ${errors.musicDirector ? "is-invalid" : ""
+              }`}
             placeholder=" Enter Music Director"
             {...register("musicDirector")}
           />
@@ -452,7 +440,7 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
           <button
             type="submit"
             className="btn btn-primary"
-            // onClick={() => setActiveSection(10)}
+          // onClick={() => setActiveSection(10)}
           >
             Next <i className="bi bi-arrow-right ms-2"></i>
           </button>
