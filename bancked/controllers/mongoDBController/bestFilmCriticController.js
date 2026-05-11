@@ -1,152 +1,47 @@
-import BestFilmCritic from "../../models/mongodbModels/BestFilmCritic.js";
-import { Document } from "../../models/mongodbModels/document.js";
-import Editor from "../../models/mongodbModels/editor.js";
-import common from "../../services/common.js";
-import Common from "../../services/common.js";
 import BestFilmCriticHelper from "../../helpers/bestFilmCriticHelper.js";
-import { errorResponse, sendJsonResponse, sendValidationError } from "../../helpers/responseHelper.js";
+import { getUserId, missingFieldResponse, sendServiceResponse } from "../../helpers/controllerHelper.js";
+import { errorResponse, sendValidationError } from "../../helpers/responseHelper.js";
+import {
+  createBestFilmCriticService,
+  finalSubmitBestFilmCriticService,
+  getBestFilmCriticByIdService,
+  shouldValidateBestFilmCriticStep,
+  updateBestFilmCriticService,
+} from "../../services/bestFilmCritic.service.js";
 
-const getUserId = (req) => req.user?._id || req.user?.id;
-
-function syncDocumentRef(data, documentId) {
-  if (!documentId) return;
-
-  if (!Array.isArray(data.documents)) {
-    data.documents = [];
-  }
-
-  const exists = data.documents?.some(
-    (id) => String(id) === String(documentId)
-  );
-
-  if (!exists) {
-    data.documents.push(documentId);
-  }
-}
-
-// Create Feature Submission
 const createFilmCritic = async (req, res) => {
-  const { isValid, errors } = BestFilmCriticHelper.validateStepInput(
-    req.body,
-    req.files
-  );
-  if (!isValid) {
-    return sendValidationError(res, errors);
-  }
+  const { isValid, errors } = BestFilmCriticHelper.validateStepInput(req.body, req.files);
+  if (!isValid) return sendValidationError(res, errors);
 
   try {
-    const user = req.user.toObject();
-    const client_id = user._id || user.id;
-    const {
-      writer_name,
-      article_title,
-      article_language_id,
-      publication_date,
-      publication_name,
-      rni,
-      step,
-    } = req.body;
-
-    const filmData = new BestFilmCritic({
-      writer_name,
-      article_title,
-      article_language_id,
-      publication_date,
-      publication_name,
-      rni,
-      step,
-      active_step: 1,
-      client_id,
+    const result = await createBestFilmCriticService({
+      payload: req.body,
+      userId: getUserId(req),
     });
-    await filmData.save();
-    const finalData = filmData.toObject(); // Convert Mongoose document to plain JS object
-    finalData.id = finalData._id;
-    delete finalData._id;
-
-    res
-      .status(200)
-      .json({ message: "Submit successful", statusCode: 200, data: finalData });
+    return sendServiceResponse(res, result);
   } catch (error) {
     return errorResponse(res, error);
   }
 };
 
 const updateEntryById = async (req, res) => {
+  const missingFields = ["id"].filter((field) => !req.body[field]);
+  if (missingFields.length > 0) {
+    return sendServiceResponse(res, missingFieldResponse(missingFields));
+  }
+
+  if (shouldValidateBestFilmCriticStep(String(req.body.step ?? ""))) {
+    const { isValid, errors } = BestFilmCriticHelper.validateStepInput(req.body, req.files);
+    if (!isValid) return sendValidationError(res, errors);
+  }
+
   try {
-    const requiredFields = ["id"];
-    const missingFields = requiredFields.filter((field) => !req.body[field]);
-
-    if (missingFields.length > 0) {
-      return sendJsonResponse(res, 200, {
-        statusCode: 203,
-        message: `${missingFields.join(" and ")} ${missingFields.length > 1 ? "are" : "is"} required`,
-      });
-    }
-    const payload = {
-      ...req.body,
+    const result = await updateBestFilmCriticService({
+      payload: req.body,
       files: req.files,
-    };
-    const step = String(req.body.step ?? "");
-
-    if (
-      step === String(Common.stepsBestFilmCritic().CRITIC_DETAILS) ||
-      step === String(Common.stepsBestFilmCritic().CRITIC) ||
-      step === String(Common.stepsBestFilmCritic().DECLARATION)
-    ) {
-      const { isValid, errors } = BestFilmCriticHelper.validateStepInput(
-        req.body,
-        req.files
-      );
-      if (!isValid) {
-        return sendValidationError(res, errors);
-      }
-    }
-
-    const { id: _id } = req.body;
-    // Find the document by ID
-    const existingEntry = await BestFilmCritic.findOne({
-      _id,
-      client_id: getUserId(req),
+      userId: getUserId(req),
     });
-    if (!existingEntry) {
-      return sendJsonResponse(res, 200, {
-        statusCode: 203,
-        message: "Please provide valid details to update.!!",
-      });
-    }
-    // Check if the user is authorized to update this entry
-    let stepHandler = {
-      [Common.stepsBestFilmCritic().CRITIC_DETAILS]: async (existingEntry, payload) => await handleBestFilmCriticStep(existingEntry, payload),
-      [Common.stepsBestFilmCritic().CRITIC]: async (existingEntry, payload) => await handleCriticStep(existingEntry, payload),
-      [Common.stepsBestFilmCritic().PUBLISHER]: async (existingEntry, payload) => await handlePublisherStep(existingEntry, payload),
-      [Common.stepsBestFilmCritic().DECLARATION]: async (data, payload) => await handleDeclarationStep(data, payload),
-    };
-
-    if (stepHandler[+req.body.step]) {
-      const result = await stepHandler[+req.body.step](existingEntry, payload);
-      if (result?.status === false) {
-        return sendJsonResponse(res, 422, {
-          statusCode: 422,
-          message: result.message || "Step processing failed",
-        });
-      }
-
-      // Update the document with request body
-      Object.assign(result, payload);
-
-      // Save updated document
-      const updated = await result.save();
-
-      return sendJsonResponse(res, 200, {
-        statusCode: 200,
-        message: "Feature submission updated successfully",
-        data: updated,
-      });
-    }
-    return sendJsonResponse(res, 200, {
-      statusCode: 203,
-      message: "Invalid step provided",
-    });
+    return sendServiceResponse(res, result);
   } catch (error) {
     return errorResponse(res, error);
   }
@@ -154,200 +49,26 @@ const updateEntryById = async (req, res) => {
 
 const finalSubmit = async (req, res) => {
   const { isValid, errors } = BestFilmCriticHelper.finalSubmitStep(req.body);
-  if (!isValid) {
-    return sendValidationError(res, errors);
-  }
+  if (!isValid) return sendValidationError(res, errors);
 
   try {
-    const payload = {
-      ...req.body,
-      user: req.user,
-    };
-
-    const bestFilmCritic = await BestFilmCritic.findOne({
-      _id: payload.id,
-      client_id: payload.user.id || payload.user._id,
+    const result = await finalSubmitBestFilmCriticService({
+      id: req.body.id,
+      userId: getUserId(req),
     });
-
-    if (!bestFilmCritic) {
-      return sendJsonResponse(res, 200, {
-        message: "You do not have any entries.!!",
-        statusCode: 203,
-      });
-    }
-
-    if (bestFilmCritic.payment_status != 2) {
-      return sendJsonResponse(res, 200, {
-        message: "Your payment is not completed.!!",
-        statusCode: 203,
-      });
-    }
-
-
-
-    // const mailContent = {
-    //   To: payload.user.email,
-    //   Subject: "Payment successfully accepted | Indian Panorama | 55th IFFI",
-    //   Data: {
-    //     clientName: payload.user.first_name + " " + payload.user.last_name,
-    //   },
-    // };
-    // await Mail.sendOtp(mailContent);
-
-    return sendJsonResponse(res, 200, {
-      message: "You have successfully submitted your form.!!",
-      statusCode: 200,
-    });
+    return sendServiceResponse(res, result);
   } catch (error) {
     return errorResponse(res, error);
   }
 };
 
-const handleBestFilmCriticStep = async (data, payload) => {
-  const lastId = payload.id || null;
-
-  if (lastId) {
-    if (
-      !data.active_step ||
-      data.active_step < Common.stepsBestFilmCritic().CRITIC_DETAILS
-    ) {
-      data.active_step = Common.stepsBestFilmCritic().CRITIC_DETAILS;
-    }
-
-    if (payload?.files && Array.isArray(payload?.files)) {
-      const criticAadhaar = payload.files.find(
-        (file) => file.fieldname === "critic_aadhaar_card"
-      );
-      if (criticAadhaar) {
-        const fileUpload = await common.imageUpload({
-          id: lastId,
-          image_key: "critic_aadhaar_card",
-          websiteType: "NFA",
-          formType: "BEST_FILM_CRITIC",
-          image: criticAadhaar,
-        });
-
-        if (!fileUpload.status) {
-          return { status: false, message: "Image not uploaded.!!" };
-        }
-        data.critic_aadhaar_card = fileUpload?.data?.file ?? null;
-        syncDocumentRef(data, fileUpload?.data?._id);
-      } else {
-        data.critic_aadhaar_card = null;
-      }
-    } else {
-      data.critic_aadhaar_card = null;
-    }
-  }
-
-  return data;
-};
-
-const handleCriticStep = async (data, payload) => {
-  const lastId = payload.id || null;
-
-  if (lastId) {
-    if (
-      !data.active_step ||
-      data.active_step < Common.stepsBestFilmCritic().CRITIC
-    ) {
-      data.active_step = Common.stepsBestFilmCritic().CRITIC;
-    }
-
-    if (payload?.files && Array.isArray(payload?.files)) {
-      const criticAadhaar = payload.files.find(
-        (file) => file.fieldname === "critic_aadhaar_card"
-      );
-      if (criticAadhaar) {
-        const fileUpload = await common.imageUpload({
-          id: lastId,
-          image_key: "critic_aadhaar_card",
-          websiteType: "NFA",
-          formType: "BEST_FILM_CRITIC",
-          image: criticAadhaar,
-        });
-
-        if (!fileUpload.status) {
-          return { status: false, message: fileUpload.message || "Image not uploaded.!!" };
-        }
-        data.critic_aadhaar_card = fileUpload?.data?.file ?? null;
-        syncDocumentRef(data, fileUpload?.data?._id);
-      } else {
-        data.critic_aadhaar_card = null;
-      }
-    } else {
-      data.critic_aadhaar_card = null;
-    }
-  }
-
-  return data;
-};
-
-const handlePublisherStep = async (data, payload) => {
-  const lastId = payload.id || null;
-  if (lastId) {
-    if (
-      !data.active_step ||
-      data.active_step < Common.stepsBestFilmCritic().PUBLISHER
-    ) {
-      data.active_step = Common.stepsBestFilmCritic().PUBLISHER;
-    }
-  }
-
-  return data;
-};
-
-const handleDeclarationStep = async (data, _payload) => {
-  if (
-    !data.active_step ||
-    data.active_step < Common.stepsBestFilmCritic().DECLARATION
-  ) {
-    data.active_step = Common.stepsBestFilmCritic().DECLARATION;
-  }
-
-  return data;
-};
-
 export const bestFilmCriticById = async (req, res) => {
-  const { id } = req.params;
-  const userId = req.user?._id || req.user?.id;
   try {
-    const bestFilmCritic = await BestFilmCritic.findOne({
-      _id: id,
-      client_id: userId,
-    }).populate({
-      path: "documents",
-      match: {
-        form_type: 4,
-        website_type: 5,
-        document_type: 6,
-      },
-      model: Document,
+    const result = await getBestFilmCriticByIdService({
+      id: req.params.id,
+      userId: getUserId(req),
     });
-
-    if (!bestFilmCritic) {
-      return sendJsonResponse(res, 404, {
-        status: "exception",
-        message: "Something went wrong!!",
-        statusCode: 404,
-      });
-    }
-
-    const editors = await Editor.find({
-      best_film_critic_id: bestFilmCritic._id,
-    });
-
-    const data = {
-      ...bestFilmCritic.toObject(),
-      editors,
-    };
-
-    return sendJsonResponse(res, 200, {
-      status: "success",
-      message: "Success.!!",
-      statusCode: 200,
-      data,
-    });
+    return sendServiceResponse(res, result);
   } catch (error) {
     return errorResponse(res, error);
   }
@@ -357,5 +78,5 @@ export default {
   createFilmCritic,
   updateEntryById,
   bestFilmCriticById,
-  finalSubmit
+  finalSubmit,
 };

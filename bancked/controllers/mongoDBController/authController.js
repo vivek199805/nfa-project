@@ -1,392 +1,137 @@
-import { hashPassword } from "../../utils/hashPassword.js";
-import { generateToken } from "../../utils/jwt.util.js";
-// import dotenv from "dotenv";
-import { comparePasswords } from "../../utils/comparePasswords.js";
-import User from "../../models/mongodbModels/user.js";
-import generateOtp from "../../utils/generate-otp.js";
-import Twoauth from "../../models/mongodbModels/twoAuth.js";
 import ClientSchemaHelper from "../../helpers/clientSchemaHelper.js";
-import { Mail } from "../../mailer/mail.js";
 import {
   errorResponse,
   sendJsonResponse,
   sendValidationError,
 } from "../../helpers/responseHelper.js";
-// dotenv.config();
 
-// import { redis } from "../../utils/redis.js";
-const normalizeEmail = (email) => email?.trim().toLowerCase();
+import {
+  registerUserService,
+  loginUserService,
+  verifyEmailService,
+  forgotPasswordService,
+  verifyOtpService,
+  resendOtpService,
+  resetPasswordService,
+  changePasswordService,
+  getUserDetailsService,
+  deleteUserService,
+  forgotPasswordWithTokenService,
+  resetPasswordWithTokenService,
+} from "../../services/auth.service.js";
+
+const sendServiceResponse = (res, result) => {
+  if (result.cookie) {
+    res.cookie(result.cookie.name, result.cookie.value, result.cookie.options);
+    delete result.cookie;
+  }
+
+  const httpCode = result.statusCode === 401 ? 401 : 200;
+
+  return sendJsonResponse(res, httpCode, {
+    ...result,
+    statusCode: result.statusCode,
+  });
+};
 
 const registerUser = async (req, res) => {
   const { isValid, errors } = ClientSchemaHelper.validateRegisterData(req.body);
-  if (!isValid) {
-    return sendValidationError(res, errors);
-  }
+  if (!isValid) return sendValidationError(res, errors);
+
   try {
-    const {
-      firstName,
-      lastName,
-      phone,
-      address,
-      pinCode,
-      aadharNumber,
-      category: usertype,
-      password,
-      email: rawEmail,
-    } = req.body;
-    const email = normalizeEmail(rawEmail);
-
-    // Check if user exists
-    const existingUser = await User.findOne({ email });
-
-    if (existingUser) {
-      return sendJsonResponse(res, 200, { message: "Email already registered", statusCode: 203 });
-    }
-
-    const hashedPassword = await hashPassword(password);
-
-    const newUser = new User({
-      firstName,
-      lastName,
-      email,
-      phone,
-      address,
-      pinCode,
-      aadharNumber,
-      usertype,
-      password: hashedPassword,
-    });
-
-    await newUser.save();
-    const userData = newUser.toObject();
-    delete userData.password;
-    sendJsonResponse(res, 200, {
-      message: "User registered successfully",
-      user: userData,
-      statusCode: 200,
-    });
-  } catch (err) {
-    return errorResponse(res, err);
+    const result = await registerUserService(req.body);
+    return sendServiceResponse(res, result);
+  } catch (error) {
+    return errorResponse(res, error);
   }
 };
 
 const loginUser = async (req, res) => {
-  const { isValid, errors } = ClientSchemaHelper.ValidateLoginSchemaData(
-    req.body
-  );
-  if (!isValid) {
-    return sendValidationError(res, errors);
-  }
+  const { isValid, errors } = ClientSchemaHelper.ValidateLoginSchemaData(req.body);
+  if (!isValid) return sendValidationError(res, errors);
+
   try {
-    const { email: rawEmail, password } = req.body;
-    const email = normalizeEmail(rawEmail);
-
-    // Validate input
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required" });
-    }
-
-    // Find user by email
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return sendJsonResponse(res, 401, {
-        message: "Invalid email or password",
-        statusCode: 401,
-      });
-    }
-
-    //compare password
-    const isMatch = await comparePasswords(password, user.password);
-    if (!isMatch) {
-      return sendJsonResponse(res, 200, {
-        message: "Email or password is incorrect",
-        statusCode: 203
-      });
-    }
-    // 🔐 Generate JWT
-    const token = generateToken({ userId: user._id, email: user.email });
-    const userObj = user.toObject();
-    delete userObj.password;
-    // Prepare user data to send in response
-    const data = {
-      id: userObj._id,
-      name: `${userObj.firstName} ${userObj.lastName}`,
-      aadharNumber: userObj.aadharNumber,
-      address: userObj.address,
-      usertype: userObj.usertype,
-      email: userObj.email,
-      firstName: userObj.firstName,
-      lastName: userObj.lastName,
-      phone: userObj.phone,
-      pinCode: userObj.pinCode,
-      token,
-    };
-    sendJsonResponse(res, 200, {
-      message: "User login successfully",
-      data,
-      statusCode: 200
-    });
+    const result = await loginUserService(req.body);
+    return sendServiceResponse(res, result);
   } catch (error) {
     return errorResponse(res, error);
   }
 };
 
 export const verifyEmail = async (req, res) => {
-  const { isValid, errors } = ClientSchemaHelper.validateEmailSchemaData(
-    req.body
-  );
-  if (!isValid) {
-    return sendValidationError(res, errors);
-  }
+  const { isValid, errors } = ClientSchemaHelper.validateEmailSchemaData(req.body);
+  if (!isValid) return sendValidationError(res, errors);
+
   try {
-    const { email: rawEmail } = req.body;
-    const email = normalizeEmail(rawEmail);
-    // Validate input
-    if (!email) {
-      return res
-        .status(200)
-        .json({ message: "Email are required", statusCode: 203 });
-    }
-
-    // Find user by email
-    const user = await User.findOne({ email });
-    if (!user)
-      return sendJsonResponse(res, 200, {
-        message: "Invalid credentials",
-        statusCode: 203,
-      });
-
-    sendJsonResponse(res, 200, {
-      message: "Email verified successfully",
-      statusCode: 200,
-    });
-  } catch (err) {
-    return errorResponse(res, err);
-  }
-};
-
-const logoutUser = async (req, res) => {
-  try {
-    sendJsonResponse(res, 200, { message: "Logout successful", statusCode: 200 });
-  } catch (err) {
-    return errorResponse(res, err);
-  }
-};
-
-const logoutAllUser = async (req, res) => {
-  try {
-    sendJsonResponse(res, 200, { message: "Logout successful on all devices", statusCode: 200 });
-  } catch (err) {
-    return errorResponse(res, err);
+    const result = await verifyEmailService(req.body);    
+    return sendServiceResponse(res, result);
+  } catch (error) {
+    return errorResponse(res, error);
   }
 };
 
 const forgotPassword = async (req, res) => {
   try {
-    const { email: rawEmail } = req.body;
-    const email = normalizeEmail(rawEmail);
-
-    const user = await User.findOne({ email });
-    if (!user)
-      return sendJsonResponse(res, 200, {
-        message: "The provided information is not Valid!",
-        statusCode: 203,
-      });
-    const otp = generateOtp();
-
-    // await redis.set(
-    //   `otp:forgot:${email}`,
-    //   JSON.stringify({ otp, userId: user._id }),
-    //   { EX: 300 }
-    // );
-    // Generate a new password and update the user's password
-    const twoAuth = await Twoauth.findOne({ email: user.email });
-    if (!twoAuth) {
-      const data = new Twoauth({
-        userId: user._id,
-        phone: user.phone,
-        email: user.email,
-        otp: otp,
-        isVerified: "0",
-        otpExpiry: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes
-      });
-      await data.save();
-    } else {
-      twoAuth.userId = user._id;
-      twoAuth.otp = otp;
-      twoAuth.isVerified = "0";
-      twoAuth.otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
-      await twoAuth.save();
-    }
-    // Cookie options
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // true only in production (requires HTTPS)
-      sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax",
-      maxAge: 5 * 60 * 1000, // 5 minutes
-    };
-
-    // Set email cookie (can be used for verification step)
-    res.cookie("resetEmail", email, cookieOptions);
-
-    const mailContent = {
-      To: email,
-      Subject: "National Film Awards (NFA) Password Reset - One Time Code",
-      Data: {
-        clientName: `${user.firstName} ${user.lastName}`,
-        otp: otp,
-      },
-    };
-    await Mail.sendOtp(mailContent);
-    return sendJsonResponse(res, 200, {
-      message: "An OTP has been sent to your registered email address.!!",
-      data: process.env.NODE_ENV === "production" ? {} : { otp },
-      statusCode: 200,
-    });
-  } catch (err) {
-    return errorResponse(res, err);
+    const result = await forgotPasswordService(req.body);
+    return sendServiceResponse(res, result);
+  } catch (error) {
+    return errorResponse(res, error);
   }
 };
 
 const verifyOtp = async (req, res) => {
   try {
-    const { email: rawEmail, otp } = req.body;
-    const email = normalizeEmail(rawEmail);
-
-    // const data = await redis.get(`otp:forgot:${email}`);
-    // if (!data)
-    //   return res.status(400).json({
-    //     message: "OTP expired or not found",
-    //     statusCode: 400,
-    //   });
-
-    const user = await User.findOne({ email });
-    if (!user) return sendJsonResponse(res, 200, { message: "User not found", statusCode: 203 });
-    const authdata = await Twoauth.findOne({
-      userId: user._id,
-      // email: user.email,
-      // isVerified: 0,
-    });
-
-    if (!authdata) {
-      return sendJsonResponse(res, 200, {
-        message: "OTP not found, please resend",
-        statusCode: 203,
-      });
-    }
-    const isDevBypass =
-      process.env.NODE_ENV !== "production" &&
-      process.env.ALLOW_DEV_OTP_BYPASS === "true" &&
-      otp == "9999";
-
-    // if (!isDevBypass && otp !== savedOtp)
-    //   return res.status(401).json({
-    //     message: "Invalid OTP",
-    //     statusCode: 401,
-    //   });
-    // await redis.del(`otp:forgot:${email}`);
-
-    if (!isDevBypass) {
-      if (authdata.otp !== otp) {
-        return sendJsonResponse(res, 203, {
-          message: "Invalid OTP entered",
-          statusCode: 203,
-        });
-      }
-
-      if (authdata.otpExpiry < Date.now()) {
-        return sendJsonResponse(res, 203, {
-          message: "OTP has expired, please resend",
-          statusCode: 203,
-        });
-      }
-    }
-
-    // Update OTP verification status
-    authdata.isVerified = 1;
-    await authdata.save();
-
-    return sendJsonResponse(res, 200, {
-      status: "success",
-      message: "OTP verified successfully!",
-      statusCode: 200,
-    });
-  } catch (err) {
-    return errorResponse(res, err);
+    const result = await verifyOtpService(req.body);
+    return sendServiceResponse(res, result);
+  } catch (error) {
+    return errorResponse(res, error);
   }
 };
 
-const resendOtp = async (req, res, next) => {
+const resendOtp = async (req, res) => {
   try {
-    const { email: rawEmail } = req.body;
-    const email = normalizeEmail(rawEmail);
-    if (!email) {
-      return sendJsonResponse(res, 422, {
-        message: "Email is required",
-        statusCode: 422,
-      });
-    }
-    const otp = generateOtp();
-    const user = await User.findOne({ email });
-    if (!user)
-      return sendJsonResponse(res, 200, {
-        message: "The provided information is not Valid!",
-        statusCode: 203,
-      });
-    // Generate a new password and update the user's password
-    await Twoauth.findOneAndUpdate({ email },
-      {
-        userId: user._id,
-        phone: user.phone,
-        email,
-        otp,
-        isVerified: "0",
-        otpExpiry: new Date(Date.now() + 5 * 60 * 1000),
-      },
-      { upsert: true, new: true }
-    );
-    // Cookie options
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // true only in production (requires HTTPS)
-      sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax",
-      maxAge: 5 * 60 * 1000, // 5 minutes
-    };
-
-    // Set email cookie (can be used for verification step)
-    res.cookie("resetEmail", email, cookieOptions);
-
-    const mailContent = {
-      To: email,
-      Subject: "National Film Awards (NFA) Password Reset - One Time Code",
-      Data: {
-        clientName: `${user.firstName} ${user.lastName}`,
-        otp
-      },
-    };
-    await Mail.sendOtp(mailContent);
-
-    return sendJsonResponse(res, 200, {
-      message: "An OTP has been sent to your registered email address!",
-      statusCode: 200,
-      data: process.env.NODE_ENV === "production" ? {} : { otp }, // hide OTP in prod
-    });
+    const result = await resendOtpService(req.body);
+    return sendServiceResponse(res, result);
   } catch (error) {
-    next(error);
+    return errorResponse(res, error);
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  const { isValid, errors } = ClientSchemaHelper.ValidateResetPassword(req.body);
+  if (!isValid) return sendValidationError(res, errors);
+
+  try {
+    const result = await resetPasswordService(req.body);
+    return sendServiceResponse(res, result);
+  } catch (error) {
+    return errorResponse(res, error);
+  }
+};
+
+export const changePassword = async (req, res) => {
+  const { isValid, errors } =
+    ClientSchemaHelper.ValidateChangePasswordSchemaData(req.body);
+
+  if (!isValid) return sendValidationError(res, errors);
+
+  try {
+    const result = await changePasswordService({
+      userId: req.user?._id || req.user?.id,
+      currentPassword: req.body.currentPassword,
+      password: req.body.password,
+    });
+
+    return sendServiceResponse(res, result);
+  } catch (error) {
+    return errorResponse(res, error);
   }
 };
 
 const getUserDetails = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select("-password"); // exclude password
-    if (!user) {
-      return sendJsonResponse(res, 200, { message: "User not found", statusCode: 203 });
-    }
-
-    return sendJsonResponse(res, 200, { message: "User fetched successfully", user, statusCode: 200 });
+    const result = await getUserDetailsService(req.user._id);
+    return sendServiceResponse(res, result);
   } catch (error) {
     return errorResponse(res, error);
   }
@@ -394,151 +139,8 @@ const getUserDetails = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.user._id);
-
-    if (!user) {
-      return sendJsonResponse(res, 200, {
-        message: "User not found or already deleted",
-        statusCode: 203,
-      });
-    }
-
-    return sendJsonResponse(res, 200, { message: "User deleted successfully", user, statusCode: 200 });
-  } catch (error) {
-    return errorResponse(res, error);
-  }
-};
-
-// const updateProfile = async (req, res, next) => {
-//   const {
-//     firstName = "",
-//     lastName = "",
-//     username = "",
-//     email = "",
-//     phone = "",
-//     dob = "",
-//     userId = ""
-//   } = req.body;
-
-//   // const userId = (req).user.userId; // user ID from JWT
-
-//   try {
-//     // Fetch current user document from Appwrite
-//     // const userDoc = await databases.getDocument(
-//     //   databaseId,
-//     //   collectionId,
-//     //   userId
-//     // );
-
-//     // Update the document
-//     const updated = await databases.updateDocument(
-//       process.env.APPWRITE_DATABASE_ID,
-//       process.env.APPWRITE_USERS_COLLECTION_ID,
-//       userId,
-//       {
-//         firstName,
-//         lastName,
-//         username,
-//         email,
-//         phone,
-//         dob
-//       }
-//     );
-//    return sendJsonResponse(res, 200, { message: "Profile updated", user: updated });
-//   } catch (err) {
-//     console.error("Profile update error:", err.message);
-//return errorResponse(res, err);
-//   }
-// }
-
-export const changePassword = async (req, res) => {
-  const { isValid, errors } =
-    ClientSchemaHelper.ValidateChangePasswordSchemaData(req.body);
-  if (!isValid) {
-    return sendValidationError(res, errors);
-  }
-
-  const { currentPassword, password } = req.body;
-  const userId = req.user?._id || req.user?.id;
-  if (!userId) {
-    return sendJsonResponse(res, 401, {
-      msg: "Unauthorized",
-      status: false,
-      statusCode: 401,
-    });
-  }
-
-  try {
-    // Step 1: Fetch user by ID
-    const user = await User.findById(userId);
-    if (!user) {
-      return sendJsonResponse(res, 404, { msg: "User not found" });
-    }
-
-    // Step 2: Compare current password
-    const isMatch = await comparePasswords(currentPassword, user.password);
-    if (!isMatch) {
-      return sendJsonResponse(res, 200, {
-        msg: "Current password is incorrect",
-        status: false,
-        statusCode: 203,
-      });
-    }
-
-    // Step 3: Hash new password
-    const hashed = await hashPassword(password);
-
-    // Step 4: Update password in database
-    user.password = hashed;
-    await user.save();
-
-    return sendJsonResponse(res, 200, {
-      message: "Password updated successfully",
-      status: true,
-      statusCode: 200,
-    });
-  } catch (error) {
-    return errorResponse(res, error);
-  }
-};
-
-export const resetPassword = async (req, res) => {
-  const { isValid, errors } = ClientSchemaHelper.ValidateResetPassword(
-    req.body
-  );
-  if (!isValid) {
-    return sendValidationError(res, errors);
-  }
-
-  try {
-    const { password, email: rawEmail } = req.body;
-    const email = normalizeEmail(rawEmail);
-    // Step 1: Check OTP verification status
-    const authData = await Twoauth.findOne({ email, isVerified: 1 });
-
-    if (!authData) {
-      return sendJsonResponse(res, 200, {
-        message: "OTP not verified.",
-        status: false,
-        statusCode: 203,
-      });
-    }
-
-    // Step 2: Update user's password
-    const hashed = await hashPassword(password);
-    await User.findOneAndUpdate(
-      { _id: authData.userId },
-      { password: hashed },
-      { new: true }
-    );
-
-    // Step 3: Optionally delete the OTP record
-    await Twoauth.deleteOne({ _id: authData._id });
-    return sendJsonResponse(res, 200, {
-      message: "Password reset successfully.",
-      status: true,
-      statusCode: 200,
-    });
+    const result = await deleteUserService(req.user._id);
+    return sendServiceResponse(res, result);
   } catch (error) {
     return errorResponse(res, error);
   }
@@ -546,68 +148,34 @@ export const resetPassword = async (req, res) => {
 
 const forgotPasswordWithToken = async (req, res) => {
   try {
-    const { email: rawEmail } = req.body;
-    const email = normalizeEmail(rawEmail);
-
-    const user = await User.findOne({ email });
-    if (!user) return sendJsonResponse(res, 404, { message: "User not found" });
-
-    const token = generateToken({ userId: user._id, email: user.email });
-
-    user.resetPasswordToken = token;
-    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
-    await user.save();
-
-    const resetLink = `${process.env.FRONTEND_BASE_URL}/reset-password?token=${token}`;
-
-    // Send email
-    const mailContent = {
-      To: email,
-      Subject: "National Film Awards (NFA) Password Reset - One Time Token",
-      Data: {
-        clientName: user.firstName + " " + user.lastName,
-        resetLink,
-      },
-    };
-    await Mail.resetPasswordMail(mailContent);
-    return sendJsonResponse(res, 200, {
-      message: "A reset email has been sent to your registered email address.!!",
-      statusCode: 200,
-    });
-  } catch (err) {
-    return errorResponse(res, err);
+    const result = await forgotPasswordWithTokenService(req.body);
+    return sendServiceResponse(res, result);
+  } catch (error) {
+    return errorResponse(res, error);
   }
 };
 
 const resetPasswordWithToken = async (req, res) => {
   try {
-    const { password, token } = req.body;
-
-    const user = await User.findOne({
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() }, // not expired
-    });
-
-    if (!user)
-      return sendJsonResponse(res, 200, {
-        message: "Invalid or expired token",
-        statusCode: 203,
-      });
-
-    const hashed = await hashPassword(password);
-
-    user.password = hashed; // hash it if needed
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
-    await user.save();
-
-    return sendJsonResponse(res, 200, {
-      message: "Password updated successfully",
-      statusCode: 200,
-    });
+    const result = await resetPasswordWithTokenService(req.body);
+    return sendServiceResponse(res, result);
   } catch (error) {
     return errorResponse(res, error);
   }
+};
+
+const logoutUser = async (req, res) => {
+  return sendJsonResponse(res, 200, {
+    message: "Logout successful",
+    statusCode: 200,
+  });
+};
+
+const logoutAllUser = async (req, res) => {
+  return sendJsonResponse(res, 200, {
+    message: "Logout successful on all devices",
+    statusCode: 200,
+  });
 };
 
 export default {
@@ -625,5 +193,4 @@ export default {
   forgotPasswordWithToken,
   resetPasswordWithToken,
   resendOtp,
-  // updateProfile,
 };
