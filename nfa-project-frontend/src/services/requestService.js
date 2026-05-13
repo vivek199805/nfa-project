@@ -1,15 +1,8 @@
 import { http } from "./apiClient";
+import { toError } from "./errorService";
 
 const normalizeError = (error) => {
-  if (error instanceof Error) {
-    return error;
-  }
-  const message =
-    error?.response?.data?.message ||
-    error?.response?.statusText ||
-    error?.message ||
-    "Something went wrong!";
-  return new Error(message);
+  return toError(error, "Something went wrong!");
 };
 
 export const getRequest = async (url, config = {}) => {

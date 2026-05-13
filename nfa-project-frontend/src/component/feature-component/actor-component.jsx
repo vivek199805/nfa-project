@@ -137,7 +137,7 @@ const ActorSection = ({ setActiveSection, filmType }) => {
 
   const handleEdit = (index) => {
     //  const data = actorData[index];
-    const data = actorData.find((item) => item._id === index);
+    const data = actorData.find((item) => item?._id === index || item?.id === index);
     if (!data) return;
 
     reset({
@@ -153,7 +153,7 @@ const ActorSection = ({ setActiveSection, filmType }) => {
   const handleDelete = (index) => {
     Swal.fire({
       title: "Confirm Deletion",
-      text: "Are you sure you want to delete producer?",
+      text: "Are you sure you want to delete actor?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
@@ -175,7 +175,7 @@ const ActorSection = ({ setActiveSection, filmType }) => {
             showSuccessToast(response.message);
             await getActorList();
             setEditingIndex(null);
-            Swal.fire("Deleted!", "director has been deleted.", "success");
+            Swal.fire("Deleted!", "Actor has been deleted.", "success");
           } else {
             showErrorToast(response.message);
           }
@@ -260,7 +260,7 @@ const ActorSection = ({ setActiveSection, filmType }) => {
                           type="button"
                           className="action-btn delete-btn"
                           title="Delete"
-                          onClick={() => handleDelete(actor._id)}
+                          onClick={() => handleDelete(actor?._id || actor?.id)}
                         >
                           <Trash2 size={16} />
                         </button>
@@ -268,7 +268,7 @@ const ActorSection = ({ setActiveSection, filmType }) => {
                           type="button"
                           className="action-btn edit-btn"
                           title="Edit"
-                          onClick={() => handleEdit(actor._id)}
+                          onClick={() => handleEdit(actor?._id || actor?.id)}
                         >
                           <Pencil size={16} />
                         </button>

@@ -116,7 +116,7 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
   };
 
   const handleEdit = (index) => {
-    const data = songsData.find((item) => item._id === index);
+    const data = songsData.find((item) => item?._id === index || item?.id === index);
     if (!data) return;
 
     reset({
@@ -233,7 +233,7 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
                           type="button"
                           className="action-btn delete-btn"
                           title="Delete"
-                          onClick={() => handleDelete(song._id)}
+                          onClick={() => handleDelete(song?._id || song?.id)}
                         >
                           <Trash2 size={16} />
                         </button>
@@ -241,7 +241,7 @@ const SongsFormSection = ({ setActiveSection, filmType }) => {
                           type="button"
                           className="action-btn edit-btn"
                           title="Edit"
-                          onClick={() => handleEdit(song._id)}
+                          onClick={() => handleEdit(song?._id || song?.id)}
                         >
                           <Pencil size={16} />
                         </button>

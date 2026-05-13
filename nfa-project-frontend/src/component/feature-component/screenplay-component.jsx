@@ -76,7 +76,7 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
         isPublicDomain: Number(formData?.data.work_under_public_domain) === 1 ? "Yes" : "No",
         originalCopy: formData?.data.original_work_copy,
         dialogues: formData?.data.dialogue,
-        effectsCreater: formData?.data.effectsCreater,
+        effectsCreater: formData?.data.special_effect_creator,
         cinemetographer: formData?.data.cinemetographer,
         isDigitalVideo: Number(formData?.data.shot_digital_video_format) === 1 ? "Yes" : "No",
         editor: formData?.data.editor,
@@ -103,7 +103,7 @@ const ScreenPlaySection = ({ setActiveSection, filmType }) => {
     );
     formData.append("original_work_copy", data.originalCopy);
     formData.append("dialogue", data.dialogues);
-    formData.append("effectsCreater", data.effectsCreater);
+    formData.append("special_effect_creator", data.effectsCreater);
     formData.append("cinemetographer", data.cinemetographer);
     formData.append(
       "shot_digital_video_format",

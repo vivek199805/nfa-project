@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { getErrorMessage } from './errorService';
 
 const defaultOptions = {
   position: 'top-right',
@@ -6,21 +7,23 @@ const defaultOptions = {
 };
 
 export const showSuccessToast = (message, options = {}) => {
-  toast.success(message, {
+  toast.success(typeof message === 'string' ? message : String(message ?? 'Success'), {
     ...defaultOptions,
     ...options,
   });
 };
 
 export const showErrorToast = (message, options = {}) => {
-  toast.error(message, {
+  if (message?.toastShown) return;
+
+  toast.error(getErrorMessage(message), {
     ...defaultOptions,
     ...options,
   });
 };
 
 export const showInfoToast = (message, options = {}) => {
-  toast(message, {
+  toast(typeof message === 'string' ? message : String(message ?? ''), {
     ...defaultOptions,
     ...options,
   });

@@ -4,6 +4,7 @@ import { clearCredentials } from "../features/auth/authSlice";
 import { setGlobalLoader } from "../features/ui/uiSlice";
 import { navigateTo } from "../common/navigate";
 import { isPublicApiEndpoint } from "./apiEndpoints";
+import { getErrorMessage } from "./errorService";
 
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -48,47 +49,38 @@ export function attachApiInterceptors(store) {
     },
   );
 
-  responseInterceptorId = apiClient.interceptors.response.use(
-    (response) => {
-      reduxStore?.dispatch(setGlobalLoader(false));
-      return response;
-    },
+  responseInterceptorId = apiClient.interceptors.response.use((response) => {
+    reduxStore?.dispatch(setGlobalLoader(false));
+    return response;
+  },
     (error) => {
       reduxStore?.dispatch(setGlobalLoader(false));
+      const errorMessage = !error.response
+        ? "No response from API"
+        : getErrorMessage(error, "Server Error");
+      const apiError = new Error(errorMessage);
+      apiError.toastShown = true;
 
       if (error.response?.status === 401) {
         localStorage.clear();
         reduxStore?.dispatch(clearCredentials());
         navigateTo("/");
-        showErrorToast("Session expired. Please login again.");
-        return Promise.reject(error);
+        apiError.message = "Session expired. Please login again.";
+        showErrorToast(apiError.message, { id: "api-error" });
+        return Promise.reject(apiError);
       }
 
       if (error.response?.status === 422) {
         const errors = error.response?.data?.errors;
         if (errors && typeof errors === "object") {
-          Object.values(errors).forEach((value) => {
-            if (Array.isArray(value)) {
-              value.forEach((m) => showErrorToast(m));
-              return;
-            }
-            showErrorToast(value);
-          });
-          return Promise.reject(error);
+          showErrorToast(errorMessage, { id: "api-error" });
+          return Promise.reject(apiError);
         }
       }
 
-      if (!error.response) {
-        showErrorToast("No response from API");
-      } else {
-        showErrorToast(
-          error.response?.data?.message ||
-            error.response?.statusText ||
-            "Something went wrong.",
-        );
-      }
+      showErrorToast(errorMessage, { id: "api-error" });
 
-      return Promise.reject(error);
+      return Promise.reject(apiError);
     },
   );
 }
