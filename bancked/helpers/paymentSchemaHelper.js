@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isObjectId, parseZodResultWithData } from "./validationCommon.js";
+import { isRecordId, parseZodResultWithData } from "./validationCommon.js";
 
 const ALLOWED_FORMS = [
   "FEATURE",
@@ -16,7 +16,7 @@ const paymentSchema = z.object({
   id: z
     .string()
     .trim()
-    .refine((val) => isNumericString(val) || isObjectId(val), {
+    .refine((val) => isNumericString(val) || isRecordId(val), {
       message: "Last ID must be a number or a valid MongoDB ObjectId.",
     }),
   form_type: z.enum(ALLOWED_FORMS, {

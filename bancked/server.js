@@ -9,7 +9,6 @@
 import app from "./app.js";
 import { connectDB } from "./config/db.js";
 import { assertStartupEnvironment } from "./services/environment.js";
-import { runStartupMaintenance } from "./services/maintenance.js";
 
 const PORT = process.env.PORT || 3000;
 // "start": "cross-env NODE_ENV=development nodemon server.js",
@@ -19,7 +18,7 @@ const startServer = async () => {
   try {
     assertStartupEnvironment();
     await connectDB();
-    await runStartupMaintenance();
+    // await runStartupMaintenance();
 
     app.listen(PORT, () => {
       console.log(` Server running on port ${PORT}`);

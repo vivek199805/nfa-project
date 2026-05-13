@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from "fs"
 import { fileURLToPath } from 'url';
-import { Document } from "../models/mongodbModels/document.js";
+import { upsertDocument } from "../repositories/document.repository.js";
 // Define __filename and __dirname manually
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -126,7 +126,7 @@ export const imageUpload = async (data) => {
     const documentType = documentTypeMap[data.image_key?.toUpperCase()] || null;
 
     if (!documentType) {
-       return {
+      return {
         status: false,
         message: "Invalid document type",
       };
@@ -178,10 +178,7 @@ export const imageUpload = async (data) => {
     const filePath = path.join(resolvedDirectory, modifiedName);
     fs.writeFileSync(filePath, image.buffer);
 
-    const updatedDoc = await Document.findOneAndUpdate(filter, fileDetails, {
-      new: true,
-      upsert: true,
-    });
+    const updatedDoc = await upsertDocument(filter, fileDetails, { client: data.prisma });
 
     return {
       status: true,

@@ -1,11 +1,24 @@
-import User from "../models/mongodbModels/user.js";
 import { mapLoginUser, normalizeEmail, sanitizeUser } from "../utils/auth.mapper.js";
-import { generateToken} from "../utils/jwt.util.js";
+import { generateToken } from "../utils/jwt.util.js";
 import { comparePasswords } from "../utils/comparePasswords.js";
 import { Mail } from "../mailer/mail.js";
 import generateOtp from "../utils/generate-otp.js";
 import { hashPassword } from "../utils/hashPassword.js";
-import Twoauth from "../models/mongodbModels/twoAuth.js";
+import {
+  createUser,
+  deleteUserById,
+  findUserByEmail,
+  findUserById,
+  findUserByResetToken,
+  updateUserById,
+} from "../repositories/user.repository.js";
+import {
+  deleteTwoAuthById,
+  findTwoAuthByUserId,
+  findVerifiedTwoAuthByEmail,
+  updateTwoAuthById,
+  upsertTwoAuthByEmail,
+} from "../repositories/twoAuth.repository.js";
 
 const OTP_EXPIRY_MINUTES = 5;
 
@@ -31,7 +44,7 @@ export const registerUserService = async (payload) => {
 
   const email = normalizeEmail(rawEmail);
 
-  const existingUser = await User.findOne({ email });
+  const existingUser = await findUserByEmail(email);
   if (existingUser) {
     return {
       statusCode: 203,
@@ -41,7 +54,7 @@ export const registerUserService = async (payload) => {
 
   const hashedPassword = await hashPassword(password);
 
-  const newUser = await User.create({
+  const newUser = await createUser({
     firstName,
     lastName,
     email,
@@ -64,7 +77,7 @@ export const loginUserService = async (payload) => {
   const email = normalizeEmail(payload.email);
   const { password } = payload;
 
-  const user = await User.findOne({ email });
+  const user = await findUserByEmail(email);
   if (!user) {
     return {
       statusCode: 401,
@@ -81,7 +94,7 @@ export const loginUserService = async (payload) => {
   }
 
   const token = generateToken({
-    userId: user._id,
+    userId: mapLoginUser(user).id,
     email: user.email,
   });
 
@@ -102,7 +115,7 @@ export const verifyEmailService = async (payload) => {
     };
   }
 
-  const user = await User.findOne({ email });
+  const user = await findUserByEmail(email);
   if (!user) {
     return {
       statusCode: 203,
@@ -119,7 +132,7 @@ export const verifyEmailService = async (payload) => {
 export const forgotPasswordService = async (payload) => {
   const email = normalizeEmail(payload.email);
 
-  const user = await User.findOne({ email });
+  const user = await findUserByEmail(email);
   if (!user) {
     return {
       statusCode: 203,
@@ -129,17 +142,16 @@ export const forgotPasswordService = async (payload) => {
 
   const otp = generateOtp();
 
-  await Twoauth.findOneAndUpdate(
-    { email },
+  await upsertTwoAuthByEmail(
+    email,
     {
-      userId: user._id,
+      userId: user.id || user._id,
       phone: user.phone,
       email,
       otp,
       isVerified: "0",
       otpExpiry: new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000),
-    },
-    { upsert: true, new: true }
+    }
   );
 
   await Mail.sendOtp({
@@ -167,7 +179,7 @@ export const verifyOtpService = async (payload) => {
   const email = normalizeEmail(payload.email);
   const { otp } = payload;
 
-  const user = await User.findOne({ email });
+  const user = await findUserByEmail(email);
   if (!user) {
     return {
       statusCode: 203,
@@ -175,7 +187,7 @@ export const verifyOtpService = async (payload) => {
     };
   }
 
-  const authData = await Twoauth.findOne({ userId: user._id });
+  const authData = await findTwoAuthByUserId(user._id || user.id);
   if (!authData) {
     return {
       statusCode: 203,
@@ -204,8 +216,7 @@ export const verifyOtpService = async (payload) => {
     }
   }
 
-  authData.isVerified = 1;
-  await authData.save();
+  await updateTwoAuthById(authData.id, { isVerified: 1 });
 
   return {
     statusCode: 200,
@@ -224,7 +235,7 @@ export const resendOtpService = async (payload) => {
     };
   }
 
-  const user = await User.findOne({ email });
+  const user = await findUserByEmail(email);
   if (!user) {
     return {
       statusCode: 203,
@@ -234,17 +245,16 @@ export const resendOtpService = async (payload) => {
 
   const otp = generateOtp();
 
-  await Twoauth.findOneAndUpdate(
-    { email },
+  await upsertTwoAuthByEmail(
+    email,
     {
-      userId: user._id,
+      userId: user.id || user._id,
       phone: user.phone,
       email,
       otp,
       isVerified: "0",
       otpExpiry: new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000),
-    },
-    { upsert: true, new: true }
+    }
   );
 
   await Mail.sendOtp({
@@ -272,7 +282,7 @@ export const resetPasswordService = async (payload) => {
   const email = normalizeEmail(payload.email);
   const { password } = payload;
 
-  const authData = await Twoauth.findOne({ email, isVerified: 1 });
+  const authData = await findVerifiedTwoAuthByEmail(email);
   if (!authData) {
     return {
       statusCode: 203,
@@ -283,13 +293,9 @@ export const resetPasswordService = async (payload) => {
 
   const hashedPassword = await hashPassword(password);
 
-  await User.findByIdAndUpdate(
-    authData.userId,
-    { password: hashedPassword },
-    { new: true }
-  );
+  await updateUserById(authData.userId, { password: hashedPassword });
 
-  await Twoauth.deleteOne({ _id: authData._id });
+  await deleteTwoAuthById(authData.id);
 
   return {
     statusCode: 200,
@@ -307,7 +313,7 @@ export const changePasswordService = async ({ userId, currentPassword, password 
     };
   }
 
-  const user = await User.findById(userId);
+  const user = await findUserById(userId);
   if (!user) {
     return {
       statusCode: 404,
@@ -324,8 +330,7 @@ export const changePasswordService = async ({ userId, currentPassword, password 
     };
   }
 
-  user.password = await hashPassword(password);
-  await user.save();
+  await updateUserById(userId, { password: await hashPassword(password) });
 
   return {
     statusCode: 200,
@@ -335,7 +340,7 @@ export const changePasswordService = async ({ userId, currentPassword, password 
 };
 
 export const getUserDetailsService = async (userId) => {
-  const user = await User.findById(userId).select("-password");
+  const user = await findUserById(userId);
 
   if (!user) {
     return {
@@ -344,15 +349,16 @@ export const getUserDetailsService = async (userId) => {
     };
   }
 
+  const { password, ...safeUser } = user;
   return {
     statusCode: 200,
     message: "User fetched successfully",
-    user,
+    user: safeUser,
   };
 };
 
 export const deleteUserService = async (userId) => {
-  const user = await User.findByIdAndDelete(userId);
+  const user = await deleteUserById(userId);
 
   if (!user) {
     return {
@@ -371,7 +377,7 @@ export const deleteUserService = async (userId) => {
 export const forgotPasswordWithTokenService = async (payload) => {
   const email = normalizeEmail(payload.email);
 
-  const user = await User.findOne({ email });
+  const user = await findUserByEmail(email);
   if (!user) {
     return {
       statusCode: 404,
@@ -380,13 +386,14 @@ export const forgotPasswordWithTokenService = async (payload) => {
   }
 
   const token = generateToken({
-    userId: user._id,
+    userId: user.id || user._id,
     email: user.email,
   });
 
-  user.resetPasswordToken = token;
-  user.resetPasswordExpires = Date.now() + 60 * 60 * 1000;
-  await user.save();
+  await updateUserById(user.id, {
+    resetPasswordToken: token,
+    resetPasswordExpires: new Date(Date.now() + 60 * 60 * 1000),
+  });
 
   const resetLink = `${process.env.FRONTEND_BASE_URL}/reset-password?token=${token}`;
 
@@ -408,10 +415,7 @@ export const forgotPasswordWithTokenService = async (payload) => {
 export const resetPasswordWithTokenService = async (payload) => {
   const { password, token } = payload;
 
-  const user = await User.findOne({
-    resetPasswordToken: token,
-    resetPasswordExpires: { $gt: Date.now() },
-  });
+  const user = await findUserByResetToken(token);
 
   if (!user) {
     return {
@@ -420,11 +424,11 @@ export const resetPasswordWithTokenService = async (payload) => {
     };
   }
 
-  user.password = await hashPassword(password);
-  user.resetPasswordToken = undefined;
-  user.resetPasswordExpires = undefined;
-
-  await user.save();
+  await updateUserById(user.id, {
+    password: await hashPassword(password),
+    resetPasswordToken: null,
+    resetPasswordExpires: null,
+  });
 
   return {
     statusCode: 200,

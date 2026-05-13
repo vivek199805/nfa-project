@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isNumeric, isObjectId, parseZodResult } from "./validationCommon.js";
+import { isNumeric, isRecordId, parseZodResult } from "./validationCommon.js";
 
 const linkedEntrySchema = z.object({
   best_book_cinema_id: z
@@ -9,7 +9,7 @@ const linkedEntrySchema = z.object({
       if (val === undefined || val === null || val === "") return true;
       if (typeof val === "number") return true;
       if (typeof val === "string") {
-        return isNumeric(val) || isObjectId(val);
+        return isNumeric(val) || isRecordId(val);
       }
       return false;
     }, {
@@ -22,7 +22,7 @@ const linkedEntrySchema = z.object({
       if (val === undefined || val === null || val === "") return true;
       if (typeof val === "number") return true;
       if (typeof val === "string") {
-        return isNumeric(val) || isObjectId(val);
+        return isNumeric(val) || isRecordId(val);
       }
       return false;
     }, {
@@ -59,7 +59,7 @@ const IDSchema = z.object({
   id: z.union([z.string(), z.number()]).refine((val) => {
     if (typeof val === "number") return true;
     if (typeof val === "string") {
-      return isNumeric(val) || isObjectId(val);
+      return isNumeric(val) || isRecordId(val);
     }
     return false;
   }, {

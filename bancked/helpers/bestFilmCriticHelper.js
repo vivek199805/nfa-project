@@ -1,7 +1,7 @@
 import { z } from "zod";
 import dayjs from "dayjs";
 import { stepsBestFilmCritic } from "../services/common.js";
-import { isObjectId, parseZodResult } from "./validationCommon.js";
+import { isRecordId, parseZodResult } from "./validationCommon.js";
 
 const baseStepSchema = z.object({
   step: z.string().refine((val) => !isNaN(val), {
@@ -10,7 +10,7 @@ const baseStepSchema = z.object({
 });
 
 const lastIdSchema = z.object({
-  id: z.string().refine((val) => val && (!isNaN(val) || isObjectId(val)), {
+  id: z.string().refine((val) => val && (!isNaN(val) || isRecordId(val)), {
     message: "Last ID is required and must be a number or valid MongoDB ObjectId.",
   }),
 });

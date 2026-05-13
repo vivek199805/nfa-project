@@ -1,5 +1,14 @@
-import { Document } from "../models/mongodbModels/document.js";
-import { FeatureForm } from "../models/mongodbModels/featureForm.js";
+import { findDocuments } from "../repositories/document.repository.js";
+import {
+  createFeatureForm,
+  featureInclude,
+  findFeatureFormByIdForUser,
+  findFeatureFormsByUser,
+  findNonFeatureFormsByUser,
+  mapFeatureForResponse,
+  updateFeatureFormByIdForUser,
+} from "../repositories/featureForm.repository.js";
+import { toPublicId } from "../repositories/prisma.mapper.js";
 import Common, { documentTypeMap } from "./common.js";
 
 const featureValidationSteps = new Set([
@@ -20,13 +29,6 @@ const nonFeatureValidationSteps = new Set([
   Common.stepsNonFeature().DECLARATION,
 ]);
 
-const toPublicObject = (item) => {
-  const obj = item.toObject();
-  obj.id = obj._id;
-  delete obj._id;
-  return obj;
-};
-
 export const shouldValidateFilmStep = (step, filmType) => {
   const stepNumber = Number(step);
   if (filmType === "feature") return featureValidationSteps.has(stepNumber);
@@ -34,57 +36,44 @@ export const shouldValidateFilmStep = (step, filmType) => {
   return false;
 };
 
-export const createFilmSubmissionService = async ({ payload, userId, filmType }) => {
-  const {
-    film_title_roman,
-    film_title_devnagri,
-    film_title_english,
-    language_id,
-    english_subtitle,
-    color_bw,
-    aspect_ratio,
-    running_time,
-    format,
-    director_debut,
-    sound_system,
-    film_synopsis,
-    step,
-  } = payload;
+const normalizeLanguageIds = (languageIds) => {
+  if (typeof languageIds === "string") {
+    return languageIds.split(",").map((item) => item.trim()).filter(Boolean);
+  }
+  if (Array.isArray(languageIds)) return languageIds;
+  return [];
+};
 
-  const filmData = new FeatureForm({
-    film_title_roman,
-    film_title_devnagri,
-    film_title_english,
-    language_id,
-    english_subtitle,
-    color_bw,
-    aspect_ratio,
-    running_time,
-    format,
-    director_debut,
-    sound_system,
-    film_synopsis,
-    step,
+export const createFilmSubmissionService = async ({ payload, userId, filmType }) => {
+  const filmData = await createFeatureForm({
+    film_title_roman: payload.film_title_roman,
+    film_title_devnagri: payload.film_title_devnagri,
+    film_title_english: payload.film_title_english,
+    language_id: normalizeLanguageIds(payload.language_id),
+    english_subtitle: payload.english_subtitle,
+    color_bw: payload.color_bw,
+    aspect_ratio: payload.aspect_ratio,
+    running_time: payload.running_time,
+    format: payload.format,
+    director_debut: payload.director_debut,
+    sound_system: payload.sound_system,
+    film_synopsis: payload.film_synopsis,
+    step: Number(payload.step || 1),
     active_step: 1,
     film_type: filmType,
-    client_id: userId,
+    client_id: String(userId),
   });
-
-  await filmData.save();
 
   return {
     message: "Submit successful",
     statusCode: 200,
-    data: toPublicObject(filmData),
+    data: toPublicId(filmData),
   };
 };
 
 export const getFilmEntryListService = async (userId) => {
-  const filmEntryData = await FeatureForm.find({ client_id: userId }).populate(
-    "producers directors songs actors audiographer documents"
-  );
-
-  const formattedData = filmEntryData.map(toPublicObject);
+  const filmEntryData = await findFeatureFormsByUser(userId, featureInclude);
+  const formattedData = filmEntryData.map((item) => toPublicId(mapFeatureForResponse(item)));
   const featureFilmData = formattedData.filter((item) => item.film_type !== "non-feature");
   const nonFeatureFilmData = formattedData.filter((item) => item.film_type === "non-feature");
 
@@ -106,13 +95,7 @@ export const getFilmDetailsByIdService = async ({ id, userId }) => {
     };
   }
 
-  const featureForm = await FeatureForm.findOne({ _id: id, client_id: userId }).populate([
-    "producers",
-    "directors",
-    "songs",
-    "actors",
-    "audiographer",
-  ]);
+  const featureForm = await findFeatureFormByIdForUser(id, userId, featureInclude);
 
   if (!featureForm) {
     return {
@@ -121,14 +104,14 @@ export const getFilmDetailsByIdService = async ({ id, userId }) => {
     };
   }
 
-  const relatedDocuments = await Document.find({ context_id: featureForm._id });
-  const featureData = featureForm.toObject();
+  const relatedDocuments = await findDocuments({ context_id: featureForm.id });
+  const featureData = mapFeatureForResponse(featureForm);
   featureData.documents = relatedDocuments || [];
 
   const documentUrlByType = new Map(
     relatedDocuments.map((documentRecord) => [
       documentRecord.document_type,
-      `/api/documents/${documentRecord._id}/download`,
+      `/api/documents/${documentRecord.id}/download`,
     ])
   );
 
@@ -169,6 +152,7 @@ const uploadStepFile = async ({ data, payload, fieldName }) => {
   }
 
   const fileUpload = await Common.imageUpload({
+
     id: payload.id,
     image_key: fieldName,
     websiteType: "NFA",
@@ -176,113 +160,102 @@ const uploadStepFile = async ({ data, payload, fieldName }) => {
     image: uploadFile,
   });
 
-  if (!fileUpload.status) {
-    return { status: false, message: "Image not uploaded.!!" };
-  }
+  if (!fileUpload.status) return { status: false, message: "Image not uploaded.!!" };
 
   data[fieldName] = fileUpload?.data?.file ?? null;
   return data;
 };
 
-const handleGeneralStep = async (data, payload) => {
-  bumpActiveStep(data, payload, Common.stepsFeature().GENERAL, Common.stepsNonFeature().GENERAL);
-  return data;
-};
+const buildStepData = async (existing, payload) => {
+  const data = { ...existing };
 
-const handleCensorStep = async (data, payload) => {
-  bumpActiveStep(data, payload, Common.stepsFeature().CENSOR, Common.stepsNonFeature().CENSOR);
-  return uploadStepFile({ data, payload, fieldName: "censor_certificate_file" });
-};
-
-const handleCompanyRegistrationStep = async (data, payload) => {
-  bumpActiveStep(
-    data,
-    payload,
-    Common.stepsFeature().COMPANY_REGISTRATION,
-    Common.stepsNonFeature().COMPANY_REGISTRATION
-  );
-  return uploadStepFile({ data, payload, fieldName: "company_reg_doc" });
-};
-
-const handleProducerStep = async (data, payload) => {
-  bumpActiveStep(data, payload, Common.stepsFeature().PRODUCER, Common.stepsNonFeature().PRODUCER);
-  return data;
-};
-
-const handleDirectorStep = async (data, payload) => {
-  bumpActiveStep(data, payload, Common.stepsFeature().DIRECTOR, Common.stepsNonFeature().DIRECTOR);
-  return data;
-};
-
-const handleActorsStep = async (data) => {
-  if (!data.active_step || data.active_step < Common.stepsFeature().ACTORS) {
-    data.active_step = Common.stepsFeature().ACTORS;
+  if (payload.film_type === "non-feature") {
+    switch (+payload.step) {
+      case Common.stepsNonFeature().GENERAL:
+        bumpActiveStep(data, payload, Common.stepsFeature().GENERAL, Common.stepsNonFeature().GENERAL);
+        return data;
+      case Common.stepsNonFeature().CENSOR:
+        bumpActiveStep(data, payload, Common.stepsFeature().CENSOR, Common.stepsNonFeature().CENSOR);
+        return uploadStepFile({ data, payload, fieldName: "censor_certificate_file" });
+      case Common.stepsNonFeature().COMPANY_REGISTRATION:
+        bumpActiveStep(
+          data,
+          payload,
+          Common.stepsFeature().COMPANY_REGISTRATION,
+          Common.stepsNonFeature().COMPANY_REGISTRATION
+        );
+        return uploadStepFile({ data, payload, fieldName: "company_reg_doc" });
+      case Common.stepsNonFeature().PRODUCER:
+        bumpActiveStep(data, payload, Common.stepsFeature().PRODUCER, Common.stepsNonFeature().PRODUCER);
+        return data;
+      case Common.stepsNonFeature().DIRECTOR:
+        bumpActiveStep(data, payload, Common.stepsFeature().DIRECTOR, Common.stepsNonFeature().DIRECTOR);
+        return data;
+      case Common.stepsNonFeature().OTHER:
+        bumpActiveStep(data, payload, Common.stepsFeature().OTHER, Common.stepsNonFeature().OTHER);
+        return uploadStepFile({ data, payload, fieldName: "original_work_copy" });
+      case Common.stepsNonFeature().RETURN_ADDRESS:
+        bumpActiveStep(data, payload, Common.stepsFeature().RETURN_ADDRESS, Common.stepsNonFeature().RETURN_ADDRESS);
+        return data;
+      case Common.stepsNonFeature().DECLARATION:
+        bumpActiveStep(data, payload, Common.stepsFeature().DECLARATION, Common.stepsNonFeature().DECLARATION);
+        return data;
+      default:
+        return null;
+    }
   }
-  return data;
-};
 
-const handleSongsStep = async (data) => {
-  if (!data.active_step || data.active_step < Common.stepsFeature().SONGS) {
-    data.active_step = Common.stepsFeature().SONGS;
+  switch (+payload.step) {
+    case Common.stepsFeature().GENERAL:
+      bumpActiveStep(data, payload, Common.stepsFeature().GENERAL, Common.stepsNonFeature().GENERAL);
+      break;
+    case Common.stepsFeature().CENSOR:
+      bumpActiveStep(data, payload, Common.stepsFeature().CENSOR, Common.stepsNonFeature().CENSOR);
+      return uploadStepFile({ data, payload, fieldName: "censor_certificate_file" });
+    case Common.stepsFeature().COMPANY_REGISTRATION:
+      bumpActiveStep(
+        data,
+        payload,
+        Common.stepsFeature().COMPANY_REGISTRATION,
+        Common.stepsNonFeature().COMPANY_REGISTRATION
+      );
+      return uploadStepFile({ data, payload, fieldName: "company_reg_doc" });
+    case Common.stepsFeature().PRODUCER:
+      bumpActiveStep(data, payload, Common.stepsFeature().PRODUCER, Common.stepsNonFeature().PRODUCER);
+      break;
+    case Common.stepsFeature().DIRECTOR:
+      bumpActiveStep(data, payload, Common.stepsFeature().DIRECTOR, Common.stepsNonFeature().DIRECTOR);
+      break;
+    case Common.stepsFeature().ACTORS:
+      if (payload.film_type !== "feature") return null;
+      if (!data.active_step || data.active_step < Common.stepsFeature().ACTORS) data.active_step = Common.stepsFeature().ACTORS;
+      break;
+    case Common.stepsFeature().SONGS:
+      if (payload.film_type !== "feature") return null;
+      if (!data.active_step || data.active_step < Common.stepsFeature().SONGS) data.active_step = Common.stepsFeature().SONGS;
+      break;
+    case Common.stepsFeature().AUDIOGRAPHER:
+      if (payload.film_type !== "feature") return null;
+      if (!data.active_step || data.active_step < Common.stepsFeature().AUDIOGRAPHER) data.active_step = Common.stepsFeature().AUDIOGRAPHER;
+      break;
+    case Common.stepsFeature().OTHER:
+      bumpActiveStep(data, payload, Common.stepsFeature().OTHER, Common.stepsNonFeature().OTHER);
+      return uploadStepFile({ data, payload, fieldName: "original_work_copy" });
+    case Common.stepsFeature().RETURN_ADDRESS:
+      bumpActiveStep(data, payload, Common.stepsFeature().RETURN_ADDRESS, Common.stepsNonFeature().RETURN_ADDRESS);
+      break;
+    case Common.stepsFeature().DECLARATION:
+      bumpActiveStep(data, payload, Common.stepsFeature().DECLARATION, Common.stepsNonFeature().DECLARATION);
+      break;
+    default:
+      return null;
   }
+
   return data;
-};
-
-const handleAudiographerStep = async (data) => {
-  if (!data.active_step || data.active_step < Common.stepsFeature().AUDIOGRAPHER) {
-    data.active_step = Common.stepsFeature().AUDIOGRAPHER;
-  }
-  return data;
-};
-
-const handleOtherStep = async (data, payload) => {
-  bumpActiveStep(data, payload, Common.stepsFeature().OTHER, Common.stepsNonFeature().OTHER);
-  return uploadStepFile({ data, payload, fieldName: "original_work_copy" });
-};
-
-const handleReturnAddressStep = async (data, payload) => {
-  bumpActiveStep(
-    data,
-    payload,
-    Common.stepsFeature().RETURN_ADDRESS,
-    Common.stepsNonFeature().RETURN_ADDRESS
-  );
-  return data;
-};
-
-const handleDeclarationStep = async (data, payload) => {
-  bumpActiveStep(data, payload, Common.stepsFeature().DECLARATION, Common.stepsNonFeature().DECLARATION);
-  return data;
-};
-
-const stepHandlers = {
-  feature: {
-    [Common.stepsFeature().GENERAL]: handleGeneralStep,
-    [Common.stepsFeature().CENSOR]: handleCensorStep,
-    [Common.stepsFeature().COMPANY_REGISTRATION]: handleCompanyRegistrationStep,
-    [Common.stepsFeature().PRODUCER]: handleProducerStep,
-    [Common.stepsFeature().DIRECTOR]: handleDirectorStep,
-    [Common.stepsFeature().ACTORS]: handleActorsStep,
-    [Common.stepsFeature().SONGS]: handleSongsStep,
-    [Common.stepsFeature().AUDIOGRAPHER]: handleAudiographerStep,
-    [Common.stepsFeature().OTHER]: handleOtherStep,
-    [Common.stepsFeature().RETURN_ADDRESS]: handleReturnAddressStep,
-    [Common.stepsFeature().DECLARATION]: handleDeclarationStep,
-  },
-  "non-feature": {
-    [Common.stepsNonFeature().GENERAL]: handleGeneralStep,
-    [Common.stepsNonFeature().CENSOR]: handleCensorStep,
-    [Common.stepsNonFeature().COMPANY_REGISTRATION]: handleCompanyRegistrationStep,
-    [Common.stepsNonFeature().PRODUCER]: handleProducerStep,
-    [Common.stepsNonFeature().DIRECTOR]: handleDirectorStep,
-    [Common.stepsNonFeature().OTHER]: handleOtherStep,
-    [Common.stepsNonFeature().RETURN_ADDRESS]: handleReturnAddressStep,
-    [Common.stepsNonFeature().DECLARATION]: handleDeclarationStep,
-  },
 };
 
 export const updateFilmSubmissionService = async ({ payload, files, userId }) => {
-  const existingEntry = await FeatureForm.findOne({ _id: payload.id, client_id: userId });
+  const existingEntry = await findFeatureFormByIdForUser(payload.id, userId);
   if (!existingEntry) {
     return {
       statusCode: 203,
@@ -290,15 +263,14 @@ export const updateFilmSubmissionService = async ({ payload, files, userId }) =>
     };
   }
 
-  const handler = stepHandlers[payload.film_type]?.[+payload.step];
-  if (!handler) {
+  const data = await buildStepData(existingEntry, { ...payload, files });
+  if (!data) {
     return {
       statusCode: 203,
       message: "Invalid step provided",
     };
   }
 
-  const data = await handler(existingEntry, { ...payload, files });
   if (data?.status === false) {
     return {
       statusCode: 422,
@@ -307,8 +279,12 @@ export const updateFilmSubmissionService = async ({ payload, files, userId }) =>
     };
   }
 
-  Object.assign(data, { ...payload, files });
-  const updated = await data.save();
+  const { id, files: _files, producers, directors, actors, songs, audiographer, _id, createdAt, updatedAt, ...updateData } = {
+    ...data,
+    ...payload,
+  };
+
+  const updated = await updateFeatureFormByIdForUser(payload.id, userId, updateData);
 
   return {
     statusCode: 200,
@@ -318,20 +294,16 @@ export const updateFilmSubmissionService = async ({ payload, files, userId }) =>
 };
 
 export const getNonFeatureSubmissionsService = async (userId) => {
-  const submissions = await FeatureForm.find({
-    film_type: "non-feature",
-    client_id: userId,
-  }).populate("producers directors songs actors audiographer documents");
-
+  const submissions = await findNonFeatureFormsByUser(userId, featureInclude);
   return {
     message: "Fetch successfully",
     statusCode: 200,
-    data: submissions,
+    data: submissions.map(mapFeatureForResponse),
   };
 };
 
 export const finalSubmitFilmService = async ({ id, userId }) => {
-  const nfaFeature = await FeatureForm.findOne({ _id: id, client_id: userId });
+  const nfaFeature = await findFeatureFormByIdForUser(id, userId);
 
   if (!nfaFeature) {
     return {

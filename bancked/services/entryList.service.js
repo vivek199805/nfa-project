@@ -1,22 +1,12 @@
-import BestBookCinema from "../models/mongodbModels/BestBookCinema.js";
-import BestFilmCritic from "../models/mongodbModels/BestFilmCritic.js";
-import { FeatureForm } from "../models/mongodbModels/featureForm.js";
-
-const formatItems = (items) =>
-  items.map((item) => {
-    const obj = item.toObject();
-    obj.id = obj._id;
-    delete obj._id;
-    return obj;
-  });
+import { findBestBooksByUser } from "../repositories/bestBook.repository.js";
+import { findBestFilmCriticsByUser } from "../repositories/bestFilmCritic.repository.js";
+import { featureInclude, findFeatureFormsByUser, mapFeatureForResponse } from "../repositories/featureForm.repository.js";
+import { toPublicId } from "../repositories/prisma.mapper.js";
 
 export const getEntryListService = async ({ userId, userType }) => {
   if (userType == 1) {
-    const filmEntryData = await FeatureForm.find({ client_id: userId }).populate(
-      "producers directors songs actors audiographer documents"
-    );
-
-    const formattedData = formatItems(filmEntryData);
+    const filmEntryData = await findFeatureFormsByUser(userId, featureInclude);
+    const formattedData = filmEntryData.map((item) => toPublicId(mapFeatureForResponse(item)));
     const featureFilmData = formattedData.filter((item) => item.film_type !== "non-feature");
     const nonFeatureFilmData = formattedData.filter((item) => item.film_type === "non-feature");
 
@@ -31,15 +21,16 @@ export const getEntryListService = async ({ userId, userType }) => {
   }
 
   if (userType == 2) {
-    const bestBooks = await BestBookCinema.find({ client_id: userId });
-    const bestFilmCritic = await BestFilmCritic.find({ client_id: userId });
+    const bestBooks = await findBestBooksByUser(userId);
+
+    const bestFilmCritic = await findBestFilmCriticsByUser(userId);
 
     return {
       message: "Fetched successfully",
       statusCode: 200,
       data: {
-        bestBooks: formatItems(bestBooks),
-        bestFilmCritic: formatItems(bestFilmCritic),
+        bestBooks: bestBooks.map(toPublicId),
+        bestFilmCritic: bestFilmCritic.map(toPublicId),
       },
     };
   }

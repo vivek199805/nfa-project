@@ -1,19 +1,27 @@
-import mongoose from "mongoose";
-
-// These settings enable strict query validation and filter sanitization for security and schema compliance.
-mongoose.set("strictQuery", true);
-mongoose.set("sanitizeFilter", true);
+import { connectPrisma, disconnectPrisma } from "./prisma.js";
+import { getDatabaseProvider } from "./databaseProvider.js";
 
 export const connectDB = async () => {
   try {
-    if (!process.env.DB_URL) {
-      throw new Error("DB_URL is required");
+    if (!process.env.DATABASE_URL && process.env.DB_URL) {
+      process.env.DATABASE_URL = process.env.DB_URL;
     }
 
-    await mongoose.connect(process.env.DB_URL);
-    console.log("Connection Successful...");
+    if (!process.env.DATABASE_URL) {
+      throw new Error("DATABASE_URL is required");
+    }
+
+    const provider = getDatabaseProvider();
+
+    await connectPrisma();
+
+    console.log(`Prisma database connection successful for ${provider}...`);
   } catch (err) {
-    console.error("MongoDB connection failed:", err.message);
+    console.error("Database connection failed:", err.message);
     process.exit(1);
   }
+};
+
+export const disconnectDB = async () => {
+  await disconnectPrisma();
 };

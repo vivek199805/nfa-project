@@ -5,9 +5,33 @@
   "description": "",
   "main": "server.js",
   "scripts": {
+    "___development___": "Development server",
     "start": "dotenv -e .env.development nodemon server.js",
     "dev": "dotenv -e .env.development nodemon server.js",
+
+    "___production___": "Production server",
     "prod": "dotenv -e .env.production node server.js",
+
+    "___prisma_common___": "Common Prisma commands",
+    "prisma:generate": "node scripts/build-prisma-schema.js && prisma generate --schema prisma/generated/schema.prisma",
+    "prisma:db:push": "node scripts/build-prisma-schema.js && prisma db push --schema prisma/generated/schema.prisma",
+    "prisma:studio": "prisma studio --schema prisma/generated/schema.prisma",
+
+    "___prisma_multi_database___": "MongoDB / MySQL support",
+    "prisma:schema": "node scripts/build-prisma-schema.js",
+    "prisma:schema:mongodb": "node scripts/build-prisma-schema.js mongodb",
+    "prisma:schema:mysql": "node scripts/build-prisma-schema.js mysql",
+    "prisma:generate:provider": "node scripts/build-prisma-schema.js && prisma generate --schema prisma/generated/schema.prisma",
+    
+    "prisma:generate:mongodb": "node scripts/build-prisma-schema.js mongodb && prisma generate --schema prisma/generated/schema.prisma",
+    "prisma:generate:mysql": "node scripts/build-prisma-schema.js mysql && prisma generate --schema prisma/generated/schema.prisma",
+    "prisma:push:provider": "node scripts/build-prisma-schema.js && prisma db push --schema prisma/generated/schema.prisma",
+    "prisma:push:mongodb": "node scripts/build-prisma-schema.js mongodb && prisma db push --schema prisma/generated/schema.prisma",
+    "prisma:push:mysql": "node scripts/build-prisma-schema.js mysql && prisma db push --schema prisma/generated/schema.prisma",
+    "start:mongodb": "cross-env DB_PROVIDER=mongodb dotenv -e .env.development nodemon server.js",
+    "start:mysql": "cross-env DB_PROVIDER=mysql dotenv -e .env.development nodemon server.js",
+    
+    "___quality___": "Lint and test commands",
     "lint": "eslint .",
     "test": "c8 node --test",
     "lint:fix": "eslint . --fix"
@@ -28,11 +52,10 @@
     "express": "^4.21.2",
     "express-rate-limit": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^9.2.3",
-    "mongoose-sequence": "^6.0.1",
     "morgan": "^1.10.1",
     "multer": "^2.0.1",
     "nodemailer": "^7.0.5",
+    "@prisma/client": "^6.19.0",
     "nodemon": "^3.1.10",
     "razorpay": "^2.9.6",
     "redis": "^5.10.0",
@@ -41,6 +64,7 @@
   "devDependencies": {
     "c8": "^11.0.0",
     "cross-env": "^10.0.0",
-    "eslint": "^10.2.0"
+    "eslint": "^10.2.0",
+    "prisma": "^6.19.0"
   }
 }

@@ -1,10 +1,10 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import BestBookCinema from "../models/mongodbModels/BestBookCinema.js";
-import BestFilmCritic from "../models/mongodbModels/BestFilmCritic.js";
-import { Document } from "../models/mongodbModels/document.js";
-import { FeatureForm } from "../models/mongodbModels/featureForm.js";
+import { findDocumentById } from "../repositories/document.repository.js";
+import { featureFormExistsByContributor, findFeatureFormByIdForUser } from "../repositories/featureForm.repository.js";
+import { findBestBookByIdForUser } from "../repositories/bestBook.repository.js";
+import { findBestFilmCriticByIdForUser } from "../repositories/bestFilmCritic.repository.js";
 import {
   documentTypeMap,
   formType,
@@ -15,13 +15,6 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const legacyDocumentRoot = path.resolve(__dirname, "../public/documents");
-
-const modelByFormType = new Map([
-  [formType.FEATURE, FeatureForm],
-  [formType.NON_FEATURE, FeatureForm],
-  [formType.BEST_BOOK, BestBookCinema],
-  [formType.BEST_FILM_CRITIC, BestFilmCritic],
-]);
 
 const websiteFolderByValue = Object.entries(websiteType).reduce((folders, [key, value]) => {
   folders[value] = key;
@@ -62,20 +55,18 @@ function findStoredFile(documentRecord) {
 }
 
 async function userOwnsDocument(userId, documentRecord) {
-  const Model = modelByFormType.get(documentRecord.form_type);
-  if (!Model || !documentRecord.context_id) return false;
+  if (!documentRecord.context_id) return false;
 
   if (
     (documentRecord.form_type === formType.FEATURE ||
       documentRecord.form_type === formType.NON_FEATURE) &&
     documentRecord.document_type === documentTypeMap.PRODUCER_SELF_ATTESTED_DOC
   ) {
-    const owner = await FeatureForm.exists({
-      "producers._id": documentRecord.context_id,
-      client_id: userId,
+    return featureFormExistsByContributor({
+      contributorType: "producers",
+      contributorId: documentRecord.context_id,
+      userId,
     });
-
-    return Boolean(owner);
   }
 
   if (
@@ -83,24 +74,30 @@ async function userOwnsDocument(userId, documentRecord) {
       documentRecord.form_type === formType.NON_FEATURE) &&
     documentRecord.document_type === documentTypeMap.DIRECTOR_SELF_ATTESTED_DOC
   ) {
-    const owner = await FeatureForm.exists({
-      "directors._id": documentRecord.context_id,
-      client_id: userId,
+    return featureFormExistsByContributor({
+      contributorType: "directors",
+      contributorId: documentRecord.context_id,
+      userId,
     });
-
-    return Boolean(owner);
   }
 
-  const owner = await Model.exists({
-    _id: documentRecord.context_id,
-    client_id: userId,
-  });
+  if (documentRecord.form_type === formType.FEATURE || documentRecord.form_type === formType.NON_FEATURE) {
+    return Boolean(await findFeatureFormByIdForUser(documentRecord.context_id, userId));
+  }
 
-  return Boolean(owner);
+  if (documentRecord.form_type === formType.BEST_BOOK) {
+    return Boolean(await findBestBookByIdForUser(documentRecord.context_id, userId));
+  }
+
+  if (documentRecord.form_type === formType.BEST_FILM_CRITIC) {
+    return Boolean(await findBestFilmCriticByIdForUser(documentRecord.context_id, userId));
+  }
+
+  return false;
 }
 
 export const getDocumentDownloadService = async ({ id, userId }) => {
-  const documentRecord = await Document.findById(id);
+  const documentRecord = await findDocumentById(id);
 
   if (!documentRecord) {
     return { message: "Document not found", statusCode: 203 };

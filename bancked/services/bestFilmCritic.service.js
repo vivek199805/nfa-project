@@ -1,6 +1,10 @@
-import BestFilmCritic from "../models/mongodbModels/BestFilmCritic.js";
-import { Document } from "../models/mongodbModels/document.js";
-import Editor from "../models/mongodbModels/editor.js";
+import {
+  createBestFilmCritic,
+  findBestFilmCriticByIdForUser,
+  updateBestFilmCriticByIdForUser,
+} from "../repositories/bestFilmCritic.repository.js";
+import { findEditors } from "../repositories/editor.repository.js";
+import { toPublicId } from "../repositories/prisma.mapper.js";
 import Common from "./common.js";
 
 const syncDocumentRef = (data, documentId) => {
@@ -11,43 +15,87 @@ const syncDocumentRef = (data, documentId) => {
   if (!exists) data.documents.push(documentId);
 };
 
+const normalizeLanguageIds = (languageIds) => {
+  if (typeof languageIds === "string") {
+    return languageIds.split(",").map((item) => item.trim()).filter(Boolean);
+  }
+  if (Array.isArray(languageIds)) return languageIds;
+  return [];
+};
+
+const toOptionalNumber = (value) => {
+  if (value === undefined) return undefined;
+  if (value === null || value === "") return null;
+  const numberValue = Number(value);
+  return Number.isNaN(numberValue) ? undefined : numberValue;
+};
+
+const toOptionalDate = (value) => {
+  if (value === undefined) return undefined;
+  if (value === null || value === "") return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+};
+
+const toBoolean = (value) => value === true || value === "true" || value === "1" || value === 1;
+
+const objectIdPattern = /^[a-f\d]{24}$/i;
+
+const normalizeDocumentIds = (documents) => {
+  if (!Array.isArray(documents)) return [];
+
+  return documents
+    .map((document) => {
+      if (typeof document === "string") return document;
+      if (document && typeof document === "object") return document.id || document._id;
+      return null;
+    })
+    .filter((documentId) => objectIdPattern.test(String(documentId)));
+};
+
+const normalizeBestFilmCriticUpdateData = (updateData) => {
+  const normalized = {
+    ...updateData,
+    step: toOptionalNumber(updateData.step),
+    active_step: toOptionalNumber(updateData.active_step),
+    status: toOptionalNumber(updateData.status),
+    rni: toOptionalNumber(updateData.rni),
+    critic_indian_nationality: toOptionalNumber(updateData.critic_indian_nationality),
+    publication_date: toOptionalDate(updateData.publication_date),
+    payment_date: toOptionalDate(updateData.payment_date),
+    article_language_id: normalizeLanguageIds(updateData.article_language_id),
+    documents: normalizeDocumentIds(updateData.documents),
+  };
+
+  ["declaration_one", "declaration_two", "declaration_three", "declaration_four"].forEach((field) => {
+    if (field in updateData) normalized[field] = toBoolean(updateData[field]);
+  });
+
+  return normalized;
+};
+
 export const shouldValidateBestFilmCriticStep = (step) =>
   step === String(Common.stepsBestFilmCritic().CRITIC_DETAILS) ||
   step === String(Common.stepsBestFilmCritic().CRITIC) ||
   step === String(Common.stepsBestFilmCritic().DECLARATION);
 
 export const createBestFilmCriticService = async ({ payload, userId }) => {
-  const {
-    writer_name,
-    article_title,
-    article_language_id,
-    publication_date,
-    publication_name,
-    rni,
-    step,
-  } = payload;
-
-  const filmData = new BestFilmCritic({
-    writer_name,
-    article_title,
-    article_language_id,
-    publication_date,
-    publication_name,
-    rni,
-    step,
+  const filmData = await createBestFilmCritic({
+    writer_name: payload.writer_name,
+    article_title: payload.article_title,
+    article_language_id: normalizeLanguageIds(payload.article_language_id),
+    publication_date: payload.publication_date ? new Date(payload.publication_date) : null,
+    publication_name: payload.publication_name,
+    rni: payload.rni === undefined ? undefined : Number(payload.rni),
+    step: Number(payload.step || 1),
     active_step: 1,
-    client_id: userId,
+    client_id: String(userId),
   });
-
-  await filmData.save();
-  const finalData = filmData.toObject();
-  finalData.id = finalData._id;
-  delete finalData._id;
 
   return {
     message: "Submit successful",
     statusCode: 200,
-    data: finalData,
+    data: toPublicId(filmData),
   };
 };
 
@@ -82,7 +130,7 @@ const handleCriticUploadStep = async (data, payload, stepNumber) => {
   }
 
   data.critic_aadhaar_card = fileUpload?.data?.file ?? null;
-  syncDocumentRef(data, fileUpload?.data?._id);
+  syncDocumentRef(data, fileUpload?.data?.id);
   return data;
 };
 
@@ -116,7 +164,7 @@ const stepHandler = {
 };
 
 export const updateBestFilmCriticService = async ({ payload, files, userId }) => {
-  const existingEntry = await BestFilmCritic.findOne({ _id: payload.id, client_id: userId });
+  const existingEntry = await findBestFilmCriticByIdForUser(payload.id, userId);
 
   if (!existingEntry) {
     return {
@@ -133,8 +181,9 @@ export const updateBestFilmCriticService = async ({ payload, files, userId }) =>
     };
   }
 
-  const data = await handler(existingEntry, { ...payload, files });
-  if (data?.status === false) {
+  const data = await handler({ ...existingEntry }, { ...payload, files });
+
+  if (data?.status == 0) {
     return {
       statusCode: 422,
       httpStatus: 422,
@@ -142,8 +191,18 @@ export const updateBestFilmCriticService = async ({ payload, files, userId }) =>
     };
   }
 
-  Object.assign(data, { ...payload, files });
-  const updated = await data.save();
+  const { id, _id, files: _files, createdAt, updatedAt, ...updateData } = {
+    ...data,
+    ...payload,
+    documents: data.documents,
+    active_step: data.active_step,
+  };
+
+  const updated = await updateBestFilmCriticByIdForUser(
+    payload.id,
+    userId,
+    normalizeBestFilmCriticUpdateData(updateData)
+  );
 
   return {
     statusCode: 200,
@@ -153,7 +212,7 @@ export const updateBestFilmCriticService = async ({ payload, files, userId }) =>
 };
 
 export const finalSubmitBestFilmCriticService = async ({ id, userId }) => {
-  const bestFilmCritic = await BestFilmCritic.findOne({ _id: id, client_id: userId });
+  const bestFilmCritic = await findBestFilmCriticByIdForUser(id, userId);
 
   if (!bestFilmCritic) {
     return {
@@ -176,19 +235,7 @@ export const finalSubmitBestFilmCriticService = async ({ id, userId }) => {
 };
 
 export const getBestFilmCriticByIdService = async ({ id, userId }) => {
-  const bestFilmCritic = await BestFilmCritic.findOne({
-    _id: id,
-    client_id: userId,
-  }).populate({
-    path: "documents",
-    match: {
-      form_type: 4,
-      website_type: 5,
-      document_type: 6,
-    },
-    model: Document,
-  });
-
+  const bestFilmCritic = await findBestFilmCriticByIdForUser(id, userId);
   if (!bestFilmCritic) {
     return {
       status: "exception",
@@ -198,14 +245,25 @@ export const getBestFilmCriticByIdService = async ({ id, userId }) => {
     };
   }
 
-  const editors = await Editor.find({ best_film_critic_id: bestFilmCritic._id });
+  // const documents = await findDocuments({
+  //   id: { in: bestFilmCritic.documents || [] },
+  //   form_type: 4,
+  //   website_type: 5,
+  //   document_type: 6,
+  // });
+
+  //  console.log("Best Film documents:", documents);
+
+  const editors = await findEditors({ best_film_critic_id: bestFilmCritic.id });
 
   return {
     status: "success",
     message: "Success.!!",
     statusCode: 200,
     data: {
-      ...bestFilmCritic.toObject(),
+      ...bestFilmCritic,
+      _id: bestFilmCritic.id,
+      // documents,
       editors,
     },
   };

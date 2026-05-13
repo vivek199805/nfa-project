@@ -1,7 +1,12 @@
-import BestBookCinema from "../models/mongodbModels/BestBookCinema.js";
-import Book from "../models/mongodbModels/book.js";
-import { Document } from "../models/mongodbModels/document.js";
-import Editor from "../models/mongodbModels/editor.js";
+import {
+  createBestBook,
+  findBestBookByIdForUser,
+  updateBestBookByIdForUser,
+} from "../repositories/bestBook.repository.js";
+import { findBooks } from "../repositories/book.repository.js";
+import { findDocuments } from "../repositories/document.repository.js";
+import { findEditors } from "../repositories/editor.repository.js";
+import { toPublicId } from "../repositories/prisma.mapper.js";
 import Common from "./common.js";
 
 const syncDocumentRef = (data, documentId) => {
@@ -12,40 +17,75 @@ const syncDocumentRef = (data, documentId) => {
   if (!exists) data.documents.push(documentId);
 };
 
+const toOptionalNumber = (value) => {
+  if (value === undefined) return undefined;
+  if (value === null || value === "") return null;
+  const numberValue = Number(value);
+  return Number.isNaN(numberValue) ? undefined : numberValue;
+};
+
+const toOptionalDate = (value) => {
+  if (value === undefined) return undefined;
+  if (value === null || value === "") return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+};
+
+const toBoolean = (value) => value === true || value === "true" || value === "1" || value === 1;
+
+const objectIdPattern = /^[a-f\d]{24}$/i;
+
+const normalizeDocumentIds = (documents) => {
+  if (!Array.isArray(documents)) return [];
+
+  return documents
+    .map((document) => {
+      if (typeof document === "string") return document;
+      if (document && typeof document === "object") return document.id || document._id;
+      return null;
+    })
+    .filter((documentId) => objectIdPattern.test(String(documentId)));
+};
+
+const normalizeBestBookUpdateData = (updateData) => {
+  const normalized = {
+    ...updateData,
+    step: toOptionalNumber(updateData.step),
+    active_step: toOptionalNumber(updateData.active_step),
+    status: toOptionalNumber(updateData.status),
+    author_nationality_indian: toOptionalNumber(updateData.author_nationality_indian),
+    payment_date: toOptionalDate(updateData.payment_date),
+    documents: normalizeDocumentIds(updateData.documents),
+  };
+
+  ["declaration_one", "declaration_two", "declaration_three", "declaration_four"].forEach((field) => {
+    if (field in updateData) normalized[field] = toBoolean(updateData[field]);
+  });
+
+  return normalized;
+};
+
 export const shouldValidateBestBookStep = (step) =>
   step === String(Common.stepsBestBook().AUTHOR) ||
   step === String(Common.stepsBestBook().DECLARATION);
 
 export const createBestBookService = async ({ payload, userId }) => {
-  const {
-    author_name,
-    author_contact,
-    author_nationality_indian,
-    author_address,
-    author_profile,
-    step,
-  } = payload;
-
-  const bestBookData = new BestBookCinema({
-    author_name,
-    author_contact,
-    author_nationality_indian,
-    author_address,
-    author_profile,
-    step,
+  const bestBookData = await createBestBook({
+    author_name: payload.author_name,
+    author_contact: payload.author_contact,
+    author_nationality_indian: Number(payload.author_nationality_indian || 0),
+    author_address: payload.author_address,
+    author_profile: payload.author_profile,
+    step: Number(payload.step || 1),
     active_step: 1,
-    client_id: userId,
+    client_id: String(userId),
   });
-
-  await bestBookData.save();
-  const finalData = bestBookData.toObject();
-  finalData.id = finalData._id;
-  delete finalData._id;
+    console.log("llllllllllllllll", bestBookData);
 
   return {
     message: "Submit successful",
     statusCode: 200,
-    data: finalData,
+    data: toPublicId(bestBookData),
   };
 };
 
@@ -71,7 +111,7 @@ const handleAuthorStep = async (data, payload) => {
       if (!fileUpload.status) return fileUpload;
 
       data.author_aadhaar_card = fileUpload?.data?.file ?? null;
-      syncDocumentRef(data, fileUpload?.data?._id);
+      syncDocumentRef(data, fileUpload?.data?.id);
     }
   }
 
@@ -110,7 +150,8 @@ const stepHandler = {
 };
 
 export const updateBestBookService = async ({ payload, files, userId }) => {
-  const existingEntry = await BestBookCinema.findOne({ _id: payload.id, client_id: userId });
+
+  const existingEntry = await findBestBookByIdForUser(payload.id, userId);
 
   if (!existingEntry) {
     return {
@@ -127,7 +168,7 @@ export const updateBestBookService = async ({ payload, files, userId }) => {
     };
   }
 
-  const data = await handler(existingEntry, { ...payload, files });
+  const data = await handler({ ...existingEntry }, { ...payload, files });
   if (data?.status === false) {
     return {
       statusCode: 422,
@@ -136,8 +177,13 @@ export const updateBestBookService = async ({ payload, files, userId }) => {
     };
   }
 
-  Object.assign(data, { ...payload, files });
-  const updated = await data.save();
+  const { id, _id, files: _files, createdAt, updatedAt, ...updateData } = {
+    ...data,
+    ...payload,
+    documents: data.documents,
+    active_step: data.active_step,
+  };
+  const updated = await updateBestBookByIdForUser(payload.id, userId, normalizeBestBookUpdateData(updateData));
 
   return {
     statusCode: 200,
@@ -147,19 +193,7 @@ export const updateBestBookService = async ({ payload, files, userId }) => {
 };
 
 export const getBestBookByIdService = async ({ id, userId }) => {
-  const bestBookCinema = await BestBookCinema.findOne({
-    _id: id,
-    client_id: userId,
-  }).populate({
-    path: "documents",
-    match: {
-      form_type: 3,
-      website_type: 5,
-      document_type: 7,
-    },
-    model: Document,
-  });
-
+  const bestBookCinema = await findBestBookByIdForUser(id, userId);
   if (!bestBookCinema) {
     return {
       status: "exception",
@@ -168,15 +202,23 @@ export const getBestBookByIdService = async ({ id, userId }) => {
     };
   }
 
-  const editors = await Editor.find({ best_book_cinema_id: bestBookCinema._id });
-  const book = await Book.find({ best_book_cinemas_id: bestBookCinema._id });
+  const documents = await findDocuments({
+    id: { in: bestBookCinema.documents || [] },
+    form_type: 3,
+    website_type: 5,
+    document_type: 7,
+  });
+  const editors = await findEditors({ best_book_cinema_id: bestBookCinema.id });
+  const book = await findBooks({ best_book_cinemas_id: bestBookCinema.id });
 
   return {
     status: "success",
     message: "Success.!!",
     statusCode: 200,
     data: {
-      ...bestBookCinema.toObject(),
+      ...bestBookCinema,
+      _id: bestBookCinema.id,
+      documents,
       editors,
       book,
     },
@@ -184,7 +226,7 @@ export const getBestBookByIdService = async ({ id, userId }) => {
 };
 
 export const finalSubmitBestBookService = async ({ id, userId }) => {
-  const bestBook = await BestBookCinema.findOne({ _id: id, client_id: userId });
+  const bestBook = await findBestBookByIdForUser(id, userId);
 
   if (!bestBook) {
     return {

@@ -1,3 +1,5 @@
+import { getDatabaseProvider } from "../config/databaseProvider.js";
+
 const weakJwtSecrets = new Set([
   "your-jwt-secret",
   "change-me",
@@ -6,7 +8,7 @@ const weakJwtSecrets = new Set([
   "jwt-secret",
 ]);
 
-const requiredEnvironment = ["DB_URL", "JWT_SECRET"];
+const requiredEnvironment = ["JWT_SECRET"];
 
 export function validateStartupEnvironment(env = process.env) {
   const errors = [];
@@ -16,6 +18,16 @@ export function validateStartupEnvironment(env = process.env) {
     if (!env[key]?.trim()) {
       errors.push(`${key} is required`);
     }
+  }
+
+  if (!env.DATABASE_URL?.trim() && !env.DB_URL?.trim()) {
+    errors.push("DATABASE_URL is required");
+  }
+
+  try {
+    getDatabaseProvider(env);
+  } catch (error) {
+    errors.push(error.message);
   }
 
   if (nodeEnv === "production") {

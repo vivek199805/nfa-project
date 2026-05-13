@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { stepsBestBook } from "../services/common.js";
 import dayjs from "dayjs";
-import { isObjectId, parseZodResult } from "./validationCommon.js";
+import { isRecordId, parseZodResult } from "./validationCommon.js";
 
 // Shared schema parts
 const baseStepSchema = z.object({
@@ -11,7 +11,7 @@ const baseStepSchema = z.object({
 });
 
 const lastIdSchema = z.object({
-  id: z.string().refine((val) => val && (!isNaN(val) || isObjectId(val)), {
+  id: z.string().refine((val) => val && (!isNaN(val) || isRecordId(val)), {
     message: "Last ID is required and must be a number or valid MongoDB ObjectId.",
   }),
 });

@@ -12,9 +12,9 @@ const router = express.Router();
 
 // Best film critic entry
 router.post("/create-entry", requireAuth, upload.none(), BestFilmCriticController.createFilmCritic);
-router.get("/best-film-critic-entry-by/:id", requireAuth, BestFilmCriticController.bestFilmCriticById);
 router.post("/update-entry", requireAuth, upload.any(), BestFilmCriticController.updateEntryById);
 router.post("/best-film-critic-final-submit", requireAuth, upload.any(), BestFilmCriticController.finalSubmit);
+router.get("/best-film-critic-entry-by/:id", requireAuth, BestFilmCriticController.bestFilmCriticById);
 
 // Best book cinema entry
 router.post("/best-book-cinema-entry", requireAuth, upload.none(), BestBookController.createBook);

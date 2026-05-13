@@ -8,7 +8,8 @@ import {
 test("validateStartupEnvironment accepts the minimum development configuration", () => {
   const result = validateStartupEnvironment({
     NODE_ENV: "development",
-    DB_URL: "mongodb://localhost:27017/nfa-project",
+    DB_PROVIDER: "mongodb",
+    DATABASE_URL: "mongodb://localhost:27017/nfa-project",
     JWT_SECRET: "local-dev-secret",
   });
 
@@ -23,15 +24,15 @@ test("validateStartupEnvironment requires database and JWT settings", () => {
 
   assert.equal(result.isValid, false);
   assert.deepEqual(result.errors, [
-    "DB_URL is required",
     "JWT_SECRET is required",
+    "DATABASE_URL is required",
   ]);
 });
 
 test("validateStartupEnvironment requires explicit CORS origin in production", () => {
   const result = validateStartupEnvironment({
     NODE_ENV: "production",
-    DB_URL: "mongodb://localhost:27017/nfa-project",
+    DATABASE_URL: "mongodb://localhost:27017/nfa-project",
     JWT_SECRET: "strong-production-secret",
   });
 
@@ -42,7 +43,7 @@ test("validateStartupEnvironment requires explicit CORS origin in production", (
 test("validateStartupEnvironment rejects example JWT secrets in production", () => {
   const result = validateStartupEnvironment({
     NODE_ENV: "production",
-    DB_URL: "mongodb://localhost:27017/nfa-project",
+    DATABASE_URL: "mongodb://localhost:27017/nfa-project",
     JWT_SECRET: "your-jwt-secret",
     CORS_ORIGIN: "https://nfa.example.com",
   });
@@ -56,6 +57,20 @@ test("validateStartupEnvironment rejects example JWT secrets in production", () 
 test("assertStartupEnvironment throws with combined configuration errors", () => {
   assert.throws(
     () => assertStartupEnvironment({ NODE_ENV: "production" }),
-    /DB_URL is required; JWT_SECRET is required; CORS_ORIGIN is required in production/,
+    /JWT_SECRET is required; DATABASE_URL is required; CORS_ORIGIN is required in production/,
   );
+});
+
+test("validateStartupEnvironment rejects unsupported database providers", () => {
+  const result = validateStartupEnvironment({
+    NODE_ENV: "development",
+    DB_PROVIDER: "sqlite",
+    DATABASE_URL: "file:./dev.db",
+    JWT_SECRET: "local-dev-secret",
+  });
+
+  assert.equal(result.isValid, false);
+  assert.deepEqual(result.errors, [
+    'Unsupported DB_PROVIDER "sqlite". Supported providers: mongodb, mysql',
+  ]);
 });

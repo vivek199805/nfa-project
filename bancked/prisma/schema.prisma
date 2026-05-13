@@ -1,0 +1,362 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  firstName            String
+  lastName             String
+  email                String   @unique
+  phone                String
+  address              String
+  pinCode              String
+  aadharNumber         String
+  usertype             String
+  password             String
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  @@map("users")
+}
+
+model TwoAuth {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String
+  email      String?   @unique
+  phone      String?
+  otp        String
+  isVerified Int       @default(0)
+  otpExpiry  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("twoauths")
+}
+
+model FeatureForm {
+  id                         String                @id @default(auto()) @map("_id") @db.ObjectId
+  step                       Int                   @default(1)
+  film_type                  String?
+  active_step                Int                   @default(1)
+  payment_status             String?
+  status                     String?               @default("1")
+  client_id                  String?
+  film_title_roman           String?               @default("")
+  film_title_devnagri        String?               @default("")
+  film_title_english         String?               @default("")
+  language_id                String[]
+  english_subtitle           String?               @default("0")
+  director_debut             String?               @default("0")
+  nom_reels_tapes            String?               @default("")
+  aspect_ratio               String?               @default("")
+  format                     String?               @default("")
+  sound_system               String?               @default("")
+  running_time               String?               @default("")
+  color_bw                   String?               @default("")
+  film_synopsis              String?               @default("")
+  censor_certificate_nom     String?               @default("")
+  censor_certificate_date    DateTime?
+  censor_certificate_file    String?
+  title_registratin_detils   String?               @default("")
+  payment_date               DateTime?
+  amount                     String?               @default("")
+  reference_number           String?               @default("")
+  receipt                    String?
+  company_reg_details        String?               @default("")
+  company_reg_doc            String?
+  original_screenplay_name   String?               @default("")
+  adapted_screenplay_name    String?               @default("")
+  story_writer_name          String?               @default("")
+  work_under_public_domain   Boolean               @default(false)
+  original_work_copy         String?
+  dialogue                   String?               @default("")
+  cinemetographer            String?               @default("")
+  editor                     String?               @default("")
+  costume_designer           String?               @default("")
+  animator                   String?               @default("")
+  vfx_supervisor             String?               @default("")
+  stunt_choreographer        String?               @default("")
+  music_director             String?               @default("")
+  special_effect_creator     String?               @default("")
+  shot_digital_video_format  Boolean               @default(false)
+  production_designer        String?               @default("")
+  make_up_director           String?               @default("")
+  choreographer              String?               @default("")
+  return_name                String?               @default("")
+  return_mobile              String?               @default("")
+  return_address             String?               @default("")
+  return_fax                 String?               @default("")
+  return_email               String?               @default("")
+  return_pincode             String?               @default("")
+  return_website             String?               @default("")
+  declaration_one            Boolean               @default(false)
+  declaration_two            Boolean               @default(false)
+  declaration_three          Boolean               @default(false)
+  declaration_four           Boolean               @default(false)
+  declaration_five           Boolean               @default(false)
+  declaration_six            Boolean               @default(false)
+  declaration_seven          Boolean               @default(false)
+  declaration_eight          Boolean               @default(false)
+  declaration_nine           Boolean               @default(false)
+  declaration_ten            Boolean               @default(false)
+  declaration_eleven         Boolean               @default(false)
+  declaration_twelve         Boolean               @default(false)
+  non_audiographer           String?               @default("")
+  payment_response           Json?
+  createdAt                  DateTime              @default(now())
+  updatedAt                  DateTime              @updatedAt
+  producers                  FeatureProducer[]
+  directors                  FeatureDirector[]
+  actors                     FeatureActor[]
+  songs                      FeatureSong[]
+  audiographer               FeatureAudiographer[]
+
+  @@index([client_id])
+   @@map("featureforms")
+}
+
+model FeatureProducer {
+  id                         String   @id @default(auto()) @map("_id") @db.ObjectId
+  featureFormId              String   @db.ObjectId
+  featureForm                FeatureForm @relation(fields: [featureFormId], references: [id], onDelete: Cascade)
+  client_id                  String?
+  address                    String?
+  contact_nom                String?
+  country_of_nationality     String?
+  name                       String?
+  email                      String?
+  pincode                    String?
+  nfa_feature_id             String?
+  producer_self_attested_doc String?
+  indian_national            Int?
+  receive_producer_award     Int?
+  production_company         String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+}
+
+model FeatureDirector {
+  id                         String   @id @default(auto()) @map("_id") @db.ObjectId
+  featureFormId              String   @db.ObjectId
+  featureForm                FeatureForm @relation(fields: [featureFormId], references: [id], onDelete: Cascade)
+  client_id                  String?
+  nfa_feature_id             String?
+  name                       String?
+  email                      String?
+  contact_nom                String?
+  address                    String?
+  pincode                    String?
+  director_self_attested_doc String?
+  receive_director_award     Boolean?
+  indian_national            String?
+  country_of_nationality     String?
+  production_company         String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+}
+
+model FeatureActor {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  featureFormId     String   @db.ObjectId
+  featureForm       FeatureForm @relation(fields: [featureFormId], references: [id], onDelete: Cascade)
+  client_id         String?
+  nfa_feature_id    String?
+  actor_category_id Int?
+  name              String?
+  screen_name       String?
+  if_voice_dubbed   Boolean?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model FeatureSong {
+  id                         String   @id @default(auto()) @map("_id") @db.ObjectId
+  featureFormId              String   @db.ObjectId
+  featureForm                FeatureForm @relation(fields: [featureFormId], references: [id], onDelete: Cascade)
+  client_id                  String?
+  nfa_feature_id             String?
+  song_title                 String?
+  music_director             String?
+  music_director_bkgd_music  String?
+  lyricist                   String?
+  playback_singer_male       String?
+  playback_singer_female     String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+}
+
+model FeatureAudiographer {
+  id                          String   @id @default(auto()) @map("_id") @db.ObjectId
+  featureFormId               String   @db.ObjectId
+  featureForm                 FeatureForm @relation(fields: [featureFormId], references: [id], onDelete: Cascade)
+  client_id                   String?
+  nfa_feature_id              String?
+  production_sound_recordist  String?
+  sound_designer              String?
+  re_recordist_filnal         String?
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+}
+
+model BestBookCinema {
+  id                         String   @id @default(auto()) @map("_id") @db.ObjectId
+  step                       Int      @default(1)
+  active_step                Int      @default(1)
+  payment_status             String?
+  status                     Int      @default(1)
+  client_id                  String?
+  author_name                String?
+  author_contact             String?
+  author_address             String?
+  author_nationality_indian  Int      @default(0)
+  author_profile             String?
+  author_aadhaar_card        String?
+  payment_date               DateTime?
+  amount                     String?
+  reference_number           String?
+  receipt                    String?
+  declaration_one            Boolean  @default(false)
+  declaration_two            Boolean  @default(false)
+  declaration_three          Boolean  @default(false)
+  declaration_four           Boolean  @default(false)
+  payment_response           Json?
+  documents                  String[] @db.ObjectId
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@index([client_id])
+  @@map("bestbookcinemas")
+}
+
+model BestFilmCritic {
+  id                         String   @id @default(auto()) @map("_id") @db.ObjectId
+  step                       Int      @default(1)
+  active_step                Int      @default(1)
+  payment_status             String?
+  status                     Int      @default(1)
+  client_id                  String?
+  writer_name                String?
+  article_title              String?
+  article_language_id        String[]
+  publication_date           DateTime?
+  publication_name           String?
+  rni                        Int?
+  rni_registration_no        String?
+  critic_name                String?
+  critic_address             String?
+  critic_contact             String?
+  critic_indian_nationality  Int      @default(1)
+  critic_profile             String?
+  critic_aadhaar_card        String?
+  payment_date               DateTime?
+  amount                     String?
+  reference_number           String?
+  receipt                    String?
+  declaration_one            Boolean  @default(false)
+  declaration_two            Boolean  @default(false)
+  declaration_three          Boolean  @default(false)
+  declaration_four           Boolean  @default(false)
+  documents                  String[] @db.ObjectId
+  payment_response           Json?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@index([client_id])
+   @@map("bestfilmcritics")
+}
+
+model Book {
+  id                       String   @id @default(auto()) @map("_id") @db.ObjectId
+  client_id                String?
+  best_book_cinemas_id     String?
+  book_title_original      String?
+  book_title_english       String?
+  english_translation_book String?
+  receive_producer_award   String?
+  language_id              String[]
+  author_name              String?
+  page_count               String?
+  date_of_publication      DateTime?
+  book_price               String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+   @@map("books")
+}
+
+model Editor {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  client_id            String?
+  best_book_cinema_id  String?
+  best_film_critic_id  String?
+  editor_name          String?
+  editor_email         String?
+  editor_mobile        String?
+  editor_landline      String?
+  editor_fax           String?
+  editor_address       String?
+  editor_citizenship   String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+   @@map("editors")
+}
+
+model Document {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  context_id    String?
+  form_type     Int?
+  document_type Int?
+  website_type  Int?
+  file          String?
+  name          String?
+  created_by    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([context_id, form_type, document_type, website_type])
+   @@map("documents")
+}
+
+model Payment {
+  id                     String   @id @default(auto()) @map("_id") @db.ObjectId
+  client_id              String
+  website_type           Int?
+  form_type              Int?
+  context_id             String?
+  request_payload        String?
+  response_payload       String?
+  amount                 String?
+  gateway                String?
+  gateway_order_id       String?
+  gateway_payment_id     String?
+  gateway_signature      String?
+  receipt                String?
+  payment_date           DateTime?
+  bank_ref_no            String?
+  payment_method_type    String?
+  currency               String?
+  bank_id                Int?
+  bank_merchant_id       Int?
+  item_code              String?
+  security_type          String?
+  security_id            Int?
+  security_password      String?
+  auth_status            String?
+  settlement_type        String?
+  error_status           String?
+  transaction_error_desc String?
+  status                 Int      @default(1)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("payments")
+}

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import dayjs from "dayjs";
 import Common from "../services/common.js";
-import { isNumeric, isObjectId, parseZodResult } from "./validationCommon.js";
+import { isNumeric, isRecordId, parseZodResult } from "./validationCommon.js";
 
 const toStringArray = (val) => {
   if (typeof val === "string") {
@@ -42,7 +42,7 @@ const lastIdSchema = z.object({
   id: z.union([z.string(), z.number()]).refine((val) => {
     if (typeof val === "number") return true;
     if (typeof val === "string") {
-      return isNumeric(val) || isObjectId(val);
+      return isNumeric(val) || isRecordId(val);
     }
     return false;
   }, {

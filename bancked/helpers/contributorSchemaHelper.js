@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isNumeric, isObjectId, parseZodResult } from "./validationCommon.js";
+import { isNumeric, isRecordId, parseZodResult } from "./validationCommon.js";
 
 // Creates a Zod schema for validating required ID fields.
 // Accepts numbers or strings that are either numeric or valid MongoDB ObjectIds.
@@ -9,7 +9,7 @@ const idValue = (fieldName) =>
     if (typeof val === "number") return true;
     if (typeof val === "string") {
       const trimmed = val.trim();
-      return Boolean(trimmed) && (isNumeric(trimmed) || isObjectId(trimmed));
+      return Boolean(trimmed) && (isNumeric(trimmed) || isRecordId(trimmed));
     }
     return false;
   }, {
@@ -22,7 +22,7 @@ const optionalIdValue = (fieldName) =>
     if (typeof val === "number") return true;
     if (typeof val === "string") {
       const trimmed = val.trim();
-      return Boolean(trimmed) && (isNumeric(trimmed) || isObjectId(trimmed));
+      return Boolean(trimmed) && (isNumeric(trimmed) || isRecordId(trimmed));
     }
     return false;
   }, {

@@ -1,5 +1,11 @@
-import BestBookCinema from "../models/mongodbModels/BestBookCinema.js";
-import Book from "../models/mongodbModels/book.js";
+import { findBestBookByIdForUser } from "../repositories/bestBook.repository.js";
+import {
+  createBook,
+  deleteBookById,
+  findBookByIdForUser,
+  findBooks,
+  updateBookById,
+} from "../repositories/book.repository.js";
 
 const normalizeLanguageIds = (languageIds) => {
   if (typeof languageIds === "string") {
@@ -24,18 +30,12 @@ const normalizeLanguageIds = (languageIds) => {
 
 export const storeBookService = async ({ payload, userId }) => {
   if (payload.best_book_cinema_id && payload.best_book_cinema_id.trim() !== "") {
-    const bestBookCinema = await BestBookCinema.findOne({
-      _id: payload.best_book_cinema_id,
-      client_id: userId,
-    });
-
-    if (!bestBookCinema) {
-      return { message: "Records not found", statusCode: 203 };
-    }
+    const bestBookCinema = await findBestBookByIdForUser(payload.best_book_cinema_id, userId);
+    if (!bestBookCinema) return { message: "Records not found", statusCode: 203 };
   }
 
-  const book = new Book({
-    client_id: userId,
+  const result = await createBook({
+    client_id: String(userId),
     best_book_cinemas_id: payload.best_book_cinema_id ?? null,
     book_title_original: payload.book_title_original ?? null,
     book_title_english: payload.book_title_english,
@@ -44,15 +44,10 @@ export const storeBookService = async ({ payload, userId }) => {
     language_id: normalizeLanguageIds(payload.language_id),
     author_name: payload.author_name,
     page_count: payload.page_count ?? null,
-    date_of_publication: payload.date_of_publication,
+    date_of_publication: payload.date_of_publication ? new Date(payload.date_of_publication) : null,
     book_price: payload.book_price,
   });
 
-  if (!book) {
-    return { message: "Book not created.!!", statusCode: 203 };
-  }
-
-  const result = await book.save();
   return {
     message: "Book created successfully.!!",
     statusCode: 200,
@@ -61,17 +56,11 @@ export const storeBookService = async ({ payload, userId }) => {
 };
 
 export const updateBookService = async ({ payload, userId }) => {
-  const book = await Book.findOne({ _id: payload.id, client_id: userId });
+  const book = await findBookByIdForUser(payload.id, userId);
   if (!book) return { message: "book not found.!!", statusCode: 203 };
 
-  const bestBookCinema = await BestBookCinema.findOne({
-    _id: payload.best_book_cinema_id,
-    client_id: userId,
-  });
-
-  if (!bestBookCinema) {
-    return { message: "Related BestBookCinema not found!", statusCode: 203 };
-  }
+  const bestBookCinema = await findBestBookByIdForUser(payload.best_book_cinema_id, userId);
+  if (!bestBookCinema) return { message: "Related BestBookCinema not found!", statusCode: 203 };
 
   const updatedData = {
     book_title_original: payload.book_title_original ?? book.book_title_original,
@@ -79,7 +68,7 @@ export const updateBookService = async ({ payload, userId }) => {
     english_translation_book: payload.english_translation_book ?? book.english_translation_book,
     author_name: payload.author_name ?? book.author_name,
     page_count: payload.page_count ?? book.page_count,
-    date_of_publication: payload.date_of_publication ?? book.date_of_publication,
+    date_of_publication: payload.date_of_publication ? new Date(payload.date_of_publication) : book.date_of_publication,
     book_price: payload.book_price ?? book.book_price,
   };
 
@@ -87,7 +76,7 @@ export const updateBookService = async ({ payload, userId }) => {
     updatedData.language_id = normalizeLanguageIds(payload.language_id);
   }
 
-  await Book.findByIdAndUpdate(book._id, updatedData, { new: true });
+  await updateBookById(book.id, updatedData);
   return { message: "Book updated successfully!", statusCode: 200 };
 };
 
@@ -95,44 +84,49 @@ export const listBookService = async ({ payload, userId }) => {
   let whereTo = {};
 
   if (payload?.best_book_cinema_id != null) {
-    const checkBestBook = await BestBookCinema.findOne({
-      _id: payload.best_book_cinema_id,
-      client_id: userId,
-    });
-
-    if (!checkBestBook) {
-      return { message: "Please provide valid details.!!", statusCode: 203 };
-    }
+    const checkBestBook = await findBestBookByIdForUser(payload.best_book_cinema_id, userId);
+    if (!checkBestBook) return { message: "Please provide valid details.!!", statusCode: 203 };
 
     whereTo = {
       best_book_cinemas_id: payload.best_book_cinema_id,
-      client_id: userId,
+      client_id: String(userId),
     };
   }
 
-  if (Object.keys(whereTo).length === 0) {
-    return { message: "No valid identifier provided.", statusCode: 203 };
-  }
+  if (Object.keys(whereTo).length === 0)
+    return {
+      message: "No valid identifier provided.",
+      statusCode: 203
+    };
 
-  const allBook = await Book.find(whereTo);
-  if (!allBook || allBook.length === 0) {
-    return { message: "No result found.!!", statusCode: 203 };
-  }
+  const allBook = await findBooks(whereTo);
+  if (!allBook) return { message: "No result found.!!", statusCode: 203 };
 
-  return { message: "Success", statusCode: 200, data: allBook };
+  return {
+    message: allBook.length === 0 ? "No books found." : "Success",
+    statusCode: 200,
+    data: allBook.length === 0 ? [] : allBook.map((book) => ({
+      ...book,
+      _id: book.id,
+    })),
+  };
 };
 
 export const getBookService = async ({ id, userId }) => {
-  const book = await Book.findOne({ _id: id, client_id: userId });
+  const book = await findBookByIdForUser(id, userId);
   if (!book) return { message: "No result found.!!", statusCode: 203 };
 
-  return { message: "Success", statusCode: 200, data: book };
+  return {
+    message: "Success",
+    statusCode: 200,
+    data: { ...book, _id: book.id }
+  };
 };
 
 export const deleteBookService = async ({ id, userId }) => {
-  const book = await Book.findOne({ _id: id, client_id: userId });
+  const book = await findBookByIdForUser(id, userId);
   if (!book) return { message: "book not found", statusCode: 203 };
 
-  await Book.deleteOne({ _id: id });
+  await deleteBookById(id);
   return { message: "book deleted successfully", statusCode: 200 };
 };

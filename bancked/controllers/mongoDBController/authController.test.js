@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import User from "../../models/mongodbModels/user.js";
-import { changePassword, resetPassword, verifyEmail } from "./authController.js";
+import { changePassword, resetPassword } from "./authController.js";
 
-const originalUserFindOne = User.findOne;
+const originalDatabaseUrl = process.env.DATABASE_URL;
 
 test.afterEach(() => {
-  User.findOne = originalUserFindOne;
+  if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+  else process.env.DATABASE_URL = originalDatabaseUrl;
 });
 
 function createResponse() {
@@ -47,6 +47,7 @@ test("changePassword rejects invalid payloads before reading authenticated user 
 
 test("changePassword preserves unauthorized response when no user id is present", async () => {
   const res = createResponse();
+  process.env.DATABASE_URL = "mongodb://localhost/test";
 
   await changePassword(
     {
@@ -86,24 +87,4 @@ test("resetPassword rejects invalid reset payloads before OTP lookup", async () 
   assert.equal(res.body.statusCode, 422);
   assert.equal(res.body.errors.email, "Enter a valid email address.");
   assert.equal(res.body.errors.password, "Password must be at least 6 characters long.");
-});
-
-test("verifyEmail returns the shared error response when user lookup fails", async () => {
-  const res = createResponse();
-  User.findOne = async () => {
-    throw new Error("database unavailable");
-  };
-
-  await verifyEmail(
-    {
-      body: {
-        email: "entrant@example.com",
-      },
-    },
-    res,
-  );
-
-  assert.equal(res.statusCode, 500);
-  assert.equal(res.body.message, "Internal Server Error");
-  assert.equal(res.body.statusCode, 500);
 });

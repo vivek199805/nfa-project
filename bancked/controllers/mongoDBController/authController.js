@@ -63,7 +63,7 @@ export const verifyEmail = async (req, res) => {
   if (!isValid) return sendValidationError(res, errors);
 
   try {
-    const result = await verifyEmailService(req.body);    
+    const result = await verifyEmailService(req.body);
     return sendServiceResponse(res, result);
   } catch (error) {
     return errorResponse(res, error);
@@ -130,7 +130,7 @@ export const changePassword = async (req, res) => {
 
 const getUserDetails = async (req, res) => {
   try {
-    const result = await getUserDetailsService(req.user._id);
+    const result = await getUserDetailsService(req.user._id || req.user.id);
     return sendServiceResponse(res, result);
   } catch (error) {
     return errorResponse(res, error);
@@ -139,7 +139,7 @@ const getUserDetails = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    const result = await deleteUserService(req.user._id);
+    const result = await deleteUserService(req.user._id || req.user.id);
     return sendServiceResponse(res, result);
   } catch (error) {
     return errorResponse(res, error);

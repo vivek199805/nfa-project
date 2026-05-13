@@ -1,5 +1,5 @@
 import { verifyToken } from "../utils/jwt.util.js";
-import User from "../models/mongodbModels/user.js";
+import { findUserById } from "../repositories/user.repository.js";
 
 export async function requireAuth(req, res, next) {
   try {
@@ -21,13 +21,18 @@ export async function requireAuth(req, res, next) {
     }
 
     const decoded = verifyToken(token);
-    const user = await User.findOne({ _id: decoded.userId });
+    
+    const user = await findUserById(decoded.userId);
 
     if (!user) {
       return res.status(401).json({ error: "Unauthorized: User not found", statusCode: 401 });
     }
 
-    req.user = user;
+    req.user = {
+      ...user,
+      _id: user.id,
+      toObject: () => ({ ...user, _id: user.id }),
+    };
     req.token = token;
     next();
   } catch {

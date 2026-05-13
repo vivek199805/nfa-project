@@ -53,6 +53,8 @@ export const bestBookCinemaById = async (req, res) => {
       id: req.params.id,
       userId: getUserId(req),
     });
+    console.log("dffffffffffffffff", result);
+    
     return sendServiceResponse(res, result);
   } catch (error) {
     return errorResponse(res, error);

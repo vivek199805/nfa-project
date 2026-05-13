@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { Document } from "../models/mongodbModels/document.js";
 import {
   documentTypeMap,
   formType,
@@ -12,7 +11,6 @@ import {
 } from "./common.js";
 
 const originalUploadRoot = process.env.UPLOAD_ROOT;
-const originalFindOneAndUpdate = Document.findOneAndUpdate;
 const originalDateNow = Date.now;
 const tempUploadRoots = [];
 
@@ -23,7 +21,6 @@ test.afterEach(() => {
     process.env.UPLOAD_ROOT = originalUploadRoot;
   }
 
-  Document.findOneAndUpdate = originalFindOneAndUpdate;
   Date.now = originalDateNow;
 
   while (tempUploadRoots.length > 0) {
@@ -39,16 +36,19 @@ test("imageUpload writes sanitized files and upserts document metadata", async (
 
   let receivedFilter;
   let receivedDetails;
-  let receivedOptions;
-
-  Document.findOneAndUpdate = async (filter, details, options) => {
-    receivedFilter = filter;
-    receivedDetails = details;
-    receivedOptions = options;
-    return { _id: "doc_1", ...details };
+  const prisma = {
+    document: {
+      upsert: async ({ where, create, update }) => {
+        receivedFilter = where.context_id_form_type_document_type_website_type;
+        receivedDetails = update;
+        assert.deepEqual(create, update);
+        return { id: "doc_1", ...update };
+      },
+    },
   };
 
   const result = await imageUpload({
+    prisma,
     id: "entry-123",
     websiteType: "NFA",
     formType: "FEATURE",
@@ -68,10 +68,6 @@ test("imageUpload writes sanitized files and upserts document metadata", async (
     document_type: documentTypeMap.CENSOR_CERTIFICATE_FILE,
     website_type: websiteType.NFA,
   });
-  assert.deepEqual(receivedOptions, {
-    new: true,
-    upsert: true,
-  });
   assert.equal(receivedDetails.file, "Censor_Certificate_Final_1777312000000.pdf");
   assert.equal(receivedDetails.name, "Censor Certificate Final.pdf");
   assert.equal(receivedDetails.context_id, "entry-123");
@@ -85,10 +81,6 @@ test("imageUpload writes sanitized files and upserts document metadata", async (
 });
 
 test("imageUpload rejects unsupported file extensions or MIME types", async () => {
-  Document.findOneAndUpdate = async () => {
-    throw new Error("Document write should not be reached");
-  };
-
   const result = await imageUpload({
     id: "entry-123",
     websiteType: "NFA",
@@ -109,10 +101,6 @@ test("imageUpload rejects invalid document metadata keys before writing", async 
   const uploadRoot = fs.mkdtempSync(path.join(os.tmpdir(), "nfa-upload-"));
   tempUploadRoots.push(uploadRoot);
   process.env.UPLOAD_ROOT = uploadRoot;
-  Document.findOneAndUpdate = async () => {
-    throw new Error("Document write should not be reached");
-  };
-
   const result = await imageUpload({
     id: "entry-123",
     websiteType: "NFA",

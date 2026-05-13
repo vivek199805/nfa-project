@@ -5,6 +5,7 @@ import { createOrder, verifyPayment } from "./paymentController.js";
 const originalEnv = {
   RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID,
   RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET,
+  DATABASE_URL: process.env.DATABASE_URL,
 };
 
 function restoreEnv() {
@@ -62,8 +63,9 @@ test("createOrder returns validation errors before Razorpay configuration checks
 });
 
 test("createOrder preserves missing Razorpay configuration response", async () => {
-  delete process.env.RAZORPAY_KEY_ID;
-  delete process.env.RAZORPAY_KEY_SECRET;
+  process.env.RAZORPAY_KEY_ID = "";
+  process.env.RAZORPAY_KEY_SECRET = "";
+  process.env.DATABASE_URL = "mongodb://localhost/test";
   const res = createResponse();
 
   await createOrder(
@@ -108,7 +110,8 @@ test("verifyPayment returns validation errors before secret checks", async () =>
 
 test("verifyPayment preserves missing Razorpay secret response", async () => {
   process.env.RAZORPAY_KEY_ID = "rzp_test_key";
-  delete process.env.RAZORPAY_KEY_SECRET;
+  process.env.DATABASE_URL = "mongodb://localhost/test";
+  process.env.RAZORPAY_KEY_SECRET = "";
   const res = createResponse();
 
   await verifyPayment(
@@ -132,6 +135,7 @@ test("verifyPayment preserves missing Razorpay secret response", async () => {
 test("verifyPayment rejects invalid signatures before payment lookup", async () => {
   process.env.RAZORPAY_KEY_ID = "rzp_test_key";
   process.env.RAZORPAY_KEY_SECRET = "secret";
+  process.env.DATABASE_URL = "mongodb://localhost/test";
   const res = createResponse();
 
   await verifyPayment(
