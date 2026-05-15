@@ -1,8 +1,5 @@
-import {
-  createBestFilmCritic,
-  findBestFilmCriticByIdForUser,
-  updateBestFilmCriticByIdForUser,
-} from "../repositories/bestFilmCritic.repository.js";
+import { createBestFilmCritic, findBestFilmCriticByIdForUser, updateBestFilmCriticByIdForUser } from "../repositories/bestFilmCritic.repository.js";
+import { findDocument } from "../repositories/document.repository.js";
 import { findEditors } from "../repositories/editor.repository.js";
 import { toPublicId } from "../repositories/prisma.mapper.js";
 import Common from "./common.js";
@@ -106,19 +103,14 @@ const handleCriticUploadStep = async (data, payload, stepNumber) => {
     data.active_step = stepNumber;
   }
 
-  if (!Array.isArray(payload.files)) {
-    data.critic_aadhaar_card = null;
-    return data;
-  }
+  if (!Array.isArray(payload.files)) return data;
 
   const criticAadhaar = payload.files.find((file) => file.fieldname === "critic_aadhaar_card");
-  if (!criticAadhaar) {
-    data.critic_aadhaar_card = null;
-    return data;
-  }
+  if (!criticAadhaar) return data;
 
   const fileUpload = await Common.imageUpload({
     id: payload.id,
+    userId: payload.userId,
     image_key: "critic_aadhaar_card",
     websiteType: "NFA",
     formType: "BEST_FILM_CRITIC",
@@ -132,6 +124,12 @@ const handleCriticUploadStep = async (data, payload, stepNumber) => {
   data.critic_aadhaar_card = fileUpload?.data?.file ?? null;
   syncDocumentRef(data, fileUpload?.data?.id);
   return data;
+};
+
+const stripBestFilmCriticUploadFields = (payload) => {
+  const sanitizedPayload = { ...payload };
+  delete sanitizedPayload.critic_aadhaar_card;
+  return sanitizedPayload;
 };
 
 const handleBestFilmCriticStep = (data, payload) =>
@@ -181,9 +179,9 @@ export const updateBestFilmCriticService = async ({ payload, files, userId }) =>
     };
   }
 
-  const data = await handler({ ...existingEntry }, { ...payload, files });
+  const data = await handler({ ...existingEntry }, { ...payload, files, userId });
 
-  if (data?.status == 0) {
+  if (data?.status === false) {
     return {
       statusCode: 422,
       httpStatus: 422,
@@ -193,7 +191,7 @@ export const updateBestFilmCriticService = async ({ payload, files, userId }) =>
 
   const { id, _id, files: _files, createdAt, updatedAt, ...updateData } = {
     ...data,
-    ...payload,
+    ...stripBestFilmCriticUploadFields(payload),
     documents: data.documents,
     active_step: data.active_step,
   };
@@ -255,6 +253,12 @@ export const getBestFilmCriticByIdService = async ({ id, userId }) => {
   //  console.log("Best Film documents:", documents);
 
   const editors = await findEditors({ best_film_critic_id: bestFilmCritic.id });
+  const criticDocument = await findDocument({
+    context_id: bestFilmCritic.id,
+    form_type: 4,
+    website_type: 5,
+    document_type: 6,
+  });
 
   return {
     status: "success",
@@ -263,7 +267,9 @@ export const getBestFilmCriticByIdService = async ({ id, userId }) => {
     data: {
       ...bestFilmCritic,
       _id: bestFilmCritic.id,
-      // documents,
+      critic_aadhaar_card: criticDocument
+        ? `/api/documents/${criticDocument.id}/download`
+        : bestFilmCritic.critic_aadhaar_card,
       editors,
     },
   };

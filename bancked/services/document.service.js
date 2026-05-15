@@ -1,57 +1,23 @@
-import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
-import { findDocumentById } from "../repositories/document.repository.js";
+import { deleteDocumentById, findDocument, findDocumentById } from "../repositories/document.repository.js";
 import { featureFormExistsByContributor, findFeatureFormByIdForUser } from "../repositories/featureForm.repository.js";
 import { findBestBookByIdForUser } from "../repositories/bestBook.repository.js";
 import { findBestFilmCriticByIdForUser } from "../repositories/bestFilmCritic.repository.js";
 import {
   documentTypeMap,
   formType,
-  getDocumentStorageRoot,
   websiteType,
 } from "./common.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const legacyDocumentRoot = path.resolve(__dirname, "../public/documents");
+import { deleteStoredFileByPath, findStoredFilePath } from "./documentStorage.js";
 
 const websiteFolderByValue = Object.entries(websiteType).reduce((folders, [key, value]) => {
   folders[value] = key;
   return folders;
 }, {});
 
-function resolveInside(baseDirectory, ...segments) {
-  const resolvedBase = path.resolve(baseDirectory);
-  const resolvedPath = path.resolve(resolvedBase, ...segments);
-
-  if (resolvedPath !== resolvedBase && !resolvedPath.startsWith(resolvedBase + path.sep)) {
-    return null;
-  }
-
-  return resolvedPath;
-}
-
 function findStoredFile(documentRecord) {
   const websiteFolder = websiteFolderByValue[documentRecord.website_type];
-  if (!websiteFolder || !documentRecord.file) return null;
-
-  const storagePath = resolveInside(
-    getDocumentStorageRoot(),
-    websiteFolder,
-    path.basename(documentRecord.file)
-  );
-
-  if (storagePath && fs.existsSync(storagePath)) return storagePath;
-
-  const legacyPath = resolveInside(
-    legacyDocumentRoot,
-    websiteFolder,
-    path.basename(documentRecord.file)
-  );
-
-  if (legacyPath && fs.existsSync(legacyPath)) return legacyPath;
-  return null;
+  return findStoredFilePath(documentRecord, websiteFolder);
 }
 
 async function userOwnsDocument(userId, documentRecord) {
@@ -122,4 +88,20 @@ export const getDocumentDownloadService = async ({ id, userId }) => {
     filePath,
     fileName: documentRecord.name || path.basename(filePath),
   };
+};
+
+export const deleteDocumentAndFileByFilter = async (where) => {
+  const documentRecord = await findDocument(where);
+  if (!documentRecord) return null;
+
+  await deleteDocumentById(documentRecord.id);
+
+  try {
+    const filePath = findStoredFile(documentRecord);
+    await deleteStoredFileByPath(filePath);
+  } catch (error) {
+    console.error(`Failed to remove stored document ${documentRecord.id}: ${error.message}`);
+  }
+
+  return documentRecord;
 };

@@ -7,7 +7,10 @@ export const findDocumentById = (id) => documentRepository.findUniqueById(id);
 
 export const findDocuments = (where) => documentRepository.findMany(where);
 
-export const findDocument = (where) => documentRepository.findFirst(where);
+export const findDocument = (where, { client } = {}) =>
+  new BaseRepository("document", client ? { client } : {}).findFirst(where);
+
+export const deleteDocumentById = (id) => documentRepository.deleteById(id);
 
 export const upsertDocument = (whereData, data, { client } = {}) =>
   new BaseRepository("document", client ? { client } : {}).upsert({

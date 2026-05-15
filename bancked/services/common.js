@@ -1,13 +1,13 @@
 import path from 'path';
 import fs from "fs"
+import { randomBytes } from "crypto";
 import { fileURLToPath } from 'url';
-import { upsertDocument } from "../repositories/document.repository.js";
+import { findDocument, upsertDocument } from "../repositories/document.repository.js";
+import { buildRelativeDocumentPath, deleteStoredFileByPath, findStoredFilePath, getDocumentStorageRoot, resolveInside } from "./documentStorage.js";
+export { getDocumentStorageRoot } from "./documentStorage.js";
 // Define __filename and __dirname manually
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-export const getDocumentStorageRoot = () =>
-  path.resolve(process.env.UPLOAD_ROOT || path.join(__dirname, "..", "storage/documents"));
 
 export const stepsFeature = () => ({
   GENERAL: 1,
@@ -96,6 +96,11 @@ function sanitizeFileName(filename) {
   return filename.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
+const websiteFolderByValue = Object.entries(websiteType).reduce((folders, [key, value]) => {
+  folders[value] = key;
+  return folders;
+}, {});
+
 export const imageUpload = async (data) => {
   const websiteTypeValue = websiteType[data.websiteType] || null;
   const formTypeValue = formType[data.formType] || null;
@@ -142,14 +147,29 @@ export const imageUpload = async (data) => {
       };
     }
 
+    const filter = {
+      context_id: data.id,
+      form_type: formTypeValue,
+      document_type: documentType,
+      website_type: websiteTypeValue,
+    };
+
     const fileName = sanitizeFileName(path.parse(originalName).name);
-    const modifiedName = `${fileName}_${Date.now()}${extension}`;
+    const modifiedName = `${fileName}_${Date.now()}_${randomBytes(4).toString("hex")}${extension}`;
     const baseDirectory = getDocumentStorageRoot();
-    const directory = path.join(baseDirectory, data.websiteType);
-    const resolvedDirectory = path.resolve(directory);
+    const existingDocument = await findDocument(filter, { client: data.prisma });
+    const relativeFilePath = buildRelativeDocumentPath({
+      userId: data.userId,
+      formTypeValue,
+      contextId: data.id,
+      documentType,
+      fileName: modifiedName,
+    });
+    const relativeSegments = relativeFilePath.split("/");
+    const resolvedDirectory = resolveInside(baseDirectory, data.websiteType, ...relativeSegments.slice(0, -1));
     const resolvedBaseDirectory = path.resolve(baseDirectory);
 
-    if (!resolvedDirectory.startsWith(resolvedBaseDirectory + path.sep)) {
+    if (!resolvedDirectory || !resolvedDirectory.startsWith(resolvedBaseDirectory + path.sep)) {
       return {
         status: false,
         message: "Invalid upload directory",
@@ -159,17 +179,10 @@ export const imageUpload = async (data) => {
     const fileDetails = {
       form_type: formTypeValue,
       document_type: documentType,
-      file: modifiedName,
+      file: relativeFilePath,
       name: originalName,
       website_type: websiteTypeValue,
       context_id: data.id,
-    };
-
-    const filter = {
-      context_id: data.id,
-      form_type: formTypeValue,
-      document_type: documentType,
-      website_type: websiteTypeValue,
     };
 
     if (!fs.existsSync(resolvedDirectory)) {
@@ -178,7 +191,23 @@ export const imageUpload = async (data) => {
     const filePath = path.join(resolvedDirectory, modifiedName);
     fs.writeFileSync(filePath, image.buffer);
 
-    const updatedDoc = await upsertDocument(filter, fileDetails, { client: data.prisma });
+    let updatedDoc;
+    try {
+      updatedDoc = await upsertDocument(filter, fileDetails, { client: data.prisma });
+    } catch (error) {
+      await deleteStoredFileByPath(filePath);
+      throw error;
+    }
+
+    if (existingDocument?.file && existingDocument.file !== relativeFilePath) {
+      try {
+        const websiteFolder = websiteFolderByValue[websiteTypeValue];
+        const oldFilePath = findStoredFilePath(existingDocument, websiteFolder);
+        await deleteStoredFileByPath(oldFilePath);
+      } catch (error) {
+        console.error(`Failed to clean up replaced upload ${existingDocument.id}: ${error.message}`);
+      }
+    }
 
     return {
       status: true,

@@ -141,19 +141,17 @@ const bumpActiveStep = (data, payload, featureStep, nonFeatureStep) => {
 
 const uploadStepFile = async ({ data, payload, fieldName }) => {
   if (!Array.isArray(payload.files)) {
-    data[fieldName] = null;
     return data;
   }
 
   const uploadFile = payload.files.find((file) => file.fieldname === fieldName);
   if (!uploadFile) {
-    data[fieldName] = null;
     return data;
   }
 
   const fileUpload = await Common.imageUpload({
-
     id: payload.id,
+    userId: payload.userId,
     image_key: fieldName,
     websiteType: "NFA",
     formType: payload.film_type === "non-feature" ? "NON_FEATURE" : "FEATURE",
@@ -164,6 +162,19 @@ const uploadStepFile = async ({ data, payload, fieldName }) => {
 
   data[fieldName] = fileUpload?.data?.file ?? null;
   return data;
+};
+
+const stripStepUploadFields = (payload) => {
+  const sanitizedPayload = { ...payload };
+  [
+    "censor_certificate_file",
+    "company_reg_doc",
+    "original_work_copy",
+  ].forEach((field) => {
+    delete sanitizedPayload[field];
+  });
+
+  return sanitizedPayload;
 };
 
 const buildStepData = async (existing, payload) => {
@@ -263,7 +274,7 @@ export const updateFilmSubmissionService = async ({ payload, files, userId }) =>
     };
   }
 
-  const data = await buildStepData(existingEntry, { ...payload, files });
+  const data = await buildStepData(existingEntry, { ...payload, files, userId });
   if (!data) {
     return {
       statusCode: 203,
@@ -281,7 +292,7 @@ export const updateFilmSubmissionService = async ({ payload, files, userId }) =>
 
   const { id, files: _files, producers, directors, actors, songs, audiographer, _id, createdAt, updatedAt, ...updateData } = {
     ...data,
-    ...payload,
+    ...stripStepUploadFields(payload),
   };
 
   const updated = await updateFeatureFormByIdForUser(payload.id, userId, updateData);

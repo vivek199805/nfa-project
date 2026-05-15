@@ -10,6 +10,7 @@ import {
 } from "../repositories/featureContributor.repository.js";
 import { toPublicIds } from "../repositories/prisma.mapper.js";
 import Common from "./common.js";
+import { deleteDocumentAndFileByFilter } from "./document.service.js";
 
 const contributorConfig = {
   producers: {
@@ -55,6 +56,11 @@ const withDownloadUrl = (item, uploadField) => {
 
   return item;
 };
+
+const sanitizeContributorPayload = (payload, uploadField) =>
+  Object.fromEntries(
+    Object.entries(payload).filter(([key]) => !["id", "nfa_feature_id", uploadField].includes(key))
+  );
 
 export const listFeatureContributorsService = async (
   { featureId, filmType, userId, contributorType }
@@ -143,9 +149,7 @@ export const saveFeatureContributorService = async (
       return { message: config.notFound, statusCode: 203 };
     }
 
-    const updateData = Object.fromEntries(
-      Object.entries(payload).filter(([key]) => !["id", "nfa_feature_id"].includes(key))
-    );
+    const updateData = sanitizeContributorPayload(payload, config.uploadField);
     contributor = await updateContributor({
       contributorType,
       contributorId,
@@ -156,7 +160,7 @@ export const saveFeatureContributorService = async (
       contributorType,
       featureId,
       userId,
-      data: payload,
+      data: sanitizeContributorPayload(payload, config.uploadField),
     });
   }
 
@@ -167,6 +171,7 @@ export const saveFeatureContributorService = async (
       const fileUpload = await Common.imageUpload({
 
         id: contributor.id,
+        userId,
         image_key: config.uploadField,
         websiteType: "NFA",
         formType: payload.film_type === "non-feature" ? "NON_FEATURE" : "FEATURE",
@@ -224,6 +229,15 @@ export const deleteFeatureContributorService = async (
 
   if (!contributor) {
     return { message: config.notFound, statusCode: 203 };
+  }
+
+  if (config.documentType) {
+    await deleteDocumentAndFileByFilter({
+      context_id: contributorId,
+      form_type: feature.film_type === "non-feature" ? 2 : 1,
+      website_type: 5,
+      document_type: config.documentType,
+    });
   }
 
   await deleteContributor({ contributorType, contributorId });

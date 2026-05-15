@@ -1,10 +1,6 @@
-import {
-  createBestBook,
-  findBestBookByIdForUser,
-  updateBestBookByIdForUser,
-} from "../repositories/bestBook.repository.js";
+import { createBestBook, findBestBookByIdForUser, updateBestBookByIdForUser } from "../repositories/bestBook.repository.js";
 import { findBooks } from "../repositories/book.repository.js";
-import { findDocuments } from "../repositories/document.repository.js";
+import { findDocument, findDocuments } from "../repositories/document.repository.js";
 import { findEditors } from "../repositories/editor.repository.js";
 import { toPublicId } from "../repositories/prisma.mapper.js";
 import Common from "./common.js";
@@ -80,7 +76,6 @@ export const createBestBookService = async ({ payload, userId }) => {
     active_step: 1,
     client_id: String(userId),
   });
-    console.log("llllllllllllllll", bestBookData);
 
   return {
     message: "Submit successful",
@@ -102,6 +97,7 @@ const handleAuthorStep = async (data, payload) => {
     if (authorAadhaar) {
       const fileUpload = await Common.imageUpload({
         id: payload.id,
+        userId: payload.userId,
         image_key: "author_aadhaar_card",
         websiteType: "NFA",
         formType: "BEST_BOOK",
@@ -116,6 +112,12 @@ const handleAuthorStep = async (data, payload) => {
   }
 
   return data;
+};
+
+const stripBestBookUploadFields = (payload) => {
+  const sanitizedPayload = { ...payload };
+  delete sanitizedPayload.author_aadhaar_card;
+  return sanitizedPayload;
 };
 
 const handleBookStep = async (data, payload) => {
@@ -168,7 +170,7 @@ export const updateBestBookService = async ({ payload, files, userId }) => {
     };
   }
 
-  const data = await handler({ ...existingEntry }, { ...payload, files });
+  const data = await handler({ ...existingEntry }, { ...payload, files, userId });
   if (data?.status === false) {
     return {
       statusCode: 422,
@@ -179,7 +181,7 @@ export const updateBestBookService = async ({ payload, files, userId }) => {
 
   const { id, _id, files: _files, createdAt, updatedAt, ...updateData } = {
     ...data,
-    ...payload,
+    ...stripBestBookUploadFields(payload),
     documents: data.documents,
     active_step: data.active_step,
   };
@@ -208,6 +210,12 @@ export const getBestBookByIdService = async ({ id, userId }) => {
     website_type: 5,
     document_type: 7,
   });
+  const authorDocument = await findDocument({
+    context_id: bestBookCinema.id,
+    form_type: 3,
+    website_type: 5,
+    document_type: 7,
+  });
   const editors = await findEditors({ best_book_cinema_id: bestBookCinema.id });
   const book = await findBooks({ best_book_cinemas_id: bestBookCinema.id });
 
@@ -218,6 +226,9 @@ export const getBestBookByIdService = async ({ id, userId }) => {
     data: {
       ...bestBookCinema,
       _id: bestBookCinema.id,
+      author_aadhaar_card: authorDocument
+        ? `/api/documents/${authorDocument.id}/download`
+        : bestBookCinema.author_aadhaar_card,
       documents,
       editors,
       book,
