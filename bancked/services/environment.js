@@ -1,4 +1,5 @@
 import { getDatabaseProvider } from "../config/databaseProvider.js";
+import { getOrmProvider } from "../config/ormProvider.js";
 
 const weakJwtSecrets = new Set([
   "your-jwt-secret",
@@ -26,6 +27,12 @@ export function validateStartupEnvironment(env = process.env) {
 
   try {
     getDatabaseProvider(env);
+  } catch (error) {
+    errors.push(error.message);
+  }
+
+  try {
+    getOrmProvider(env);
   } catch (error) {
     errors.push(error.message);
   }

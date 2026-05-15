@@ -1,13 +1,9 @@
 import { getDatabaseProvider } from "../config/databaseProvider.js";
-import prisma from "../config/prisma.js";
-import {
-  normalizeId,
-  normalizeWhere,
-  stripUndefined,
-} from "./prisma.mapper.js";
+import db from "../db/index.js";
+import { normalizeId, normalizeWhere, stripUndefined } from "./prisma.mapper.js";
 
 export class BaseRepository {
-  constructor(delegateName, { client = prisma, provider = getDatabaseProvider() } = {}) {
+  constructor(delegateName, { client = db, provider = getDatabaseProvider() } = {}) {
     this.client = client;
     this.delegateName = delegateName;
     this.provider = provider;
@@ -16,7 +12,7 @@ export class BaseRepository {
   get delegate() {
     const delegate = this.client[this.delegateName];
     if (!delegate) {
-      throw new Error(`Prisma delegate "${this.delegateName}" is not available. Regenerate the Prisma client.`);
+      throw new Error(`Database delegate "${this.delegateName}" is not available for the selected ORM provider.`);
     }
     return delegate;
   }

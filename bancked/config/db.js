@@ -1,5 +1,6 @@
-import { connectPrisma, disconnectPrisma } from "./prisma.js";
 import { getDatabaseProvider } from "./databaseProvider.js";
+import { getOrmProvider } from "./ormProvider.js";
+import { connectOrm, disconnectOrm } from "../db/index.js";
 
 export const connectDB = async () => {
   try {
@@ -11,11 +12,12 @@ export const connectDB = async () => {
       throw new Error("DATABASE_URL is required");
     }
 
-    const provider = getDatabaseProvider();
+    const databaseProvider = getDatabaseProvider();
+    const ormProvider = getOrmProvider();
 
-    await connectPrisma();
+    await connectOrm();
 
-    console.log(`Prisma database connection successful for ${provider}...`);
+    console.log(`${ormProvider} database connection successful for ${databaseProvider}...`);
   } catch (err) {
     console.error("Database connection failed:", err.message);
     process.exit(1);
@@ -23,5 +25,5 @@ export const connectDB = async () => {
 };
 
 export const disconnectDB = async () => {
-  await disconnectPrisma();
+  await disconnectOrm();
 };

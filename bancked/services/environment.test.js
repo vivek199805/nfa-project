@@ -8,6 +8,7 @@ import {
 test("validateStartupEnvironment accepts the minimum development configuration", () => {
   const result = validateStartupEnvironment({
     NODE_ENV: "development",
+    ORM_PROVIDER: "prisma",
     DB_PROVIDER: "mongodb",
     DATABASE_URL: "mongodb://localhost:27017/nfa-project",
     JWT_SECRET: "local-dev-secret",
@@ -72,5 +73,20 @@ test("validateStartupEnvironment rejects unsupported database providers", () => 
   assert.equal(result.isValid, false);
   assert.deepEqual(result.errors, [
     'Unsupported DB_PROVIDER "sqlite". Supported providers: mongodb, mysql',
+  ]);
+});
+
+test("validateStartupEnvironment rejects unsupported ORM providers", () => {
+  const result = validateStartupEnvironment({
+    NODE_ENV: "development",
+    ORM_PROVIDER: "typeorm",
+    DB_PROVIDER: "mysql",
+    DATABASE_URL: "mysql://root:password@localhost:3306/nfa_project",
+    JWT_SECRET: "local-dev-secret",
+  });
+
+  assert.equal(result.isValid, false);
+  assert.deepEqual(result.errors, [
+    'Unsupported ORM_PROVIDER "typeorm". Supported providers: prisma, mongoose, sequelize',
   ]);
 });

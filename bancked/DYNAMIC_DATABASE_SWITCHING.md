@@ -1,24 +1,62 @@
-# Dynamic Database Switching
+# Dynamic Database / ORM Switching
 
-The backend uses Prisma for persistence and keeps database-specific behavior behind:
+The backend can select both a database provider and an ORM/data-access provider.
 
+Set:
+
+- `ORM_PROVIDER`: `prisma`, `mongoose`, or `sequelize`
+- `DB_PROVIDER`: `mongodb` or `mysql`
+- `DATABASE_URL`: connection string for the selected provider
+
+Prisma remains the default ORM when `ORM_PROVIDER` is omitted.
+
+The backend keeps ORM-specific behavior behind:
+
+- `config/ormProvider.js`
 - `config/databaseProvider.js`
 - `config/prisma.js`
 - `config/db.js`
+- `db/index.js`
+- `adapters/prisma/*`
+- `adapters/mongoose/*`
+- `adapters/sequelize/*`
 - `repositories/base.repository.js`
 - provider-aware repository modules in `repositories/*.repository.js`
 - generated Prisma schema at `prisma/generated/schema.prisma`
 
-Controllers should continue calling services and services should continue calling repositories. Controllers must not import Prisma directly or branch on MongoDB/MySQL.
+Controllers should continue calling services and services should continue calling repositories. Controllers must not import Prisma, Mongoose, or Sequelize directly or branch on provider values.
 
 ## Provider Selection
 
-Set both:
+For Prisma, set both:
 
 - `DB_PROVIDER`: `mongodb` or `mysql`
 - `DATABASE_URL`: connection string for the selected provider
+- `ORM_PROVIDER`: `prisma`
 
 `DATABASE_URL` decides where Prisma connects. `DB_PROVIDER` decides which schema is generated and how repository filters/IDs are normalized. Changing only `DATABASE_URL` is not enough when switching between MongoDB and MySQL.
+
+For Mongoose:
+
+```powershell
+cd bancked
+$env:ORM_PROVIDER="mongoose"
+$env:DB_PROVIDER="mongodb"
+$env:DATABASE_URL="mongodb://localhost:27017/nfa-project"
+npm run dev
+```
+
+For Sequelize with MySQL:
+
+```powershell
+cd bancked
+$env:ORM_PROVIDER="sequelize"
+$env:DB_PROVIDER="mysql"
+$env:DATABASE_URL="mysql://USER:PASSWORD@HOST:3306/DATABASE"
+npm run dev
+```
+
+The Mongoose and Sequelize adapters expose Prisma-compatible delegates so existing repositories can keep calling methods such as `findFirst`, `findMany`, `create`, `update`, `delete`, and `upsert`.
 
 ## Generated Files
 
