@@ -544,6 +544,7 @@ h6 {
   border-color: #bea460;
   box-shadow: 0 0 0 0.2rem rgba(190, 164, 96, 0.16);
   background: rgba(15, 18, 26, 0.9);
+  color: #fff;
 }
 
 .auth-form-container .input-group {
@@ -900,6 +901,22 @@ h6 {
   margin-left: 0;
 }
 
+.workflow-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.workflow-nav.workflow-nav-end {
+  justify-content: flex-end;
+}
+
+.workflow-nav .btn {
+  min-width: 160px;
+}
+
 .film-form-container [class*="col-"],
 .form-box [class*="col-"],
 .accordion-body [class*="col-"] {
@@ -1219,6 +1236,17 @@ h6 {
   .film-form-container .d-flex,
   .form-box .d-flex {
     flex-wrap: wrap;
+  }
+
+  .workflow-nav,
+  .workflow-nav.workflow-nav-end {
+    justify-content: stretch;
+    align-items: stretch;
+    gap: 0.85rem;
+  }
+
+  .workflow-nav .btn {
+    min-width: 0;
   }
 }
 

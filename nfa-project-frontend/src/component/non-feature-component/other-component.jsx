@@ -236,7 +236,7 @@ const OtherSection = ({ setActiveSection, filmType }) => {
           )}
         </div>
 
-        <div className="d-flex justify-content-between">
+        <div className="workflow-nav">
           <button
             type="button"
             className="btn btn-primary"

@@ -7,13 +7,13 @@ import FilmDetailsSection from "../component/feature-component/film-details-comp
 import PaymentSection from "../component/feature-component/PaymentSection-component";
 import ProducerDetailsSection from "../component/feature-component/producer-component";
 import ReturnSection from "../component/feature-component/return-component";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import OtherSection from "../component/non-feature-component/other-component";
 import ViewSection from "../component/non-feature-component/view-section";
 import WorkflowPageLayout from "../features/components/layout/WorkflowPageLayout";
 import { useFetchById } from "../hooks/useFetchById";
-import { getResumeStep } from "../common/entry-step";
 import { getFilmEntryByEndpoint } from "../common/film-workflow";
+import { useResumeWorkflowStep } from "../hooks/useResumeWorkflowStep";
 
 const steps = [
   "General",
@@ -33,11 +33,12 @@ const NonFeatureFilmPage = () => {
   const { id } = useParams();
   const { data: formData, } = useFetchById(getFilmEntryByEndpoint("non-feature"), id);
 
-  useEffect(() => {
-    if (id && formData?.data?.active_step != null) {
-      setActiveSection(getResumeStep(formData.data.active_step, steps.length));
-    }
-  }, [id, formData]);
+  useResumeWorkflowStep({
+    id,
+    activeStep: formData?.data?.active_step,
+    stepsLength: steps.length,
+    setActiveSection,
+  });
 
   return (
     <WorkflowPageLayout

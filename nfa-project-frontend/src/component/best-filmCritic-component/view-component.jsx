@@ -12,6 +12,7 @@ import { startRazorpayPayment } from "../../services/paymentService";
 import { useAuth } from "../../hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../lib/queryClient";
+import { openUploadedDocument } from "../../services/documentService";
 import {
   filmCriticWorkflow,
 } from "../../common/award-workflow";
@@ -176,6 +177,14 @@ const AccordionItem = ({
 );
 
 const CriticView = ({ data }) => {
+  const handleViewDocument = async () => {
+    try {
+      await openUploadedDocument(data?.critic_aadhaar_card);
+    } catch (error) {
+      showErrorToast(error);
+    }
+  };
+
   return (
     <div className="return-view">
       <div className="row">
@@ -222,17 +231,13 @@ const CriticView = ({ data }) => {
           <div>{data?.critic_profile}</div>
           <div>
             {data?.critic_aadhaar_card ? (
-              <>
-                <a
-                  href={`${import.meta.env.VITE_API_URL}/${data.critic_aadhaar_card
-                    }`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-sm btn-outline-primary ms-2"
-                >
-                  View
-                </a>
-              </>
+              <button
+                type="button"
+                onClick={handleViewDocument}
+                className="btn btn-sm btn-outline-primary ms-2"
+              >
+                View
+              </button>
             ) : (
               <span className="id-proof-status text-muted">Not Provided</span>
             )}

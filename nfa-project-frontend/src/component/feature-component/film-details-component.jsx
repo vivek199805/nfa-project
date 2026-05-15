@@ -504,7 +504,7 @@ const FilmDetailsSection = ({ setActiveSection, filmType }) => {
             )}
           </div>
 
-          <div className="col-12 text-end mt-3">
+          <div className="col-12 workflow-nav workflow-nav-end">
             <button type="submit" className="btn btn-primary">
               Next <i className="bi bi-arrow-right ms-2"></i>
             </button>

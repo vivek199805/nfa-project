@@ -6,6 +6,8 @@ import { useParams } from "react-router-dom";
 import { useFetchById } from "../../hooks/useFetchById";
 import { postRequest } from "../../services/requestService";
 import { useInputRestriction } from "../../hooks/useInputRestriction";
+import { openUploadedDocument } from "../../services/documentService";
+import { showErrorToast } from "../../services/toastService";
 import {
   getAwardNextSection,
   getAwardPreviousSection,
@@ -102,6 +104,14 @@ const CriticSection = ({ setActiveSection }) => {
     const response = await postRequest(apiConfig.filmCritic.update, formData);
     if (Number(response.statusCode) === 200) {
       setActiveSection(getAwardNextSection("detail"));
+    }
+  };
+
+  const handleViewUploadedFile = async () => {
+    try {
+      await openUploadedDocument(formData?.data?.critic_aadhaar_card);
+    } catch (error) {
+      showErrorToast(error);
     }
   };
 
@@ -235,18 +245,16 @@ const CriticSection = ({ setActiveSection }) => {
                       field.onChange(e.target.files?.[0] || null)
                     }
                   />
-                  {typeof formData?.data?.censor_certificate_file ===
+                  {typeof formData?.data?.critic_aadhaar_card ===
                     "string" &&
-                    formData?.data?.censor_certificate_file && (
-                      <a
-                        href={`${import.meta.env.VITE_API_URL
-                          }/${formData?.data?.censor_certificate_file.trim()}`} // Adjust path based on backend storage
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    formData?.data?.critic_aadhaar_card && (
+                      <button
+                        type="button"
+                        onClick={handleViewUploadedFile}
                         className="btn btn-sm btn-outline-primary mt-2"
                       >
                         View Uploaded File
-                      </a>
+                      </button>
                     )}
                 </>
               )}

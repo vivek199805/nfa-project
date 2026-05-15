@@ -8,6 +8,7 @@ export function useEntryByIdQuery(endpoint, id, options = {}) {
     queryFn: () => entryService.getById({ endpoint, id }),
     enabled: Boolean(endpoint) && Boolean(id),
     staleTime: 1000 * 60,
+    refetchOnMount: "always",
     ...options,
   });
 }

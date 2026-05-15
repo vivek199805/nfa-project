@@ -7,6 +7,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { postRequest } from "../../services/requestService";
 import { showErrorToast, showSuccessToast } from "../../services/toastService";
+import { openUploadedDocument } from "../../services/documentService";
 import { useParams } from "react-router-dom";
 // import { useQuery } from "@tanstack/react-query";
 import Swal from "sweetalert2";
@@ -232,6 +233,14 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
     });
   };
 
+  const handleViewUploadedFile = async (filePath) => {
+    try {
+      await openUploadedDocument(filePath);
+    } catch (error) {
+      showErrorToast(error);
+    }
+  };
+
   const onNext = async () => {
     const isValid = await trigger(); // validate the form
     let url = getFilmUpdateEndpoint(filmType);
@@ -307,16 +316,13 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
                     </td>
                     <td>
                       {director.director_self_attested_doc ? (
-                        <>
-                          <a
-                            href={`${import.meta.env.VITE_API_URL}/${director.director_self_attested_doc}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-sm btn-outline-primary ms-2"
-                          >
-                            View
-                          </a>
-                        </>
+                        <button
+                          type="button"
+                          onClick={() => handleViewUploadedFile(director.director_self_attested_doc)}
+                          className="btn btn-sm btn-outline-primary ms-2"
+                        >
+                          View
+                        </button>
                       ) : (
                         <span className="id-proof-status text-muted">Not Provided</span>
                       )}
@@ -487,14 +493,13 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
                       }
                     />
                     {typeof field.value === "string" && field.value !== "" && (
-                      <a
-                        href={`${import.meta.env.VITE_API_URL}/${field.value}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-2 d-block"
+                      <button
+                        type="button"
+                        onClick={() => handleViewUploadedFile(field.value)}
+                        className="btn btn-sm btn-outline-primary mt-2"
                       >
-                        View uploaded file
-                      </a>
+                        View Uploaded File
+                      </button>
                     )}
                   </>
                 )}
@@ -515,7 +520,7 @@ const DirectorDetailsSection = ({ setActiveSection, filmType }) => {
           </div>
         </form>
       )}
-      <div className="d-flex justify-content-between">
+      <div className="workflow-nav">
         <button
           type="button"
           className="btn btn-primary"

@@ -9,6 +9,8 @@ import { formatDate } from "../../common/common-function";
 import { useFetchById } from "../../hooks/useFetchById";
 import CustomDatePicker from "../../features/components/form/CustomDatePicker";
 import dayjs from "dayjs";
+import { openUploadedDocument } from "../../services/documentService";
+import { showErrorToast } from "../../services/toastService";
 import {
   getFilmEntryByEndpoint,
   getFilmNextSection,
@@ -105,6 +107,14 @@ const CensorSection = ({ setActiveSection, filmType }) => {
     }
   };
 
+  const handleViewUploadedFile = async () => {
+    try {
+      await openUploadedDocument(formData?.data?.censor_certificate_file);
+    } catch (error) {
+      showErrorToast(error);
+    }
+  };
+
   return (
     <>
       <form
@@ -180,14 +190,13 @@ const CensorSection = ({ setActiveSection, filmType }) => {
                     onChange={(e) => field.onChange(e.target.files?.[0] || null)}
                   />
                   {typeof formData?.data?.censor_certificate_file === "string" && formData?.data?.censor_certificate_file && (
-                    <a
-                      href={`${import.meta.env.VITE_API_URL}/${formData?.data?.censor_certificate_file.trim()}`} // Adjust path based on backend storage
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={handleViewUploadedFile}
                       className="btn btn-sm btn-outline-primary mt-2"
                     >
                       View Uploaded File
-                    </a>
+                    </button>
                   )}
                 </>
               )}
@@ -198,7 +207,7 @@ const CensorSection = ({ setActiveSection, filmType }) => {
               </div>
             )}
           </div>
-          <div className="d-flex justify-content-between">
+          <div className="workflow-nav">
             <button
               type="button"
               className="btn btn-primary"

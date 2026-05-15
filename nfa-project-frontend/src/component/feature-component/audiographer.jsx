@@ -296,7 +296,7 @@ const AudiographerSection = ({ setActiveSection, filmType }) => {
           </div>
         </form>
       )}
-      <div className="d-flex justify-content-between">
+      <div className="workflow-nav">
         <button
           type="button"
           className="btn btn-primary"

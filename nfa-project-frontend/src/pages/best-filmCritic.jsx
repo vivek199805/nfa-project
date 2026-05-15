@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import WorkflowPageLayout from "../features/components/layout/WorkflowPageLayout";
 import BestFilmSection from "../component/best-filmCritic-component/best-film-critic-component";
 import CriticSection from "../component/best-filmCritic-component/critic-component";
@@ -7,8 +7,8 @@ import PublisherNewspaperSection from "../component/best-filmCritic-component/pu
 import ViewSection from "../component/best-filmCritic-component/view-component";
 import DeclarationSection from "../component/best-filmCritic-component/declaration-component";
 import { useFetchById } from "../hooks/useFetchById";
-import { getResumeStep } from "../common/entry-step";
 import { apiConfig } from "../services/apiEndpoints";
+import { useResumeWorkflowStep } from "../hooks/useResumeWorkflowStep";
 
 const steps = [
   "Best Film Critic",
@@ -22,11 +22,12 @@ const BestFilmCriticPage = () => {
   const { id } = useParams();
   const { data: formData } = useFetchById(apiConfig.filmCritic.entryBy, id);
 
-  useEffect(() => {
-    if (id && formData?.data?.active_step !== undefined) {
-      setActiveSection(getResumeStep(formData.data.active_step, steps.length));
-    }
-  }, [id, formData]);
+  useResumeWorkflowStep({
+    id,
+    activeStep: formData?.data?.active_step,
+    stepsLength: steps.length,
+    setActiveSection,
+  });
 
   return (
     <WorkflowPageLayout

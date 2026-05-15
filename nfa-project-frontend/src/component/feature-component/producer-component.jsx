@@ -11,6 +11,7 @@ import {
   showErrorToast,
   showSuccessToast,
 } from "../../services/toastService";
+import { openUploadedDocument } from "../../services/documentService";
 import Swal from "sweetalert2";
 import {
   getFilmNextSection,
@@ -223,6 +224,14 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
     });
   };
 
+  const handleViewUploadedFile = async (filePath) => {
+    try {
+      await openUploadedDocument(filePath);
+    } catch (error) {
+      showErrorToast(error);
+    }
+  };
+
   const onNext = async () => {
     let url = getFilmUpdateEndpoint(filmType);
     const isValid = await trigger(); // validate the form
@@ -302,16 +311,13 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
                     </td>
                     <td>
                       {producer.producer_self_attested_doc ? (
-                        <>
-                          <a
-                            href={`${import.meta.env.VITE_API_URL}/${producer.producer_self_attested_doc}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-sm btn-outline-primary ms-2"
-                          >
-                            View
-                          </a>
-                        </>
+                        <button
+                          type="button"
+                          onClick={() => handleViewUploadedFile(producer.producer_self_attested_doc)}
+                          className="btn btn-sm btn-outline-primary ms-2"
+                        >
+                          View
+                        </button>
                       ) : (
                         <span className="id-proof-status text-muted">Not Provided</span>
                       )}
@@ -502,14 +508,13 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
                     />
 
                     {typeof field.value === "string" && field.value && (
-                      <a
-                        href={`${import.meta.env.VITE_API_URL}/${field.value.trim()}`} // Adjust path based on backend storage
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        type="button"
+                        onClick={() => handleViewUploadedFile(field.value.trim())}
                         className="btn btn-sm btn-outline-primary mt-2"
                       >
                         View Uploaded File
-                      </a>
+                      </button>
                     )}
                   </>
                 )}
@@ -531,7 +536,7 @@ const ProducerDetailsSection = ({ setActiveSection, filmType }) => {
           </div>
         </form>
       )}
-      <div className="d-flex justify-content-between">
+      <div className="workflow-nav">
         <button
           type="button"
           className="btn btn-primary"

@@ -8,6 +8,8 @@ import {
   getFilmNextSection,
   getFilmPreviousSection,
 } from "../../common/film-workflow";
+import { openUploadedDocument } from "../../services/documentService";
+import { showErrorToast } from "../../services/toastService";
 
 const previewSteps = [
   "General",
@@ -63,7 +65,7 @@ const ViewSection = ({ setActiveSection }) => {
         ))}
       </div>
 
-      <div className="d-flex justify-content-between mt-4">
+      <div className="workflow-nav">
         <button
           type="button"
           className="btn btn-primary"
@@ -225,6 +227,14 @@ const GeneralView = ({ data }) => {
   );
 };
 const CensorView = ({ data }) => {
+  const handleViewDocument = async () => {
+    try {
+      await openUploadedDocument(data?.censor_certificate_file);
+    } catch (error) {
+      showErrorToast(error);
+    }
+  };
+
   return (
     <div className="return-view">
       <div className="row">
@@ -252,14 +262,13 @@ const CensorView = ({ data }) => {
           <div>
             {data.censor_certificate_file ? (
               <>
-                <a
-                  href={`${import.meta.env.VITE_API_URL}/${data.censor_certificate_file}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={handleViewDocument}
                   className="btn btn-sm btn-outline-primary ms-2"
                 >
                   View
-                </a>
+                </button>
               </>
             ) : (
               <span className="id-proof-status text-muted">Not Provided</span>
@@ -272,6 +281,14 @@ const CensorView = ({ data }) => {
 };
 
 const CompanyRegistrationView = ({ data }) => {
+  const handleViewDocument = async () => {
+    try {
+      await openUploadedDocument(data?.company_reg_doc);
+    } catch (error) {
+      showErrorToast(error);
+    }
+  };
+
   return (
     <div className="return-view">
       <div className="row">
@@ -291,7 +308,19 @@ const CompanyRegistrationView = ({ data }) => {
 
         <div className="col-6 value-column">
           <div>{data.company_reg_details}</div>
-          <div>{data.company_reg_doc}</div>
+          <div>
+            {data.company_reg_doc ? (
+              <button
+                type="button"
+                onClick={handleViewDocument}
+                className="btn btn-sm btn-outline-primary ms-2"
+              >
+                View
+              </button>
+            ) : (
+              <span className="id-proof-status text-muted">Not Provided</span>
+            )}
+          </div>
         </div>
       </div>
     </div>

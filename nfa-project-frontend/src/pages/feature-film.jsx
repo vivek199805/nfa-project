@@ -11,11 +11,11 @@ import ProducerDetailsSection from "../component/feature-component/producer-comp
 import ReturnSection from "../component/feature-component/return-component";
 import ScreenPlaySection from "../component/feature-component/screenplay-component";
 import SongsFormSection from "../component/feature-component/songs-component";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import WorkflowPageLayout from "../features/components/layout/WorkflowPageLayout";
 import { useFetchById } from "../hooks/useFetchById";
-import { getResumeStep } from "../common/entry-step";
 import { getFilmEntryByEndpoint } from "../common/film-workflow";
+import { useResumeWorkflowStep } from "../hooks/useResumeWorkflowStep";
 
 const steps = [
   "Film Details",
@@ -38,11 +38,12 @@ const FeatureFilmPage = () => {
 
   const { data: formData } = useFetchById(getFilmEntryByEndpoint("feature"), id);
 
-  useEffect(() => {
-    if (id && formData?.data?.active_step !== undefined) {
-      setActiveSection(getResumeStep(formData.data.active_step, steps.length));
-    }
-  }, [id, formData]);
+  useResumeWorkflowStep({
+    id,
+    activeStep: formData?.data?.active_step,
+    stepsLength: steps.length,
+    setActiveSection,
+  });
 
   return (
     <WorkflowPageLayout

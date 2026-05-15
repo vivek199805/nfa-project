@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import WorkflowPageLayout from "../features/components/layout/WorkflowPageLayout";
 import AuthorSection from "../component/best-book-component/author-component";
 import BestBookCinemaSection from "../component/best-book-component/book-cinema-component";
@@ -7,8 +7,8 @@ import PublisherBookSection from "../component/best-book-component/punlisher-boo
 import BookDeclarationSection from "../component/best-book-component/declaration-component";
 import PreviewPaymentSection from "../component/best-book-component/preview-payment";
 import { useFetchById } from "../hooks/useFetchById";
-import { getResumeStep } from "../common/entry-step";
 import { apiConfig } from "../services/apiEndpoints";
+import { useResumeWorkflowStep } from "../hooks/useResumeWorkflowStep";
 
 const steps = [
   "Author",
@@ -22,11 +22,12 @@ const BestBookPage = () => {
   const { id } = useParams();
   const { data: formData } = useFetchById(apiConfig.bestBook.entryBy, id);
 
-  useEffect(() => {
-    if (id && formData?.data?.active_step !== undefined) {
-      setActiveSection(getResumeStep(formData.data.active_step, steps.length));
-    }
-  }, [id, formData]);
+  useResumeWorkflowStep({
+    id,
+    activeStep: formData?.data?.active_step,
+    stepsLength: steps.length,
+    setActiveSection,
+  });
 
   return (
     <WorkflowPageLayout

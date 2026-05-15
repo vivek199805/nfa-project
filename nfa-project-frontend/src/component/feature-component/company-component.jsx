@@ -5,6 +5,8 @@ import { useParams } from "react-router-dom";
 import { z } from "zod";
 import { postRequest } from "../../services/requestService";
 import { useFetchById } from "../../hooks/useFetchById";
+import { openUploadedDocument } from "../../services/documentService";
+import { showErrorToast } from "../../services/toastService";
 import {
   getFilmEntryByEndpoint,
   getFilmNextSection,
@@ -89,6 +91,14 @@ const CompanyRegistrationSection = ({ setActiveSection, filmType }) => {
     }
   };
 
+  const handleViewUploadedFile = async () => {
+    try {
+      await openUploadedDocument(formData?.data?.company_reg_doc);
+    } catch (error) {
+      showErrorToast(error);
+    }
+  };
+
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
@@ -131,14 +141,13 @@ const CompanyRegistrationSection = ({ setActiveSection, filmType }) => {
                   onChange={(e) => field.onChange(e.target.files?.[0] || null)}
                 />
                 {typeof formData?.data?.company_reg_doc === "string" && formData?.data?.company_reg_doc && (
-                  <a
-                    href={`${import.meta.env.VITE_API_URL}/${formData?.data?.company_reg_doc.trim()}`} // Adjust path based on backend storage
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
+                    onClick={handleViewUploadedFile}
                     className="btn btn-sm btn-outline-primary mt-2"
                   >
                     View Uploaded File
-                  </a>
+                  </button>
                 )}
               </>
             )}
@@ -149,7 +158,7 @@ const CompanyRegistrationSection = ({ setActiveSection, filmType }) => {
             </div>
           )}
         </div>
-        <div className="d-flex justify-content-between">
+        <div className="workflow-nav">
           <button
             type="button"
             className="btn btn-primary"
